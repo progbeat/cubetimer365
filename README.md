@@ -1,70 +1,103 @@
-# Getting Started with Create React App
+# CubeTimer365
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+CubeTimer365 is a minimalistic Rubik's Cube timer built with React. It generates a new scramble each day and keeps track of your solving history for that day's scramble. The timer also supports dark/light mode based on your system preferences.
 
-## Available Scripts
+## Features
 
-In the project directory, you can run:
+- **Daily Scramble:** Generates a unique scramble each day. The scramble remains the same throughout the day and changes daily.
+- **Timer Precision:** The timer has a precision of 10ms.
+- **History:** Keeps track of your solve times for the current day's scramble.
+- **Dark/Light Mode:** Automatically adjusts to your system's dark or light mode.
 
-### `npm start`
+## Usage
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- **Start Timer:** Press and release the `Space` key to start the timer.
+- **Stop Timer:** Press and hold the `Space` key to stop the timer.
+- **View History:** Your solve times are saved in a list below the timer.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Random Scramble Rules
 
-### `npm test`
+- **Non-redundant Rotations:** Two consecutive moves should not affect the same face (e.g., `U U2` is invalid as it can be simplified).
+- **Perpendicular Face Rule:** Any sequence of three moves must involve at least two perpendicular faces. For example, `R L R` is not allowed as it can be simplified.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## How It Works
 
-### `npm run build`
+1. **Daily Scramble Generation:**
+   The scramble for each day is generated based on the current date. The same scramble will appear for the entire day, ensuring consistency for all solves on the same day.
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+2. **Timer Controls:**
+   The timer starts when the `Space` key is released and stops when the `Space` key is pressed again. It accurately tracks the time with a precision of 10 milliseconds.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+3. **History:**
+   All solve times for the current day's scramble are stored in the history section, which displays your solve times in the order they were recorded.
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## Getting Started
 
-### `npm run eject`
+To run the app locally, follow these steps:
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+### Prerequisites
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+- Node.js (version 14 or higher)
+- npm or yarn
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+### Installation
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/progbeat/cubetimer365.git
+   cd cubetimer365
+   ```
 
-## Learn More
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+3. Run the app:
+   ```bash
+   npm start
+   ```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+   The app will run locally at [http://localhost:3000](http://localhost:3000).
 
-### Code Splitting
+### Build for Production
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+To create an optimized production build:
 
-### Analyzing the Bundle Size
+```bash
+npm run build
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+The optimized build will be available in the `build` directory.
 
-### Making a Progressive Web App
+## Deployment
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+The project uses GitHub Actions to automatically deploy the app to GitHub Pages whenever the `master` branch is updated.
 
-### Advanced Configuration
+To manually deploy:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+1. Run the build command:
+   ```bash
+   npm run build
+   ```
 
-### Deployment
+2. Deploy to GitHub Pages:
+   ```bash
+   npm run deploy
+   ```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+## GitHub Pages
 
-### `npm run build` fails to minify
+The app is published and accessible at [progbeat.github.io/cubetimer365](https://progbeat.github.io/cubetimer365/).
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+## Contributing
+
+Feel free to fork this repository, make updates, and submit pull requests. Contributions are welcome!
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
+
+## Acknowledgments
+
+This project was created as a simple, daily Rubik's Cube timer to track solve times with random scrambles that follow common cubing rules. The app features light and dark mode support and is optimized for use in browsers.
