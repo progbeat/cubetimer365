@@ -1,15 +1,15 @@
 {
   "files": {
     "main.css": "/cubetimer365/static/css/main.5956928b.css",
-    "main.js": "/cubetimer365/static/js/main.800e56a6.js",
+    "main.js": "/cubetimer365/static/js/main.d1017527.js",
     "static/js/453.4224bb29.chunk.js": "/cubetimer365/static/js/453.4224bb29.chunk.js",
     "index.html": "/cubetimer365/index.html",
     "main.5956928b.css.map": "/cubetimer365/static/css/main.5956928b.css.map",
-    "main.800e56a6.js.map": "/cubetimer365/static/js/main.800e56a6.js.map",
+    "main.d1017527.js.map": "/cubetimer365/static/js/main.d1017527.js.map",
     "453.4224bb29.chunk.js.map": "/cubetimer365/static/js/453.4224bb29.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.5956928b.css",
-    "static/js/main.800e56a6.js"
+    "static/js/main.d1017527.js"
   ]
 }
