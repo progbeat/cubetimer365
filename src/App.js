@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+// App.js
+import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 
 const moves = ['U', 'D', 'L', 'R', 'F', 'B'];
@@ -6,23 +7,25 @@ const modifiers = ['', "'", '2'];
 
 function App() {
   const [scramble, setScramble] = useState('');
-  const [timer, setTimer] = useState(0);
   const [isTiming, setIsTiming] = useState(false);
   const [history, setHistory] = useState([]);
   const [theme, setTheme] = useState('light');
-  const [justStopped, setJustStopped] = useState(false); // New state variable
+  const [justStopped, setJustStopped] = useState(false);
+  const timerRef = useRef(0);
 
   useEffect(() => {
     // Detect system color scheme
     const matchMedia = window.matchMedia('(prefers-color-scheme: dark)');
     setTheme(matchMedia.matches ? 'dark' : 'light');
-    matchMedia.addEventListener('change', (e) => {
+    const handleChange = (e) => {
       setTheme(e.matches ? 'dark' : 'light');
-    });
+    };
+    matchMedia.addEventListener('change', handleChange);
 
     // Generate today's scramble
     const today = new Date();
-    const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+    const seed =
+      today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
     setScramble(generateScramble(seed));
 
     // Keyboard events
@@ -31,8 +34,8 @@ function App() {
         e.preventDefault();
         if (isTiming) {
           setIsTiming(false);
-          setHistory((prev) => [...prev, timer]);
-          setJustStopped(true); // Set flag to true when timer is stopped
+          setHistory((prev) => [...prev, timerRef.current]);
+          setJustStopped(true);
         }
       }
     };
@@ -41,9 +44,9 @@ function App() {
       if (e.code === 'Space') {
         e.preventDefault();
         if (justStopped) {
-          setJustStopped(false); // Reset the flag and ignore this keyup
+          setJustStopped(false);
         } else if (!isTiming) {
-          setTimer(0);
+          timerRef.current = 0;
           setIsTiming(true);
         }
       }
@@ -53,23 +56,26 @@ function App() {
     window.addEventListener('keyup', handleKeyUp);
 
     return () => {
-      matchMedia.removeEventListener('change', () => {});
+      matchMedia.removeEventListener('change', handleChange);
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [isTiming, timer, justStopped]); // Added justStopped to dependencies
+  }, [isTiming, justStopped]);
 
   useEffect(() => {
     let interval;
     if (isTiming) {
       interval = setInterval(() => {
-        setTimer((prev) => prev + 10);
+        timerRef.current += 10;
+        setTimerDisplay(timerRef.current);
       }, 10);
-    } else if (!isTiming && timer !== 0) {
+    } else {
       clearInterval(interval);
     }
     return () => clearInterval(interval);
   }, [isTiming]);
+
+  const [timerDisplay, setTimerDisplay] = useState(0);
 
   const formatTime = (time) => {
     const ms = ('0' + ((time / 10) % 100)).slice(-2);
@@ -81,7 +87,7 @@ function App() {
   return (
     <div className={`app ${theme}`}>
       <h1 className="scramble">{scramble}</h1>
-      <div className="timer">{formatTime(timer)}</div>
+      <div className="timer">{formatTime(timerDisplay)}</div>
       <h2>History</h2>
       <ul className="history">
         {history.map((time, index) => (
@@ -105,6 +111,7 @@ function generateScramble(seed) {
     const moveAxis = getAxis(moveFace);
 
     if (moveFace === lastFace) continue;
+
     if (
       scrambleMoves.length >= 2 &&
       moveAxis === lastAxis &&
