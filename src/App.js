@@ -90,7 +90,7 @@ function App() {
       <div className="timer">{formatTime(timerDisplay)}</div>
       <h2>History</h2>
       <ul className="history">
-        {history.map((time, index) => (
+        {[...history].reverse().map((time, index) => (
           <li key={index}>{formatTime(time)}</li>
         ))}
       </ul>
