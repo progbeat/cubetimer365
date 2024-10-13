@@ -96,6 +96,16 @@ function App() {
     return `${m}:${s}.${ms}`;
   };
 
+  // Function to handle deleting a history record
+  const handleDelete = (index) => {
+    setHistory((prevHistory) => {
+      const newHistory = prevHistory.filter((_, i) => i !== index);
+      // Save updated history to localStorage
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(newHistory));
+      return newHistory;
+    });
+  };
+
   return (
     <div className={`app ${theme}`}>
       <h1 className="scramble">{scramble}</h1>
@@ -103,9 +113,20 @@ function App() {
       <div className="history-container">
         <h2>History</h2>
         <ul className="history">
-          {[...history].reverse().map((time, index) => (
-            <li key={index}>{formatTime(time)}</li>
-          ))}
+          {history.slice(0).reverse().map((time, reversedIndex) => {
+            const originalIndex = history.length - 1 - reversedIndex;
+            return (
+              <li key={originalIndex}>
+                {formatTime(time)}
+                <button
+                  className="delete-button"
+                  onClick={() => handleDelete(originalIndex)}
+                >
+                  Delete
+                </button>
+              </li>
+            );
+          })}
         </ul>
       </div>
     </div>

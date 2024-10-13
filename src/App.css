@@ -89,6 +89,9 @@ body {
 }
 
 .history li {
+  display: flex; /* Use flex to align items horizontally */
+  align-items: center;
+  justify-content: space-between; /* Space between time and delete button */
   font-size: 1.2em;
   padding: 10px;
   margin: 5px 0;
@@ -97,9 +100,21 @@ body {
   text-align: center;
   box-sizing: border-box;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s;
+  /* Removed transition and transform properties */
 }
 
-.history li:hover {
-  transform: translateY(-2px);
+.delete-button {
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: 0.8em;
+  cursor: pointer;
+  padding: 5px;
+  margin-left: 10px;
+  border-radius: 3px;
+  transition: background-color 0.2s;
+}
+
+.delete-button:hover {
+  background-color: rgba(255, 0, 0, 0.2);
 }
