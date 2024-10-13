@@ -6,9 +6,21 @@ const moves = ['U', 'D', 'L', 'R', 'F', 'B'];
 const modifiers = ['', "'", '2'];
 
 function App() {
+  // Compute the seed based on the current date
+  const today = new Date();
+  const seed =
+    today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+
+  const HISTORY_KEY = `cubeTimerHistory_${seed}`; // Use seed in the key
+
+  // Initialize history from localStorage using the seed-based key
+  const [history, setHistory] = useState(() => {
+    const savedHistory = localStorage.getItem(HISTORY_KEY);
+    return savedHistory ? JSON.parse(savedHistory) : [];
+  });
+
   const [scramble, setScramble] = useState('');
   const [isTiming, setIsTiming] = useState(false);
-  const [history, setHistory] = useState([]);
   const [theme, setTheme] = useState('light');
   const [justStopped, setJustStopped] = useState(false);
   const timerRef = useRef(0);
@@ -22,10 +34,7 @@ function App() {
     };
     matchMedia.addEventListener('change', handleChange);
 
-    // Generate today's scramble
-    const today = new Date();
-    const seed =
-      today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+    // Generate scramble using the seed
     setScramble(generateScramble(seed));
 
     // Keyboard events
@@ -60,7 +69,12 @@ function App() {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [isTiming, justStopped]);
+  }, [isTiming, justStopped, seed]);
+
+  // Save history to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  }, [history, HISTORY_KEY]);
 
   useEffect(() => {
     let interval;
