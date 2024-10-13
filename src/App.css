@@ -3,6 +3,28 @@
 /* Google Fonts for better typography */
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
 
+:root {
+  /* Light theme colors */
+  --bg-color: #f5f5f5;
+  --text-color: #222;
+  --button-color: blue;
+  --button-hover-bg: rgba(255, 0, 0, 0.1);
+  --history-bg: rgba(0, 0, 0, 0.05);
+  --box-shadow: rgba(0, 0, 0, 0.1);
+  --panel-border: #ddd;
+}
+
+[data-theme='dark'] {
+  /* Dark theme colors */
+  --bg-color: #121212;
+  --text-color: #fafafa;
+  --button-color: #4ea8ff;
+  --button-hover-bg: rgba(255, 0, 0, 0.2);
+  --history-bg: rgba(255, 255, 255, 0.1);
+  --panel-border: #333;
+  --box-shadow: none; /* No shadow in dark mode */
+}
+
 html,
 body,
 #root {
@@ -13,6 +35,8 @@ body,
 
 body {
   font-family: 'Roboto', sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-color);
 }
 
 .app {
@@ -25,16 +49,6 @@ body {
   overflow: hidden; /* Prevent page scrolling */
 }
 
-.app.light {
-  background-color: #f5f5f5;
-  color: #222;
-}
-
-.app.dark {
-  background-color: #121212;
-  color: #fafafa;
-}
-
 .scramble {
   font-size: 2.5em;
   font-weight: 700;
@@ -42,9 +56,9 @@ body {
   text-align: center;
   padding: 10px 20px;
   border-radius: 8px;
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: var(--history-bg);
   box-sizing: border-box;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 10px var(--box-shadow); /* Conditional shadow */
 }
 
 .timer {
@@ -53,9 +67,9 @@ body {
   margin-bottom: 30px;
   padding: 20px 40px;
   border-radius: 10px;
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: var(--history-bg);
   box-sizing: border-box;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 10px var(--box-shadow); /* Conditional shadow */
   transition: transform 0.2s;
 }
 
@@ -66,55 +80,66 @@ body {
 .history-container {
   width: 100%;
   max-width: 600px;
+  padding: 10px;
+  background-color: var(--history-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
   display: flex;
   flex-direction: column;
   flex-grow: 1;
-  min-height: 0; /* Allow the container to shrink */
+  min-height: 0;
 }
 
-.history-container h2 {
-  margin: 0;
-  padding: 10px 0;
+.history-header {
   text-align: center;
-  flex-shrink: 0; /* Prevent h2 from shrinking */
+  padding: 5px 0; /* Reduced padding to make label take less space */
+  font-size: 1.2em; /* Adjust font size */
+  margin: 0; /* Remove any margin */
+  flex-shrink: 0; /* Ensure the header does not shrink or scroll */
 }
 
 .history {
   flex-grow: 1;
-  min-height: 0;
+  overflow-y: auto; /* Only the list will scroll */
   list-style: none;
-  padding: 0 10px;
+  padding: 0;
   margin: 0;
-  overflow-y: auto; /* Enable vertical scrolling within the history */
 }
 
 .history li {
-  display: flex; /* Use flex to align items horizontally */
+  display: flex;
   align-items: center;
-  justify-content: space-between; /* Space between time and delete button */
-  font-size: 1.2em;
-  padding: 10px;
-  margin: 5px 0;
-  background-color: rgba(255, 255, 255, 0.1);
-  border-radius: 5px;
-  text-align: center;
-  box-sizing: border-box;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  /* Removed transition and transform properties */
+  justify-content: space-between;
+  font-size: 1.1em;
+  padding: 5px 0;  /* Reduced vertical padding for compact look */
+  margin: 0; /* Removed margin */
+  border-bottom: 1px solid var(--panel-border); /* Divider between rows */
+}
+
+.history li:last-child {
+  border-bottom: none; /* Remove last border */
+}
+
+.history-index {
+  font-weight: bold;
+  font-size: 1em;
+}
+
+.history-time {
+  margin-left: 10px;
+  margin-right: auto;
 }
 
 .delete-button {
   background: none;
   border: none;
-  color: inherit;
-  font-size: 0.8em;
+  color: var(--button-color);
+  font-size: 0.9em;
   cursor: pointer;
-  padding: 5px;
-  margin-left: 10px;
-  border-radius: 3px;
+  text-decoration: underline;
   transition: background-color 0.2s;
 }
 
 .delete-button:hover {
-  background-color: rgba(255, 0, 0, 0.2);
+  background-color: var(--button-hover-bg);
 }

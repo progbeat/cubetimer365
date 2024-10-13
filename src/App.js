@@ -9,7 +9,6 @@ function App() {
   const [scramble, setScramble] = useState('');
   const [isTiming, setIsTiming] = useState(false);
   const [history, setHistory] = useState([]);
-  const [theme, setTheme] = useState('light');
   const [justStopped, setJustStopped] = useState(false);
   const timerRef = useRef(0);
 
@@ -19,18 +18,34 @@ function App() {
     today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
   const HISTORY_KEY = `cubeTimerHistory_${seed}`; // Use seed in the key
 
+  // Handle theme detection and switching
+  useEffect(() => {
+    const applyTheme = (theme) => {
+      document.documentElement.setAttribute('data-theme', theme);
+    };
+
+    // Initial theme detection
+    const matchMedia = window.matchMedia('(prefers-color-scheme: dark)');
+    const currentTheme = matchMedia.matches ? 'dark' : 'light';
+    applyTheme(currentTheme);
+
+    // Listen for system theme changes
+    const handleChange = (e) => {
+      const newTheme = e.matches ? 'dark' : 'light';
+      applyTheme(newTheme);
+    };
+
+    matchMedia.addEventListener('change', handleChange);
+
+    return () => {
+      matchMedia.removeEventListener('change', handleChange);
+    };
+  }, []);
+
   useEffect(() => {
     // Load history from localStorage using the seed-based key
     const savedHistory = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
     setHistory(savedHistory);
-
-    // Detect system color scheme
-    const matchMedia = window.matchMedia('(prefers-color-scheme: dark)');
-    setTheme(matchMedia.matches ? 'dark' : 'light');
-    const handleChange = (e) => {
-      setTheme(e.matches ? 'dark' : 'light');
-    };
-    matchMedia.addEventListener('change', handleChange);
 
     // Generate today's scramble using the seed
     setScramble(generateScramble(seed));
@@ -68,7 +83,6 @@ function App() {
     window.addEventListener('keyup', handleKeyUp);
 
     return () => {
-      matchMedia.removeEventListener('change', handleChange);
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
@@ -107,22 +121,23 @@ function App() {
   };
 
   return (
-    <div className={`app ${theme}`}>
+    <div className="app">
       <h1 className="scramble">{scramble}</h1>
       <div className="timer">{formatTime(timerDisplay)}</div>
       <div className="history-container">
-        <h2>History</h2>
+        <h2 className="history-header">History</h2>
         <ul className="history">
           {history.slice(0).reverse().map((time, reversedIndex) => {
             const originalIndex = history.length - 1 - reversedIndex;
             return (
               <li key={originalIndex}>
-                {formatTime(time)}
+                <span className="history-index">{originalIndex + 1}:</span>
+                <span className="history-time">{formatTime(time)}</span>
                 <button
                   className="delete-button"
                   onClick={() => handleDelete(originalIndex)}
                 >
-                  Delete
+                  x
                 </button>
               </li>
             );
