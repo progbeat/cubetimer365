@@ -3,10 +3,12 @@
 /* Google Fonts for better typography */
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
 
-* {
+html,
+body,
+#root {
+  height: 100%;
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
 }
 
 body {
@@ -16,11 +18,11 @@ body {
 .app {
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
+  height: 100%;
   padding: 20px;
-  min-height: 100vh;
-  transition: background-color 0.3s, color 0.3s;
+  box-sizing: border-box;
+  overflow: hidden; /* Prevent page scrolling */
 }
 
 .app.light {
@@ -41,6 +43,7 @@ body {
   padding: 10px 20px;
   border-radius: 8px;
   background-color: rgba(255, 255, 255, 0.1);
+  box-sizing: border-box;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
@@ -51,6 +54,7 @@ body {
   padding: 20px 40px;
   border-radius: 10px;
   background-color: rgba(255, 255, 255, 0.1);
+  box-sizing: border-box;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s;
 }
@@ -59,11 +63,29 @@ body {
   transform: scale(1.05);
 }
 
-.history {
-  list-style: none;
-  padding: 0;
+.history-container {
   width: 100%;
   max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  min-height: 0; /* Allow the container to shrink */
+}
+
+.history-container h2 {
+  margin: 0;
+  padding: 10px 0;
+  text-align: center;
+  flex-shrink: 0; /* Prevent h2 from shrinking */
+}
+
+.history {
+  flex-grow: 1;
+  min-height: 0;
+  list-style: none;
+  padding: 0 10px;
+  margin: 0;
+  overflow-y: auto; /* Enable vertical scrolling within the history */
 }
 
 .history li {
@@ -73,6 +95,7 @@ body {
   background-color: rgba(255, 255, 255, 0.1);
   border-radius: 5px;
   text-align: center;
+  box-sizing: border-box;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s;
 }

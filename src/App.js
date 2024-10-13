@@ -6,26 +6,24 @@ const moves = ['U', 'D', 'L', 'R', 'F', 'B'];
 const modifiers = ['', "'", '2'];
 
 function App() {
-  // Compute the seed based on the current date
-  const today = new Date();
-  const seed =
-    today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
-
-  const HISTORY_KEY = `cubeTimerHistory_${seed}`; // Use seed in the key
-
-  // Initialize history from localStorage using the seed-based key
-  const [history, setHistory] = useState(() => {
-    const savedHistory = localStorage.getItem(HISTORY_KEY);
-    return savedHistory ? JSON.parse(savedHistory) : [];
-  });
-
   const [scramble, setScramble] = useState('');
   const [isTiming, setIsTiming] = useState(false);
+  const [history, setHistory] = useState([]);
   const [theme, setTheme] = useState('light');
   const [justStopped, setJustStopped] = useState(false);
   const timerRef = useRef(0);
 
+  // Generate today's seed based on the date
+  const today = new Date();
+  const seed =
+    today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+  const HISTORY_KEY = `cubeTimerHistory_${seed}`; // Use seed in the key
+
   useEffect(() => {
+    // Load history from localStorage using the seed-based key
+    const savedHistory = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+    setHistory(savedHistory);
+
     // Detect system color scheme
     const matchMedia = window.matchMedia('(prefers-color-scheme: dark)');
     setTheme(matchMedia.matches ? 'dark' : 'light');
@@ -34,7 +32,7 @@ function App() {
     };
     matchMedia.addEventListener('change', handleChange);
 
-    // Generate scramble using the seed
+    // Generate today's scramble using the seed
     setScramble(generateScramble(seed));
 
     // Keyboard events
@@ -43,7 +41,12 @@ function App() {
         e.preventDefault();
         if (isTiming) {
           setIsTiming(false);
-          setHistory((prev) => [...prev, timerRef.current]);
+          setHistory((prev) => {
+            const newHistory = [...prev, timerRef.current];
+            // Save updated history to localStorage
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(newHistory));
+            return newHistory;
+          });
           setJustStopped(true);
         }
       }
@@ -69,12 +72,7 @@ function App() {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [isTiming, justStopped, seed]);
-
-  // Save history to localStorage whenever it changes
-  useEffect(() => {
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-  }, [history, HISTORY_KEY]);
+  }, [isTiming, justStopped, seed, HISTORY_KEY]);
 
   useEffect(() => {
     let interval;
@@ -102,12 +100,14 @@ function App() {
     <div className={`app ${theme}`}>
       <h1 className="scramble">{scramble}</h1>
       <div className="timer">{formatTime(timerDisplay)}</div>
-      <h2>History</h2>
-      <ul className="history">
-        {[...history].reverse().map((time, index) => (
-          <li key={index}>{formatTime(time)}</li>
-        ))}
-      </ul>
+      <div className="history-container">
+        <h2>History</h2>
+        <ul className="history">
+          {[...history].reverse().map((time, index) => (
+            <li key={index}>{formatTime(time)}</li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }
