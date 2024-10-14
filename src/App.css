@@ -92,15 +92,15 @@ body {
 
 .history-header {
   text-align: center;
-  padding: 5px 0; /* Reduced padding to make label take less space */
-  font-size: 1.2em; /* Adjust font size */
-  margin: 0; /* Remove any margin */
-  flex-shrink: 0; /* Ensure the header does not shrink or scroll */
+  padding: 5px 0;
+  font-size: 1.2em;
+  margin: 0;
+  flex-shrink: 0;
 }
 
 .history {
   flex-grow: 1;
-  overflow-y: auto; /* Only the list will scroll */
+  overflow-y: auto;
   list-style: none;
   padding: 0;
   margin: 0;
@@ -111,13 +111,13 @@ body {
   align-items: center;
   justify-content: space-between;
   font-size: 1.1em;
-  padding: 5px 0;  /* Reduced vertical padding for compact look */
-  margin: 0; /* Removed margin */
-  border-bottom: 1px solid var(--panel-border); /* Divider between rows */
+  padding: 5px 20px; /* Symmetrical padding */
+  margin: 0;
+  border-bottom: 1px solid var(--panel-border);
 }
 
 .history li:last-child {
-  border-bottom: none; /* Remove last border */
+  border-bottom: none;
 }
 
 .history-index {
