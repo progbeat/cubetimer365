@@ -10,13 +10,22 @@ function App() {
   const [isTiming, setIsTiming] = useState(false);
   const [history, setHistory] = useState([]);
   const [justStopped, setJustStopped] = useState(false);
+  const [timerDisplay, setTimerDisplay] = useState(0);
   const timerRef = useRef(0);
 
-  // Generate today's seed based on the date
-  const today = new Date();
-  const seed =
-    today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
-  const HISTORY_KEY = `cubeTimerHistory_${seed}`; // Use seed in the key
+  const isTimingRef = useRef(isTiming);
+  const justStoppedRef = useRef(justStopped);
+
+  const HISTORY_KEY = 'cubeTimerHistory';
+
+  // Update refs when state changes
+  useEffect(() => {
+    isTimingRef.current = isTiming;
+  }, [isTiming]);
+
+  useEffect(() => {
+    justStoppedRef.current = justStopped;
+  }, [justStopped]);
 
   // Handle theme detection and switching
   useEffect(() => {
@@ -42,20 +51,35 @@ function App() {
     };
   }, []);
 
+  // Load history and generate scramble
   useEffect(() => {
-    // Load history from localStorage using the seed-based key
-    const savedHistory = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
-    setHistory(savedHistory);
+    const savedDate = localStorage.getItem('cubeTimerDate');
+    const today = new Date().toISOString().split('T')[0]; // 'YYYY-MM-DD'
 
-    // Generate today's scramble using the seed
+    if (savedDate !== today) {
+      // It's a new day, reset the history
+      localStorage.setItem('cubeTimerDate', today);
+      localStorage.setItem(HISTORY_KEY, '[]');
+      setHistory([]);
+    } else {
+      // Load existing history
+      const savedHistory = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+      setHistory(savedHistory);
+    }
+
+    // Generate today's scramble using the date
+    const seed = parseInt(today.replace(/-/g, ''), 10);
     setScramble(generateScramble(seed));
+  }, []);
 
-    // Keyboard events
+  // Handle keyboard events
+  useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.code === 'Space') {
         e.preventDefault();
-        if (isTiming) {
+        if (isTimingRef.current) {
           setIsTiming(false);
+          isTimingRef.current = false;
           setHistory((prev) => {
             const newHistory = [...prev, timerRef.current];
             // Save updated history to localStorage
@@ -63,6 +87,7 @@ function App() {
             return newHistory;
           });
           setJustStopped(true);
+          justStoppedRef.current = true;
         }
       }
     };
@@ -70,11 +95,13 @@ function App() {
     const handleKeyUp = (e) => {
       if (e.code === 'Space') {
         e.preventDefault();
-        if (justStopped) {
+        if (justStoppedRef.current) {
           setJustStopped(false);
-        } else if (!isTiming) {
+          justStoppedRef.current = false;
+        } else if (!isTimingRef.current) {
           timerRef.current = 0;
           setIsTiming(true);
+          isTimingRef.current = true;
         }
       }
     };
@@ -86,8 +113,9 @@ function App() {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [isTiming, justStopped, seed, HISTORY_KEY]);
+  }, []);
 
+  // Timer interval
   useEffect(() => {
     let interval;
     if (isTiming) {
@@ -100,8 +128,6 @@ function App() {
     }
     return () => clearInterval(interval);
   }, [isTiming]);
-
-  const [timerDisplay, setTimerDisplay] = useState(0);
 
   const formatTime = (time) => {
     const ms = ('0' + ((time / 10) % 100)).slice(-2);
@@ -127,21 +153,24 @@ function App() {
       <div className="history-container">
         <h2 className="history-header">History</h2>
         <ul className="history">
-          {history.slice(0).reverse().map((time, reversedIndex) => {
-            const originalIndex = history.length - 1 - reversedIndex;
-            return (
-              <li key={originalIndex}>
-                <span className="history-index">{originalIndex + 1}:</span>
-                <span className="history-time">{formatTime(time)}</span>
-                <button
-                  className="delete-button"
-                  onClick={() => handleDelete(originalIndex)}
-                >
-                  x
-                </button>
-              </li>
-            );
-          })}
+          {history
+            .slice(0)
+            .reverse()
+            .map((time, reversedIndex) => {
+              const originalIndex = history.length - 1 - reversedIndex;
+              return (
+                <li key={originalIndex}>
+                  <span className="history-index">{originalIndex + 1}:</span>
+                  <span className="history-time">{formatTime(time)}</span>
+                  <button
+                    className="delete-button"
+                    onClick={() => handleDelete(originalIndex)}
+                  >
+                    x
+                  </button>
+                </li>
+              );
+            })}
         </ul>
       </div>
     </div>
