@@ -18,7 +18,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '16'  # Ensure this matches your project's Node.js version
+          node-version: '23'
 
       - name: Enable Corepack
         run: corepack enable
