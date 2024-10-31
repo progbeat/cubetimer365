@@ -6,7 +6,7 @@ on:
       - master  # or 'main' if your default branch is 'main'
 
 permissions:
-  contents: write  # Add this line to grant write permissions
+  contents: write  # Grants write permissions
 
 jobs:
   build-and-deploy:
@@ -18,16 +18,16 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '16'  # Use the version compatible with your app
+          node-version: '16'  # Ensure this matches your project's Node.js version
 
       - name: Install dependencies
-        run: npm install
+        run: yarn install
 
       - name: Build the app
-        run: npm run build
+        run: yarn build
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./build
+          publish_dir: ./dist
