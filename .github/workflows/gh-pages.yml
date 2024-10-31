@@ -20,6 +20,9 @@ jobs:
         with:
           node-version: '16'  # Ensure this matches your project's Node.js version
 
+      - name: Enable Corepack
+        run: corepack enable
+
       - name: Install dependencies
         run: yarn install
 
