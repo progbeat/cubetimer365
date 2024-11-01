@@ -42,8 +42,8 @@ const theme = createTheme({
   fontFamily: 'Roboto',
   headings: {
     sizes: {
-      h1: { fontSize: rem(96), fontWeight: 900 },
-      h2: { fontSize: rem(32), fontWeight: 900 },
+      h1: { fontSize: rem(96), fontWeight: '900' },
+      h2: { fontSize: rem(32), fontWeight: '900' },
     },
   },
 });
@@ -154,7 +154,7 @@ function useTimer(isTiming: boolean, justStopped: boolean) {
   const timerRef = useRef<number>(0);
 
   useEffect(() => {
-    let interval: number;
+    let interval: number | undefined;
     if (isTiming) {
       interval = window.setInterval(() => {
         timerRef.current += 0.01;
@@ -308,7 +308,6 @@ const TimerDisplay: React.FC<TimerDisplayProps> = ({ timerDisplay }) => {
     <Paper withBorder shadow="md" mb="lg" radius="md" px="xl">
       <Title
         order={1}
-        align="center"
         style={{ fontFamily: theme.fontFamilyMonospace }}
       >
         {formatTime(timerDisplay)}
@@ -325,7 +324,7 @@ interface ScrambleDisplayProps {
 const ScrambleDisplay: React.FC<ScrambleDisplayProps> = ({ scramble }) => {
   return (
     <Paper mb="lg" radius="md" px="md" py="sm">
-      <Title order={2} align="center">
+      <Title order={2}>
         {scramble}
       </Title>
     </Paper>
@@ -380,7 +379,7 @@ const ChartArea: React.FC<ChartAreaProps> = ({ history }) => {
         justifyContent: 'center',
       }}
     >
-      <Title order={2} align="center">
+      <Title order={2}>
         No data to display. Complete some solves to see your performance chart here.
       </Title>
     </Paper>
@@ -486,7 +485,7 @@ const App: React.FC = () => {
   return (
       <MantineProvider theme={theme} forceColorScheme={preferredColorScheme}>
         <AppShell
-          aside={{ width: rem(256) }}
+          aside={{ width: 256, breakpoint: 'sm' }}
           style={{ height: '100vh' }}
         >
           <AppShell.Aside
