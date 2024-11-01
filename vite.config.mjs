@@ -4,6 +4,7 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig({
   plugins: [react(), tsconfigPaths()],
+  base: '/cubetimer365/',
   test: {
     globals: true,
     environment: 'jsdom',
