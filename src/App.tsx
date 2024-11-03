@@ -46,6 +46,12 @@ const theme = createTheme({
       h2: { fontSize: rem(32), fontWeight: '900' },
     },
   },
+  globalStyles: (theme) => ({
+    ':root': {
+      '--mantine-color-green-sticker':
+        theme.colorScheme === 'dark' ? '#0EFC61' : '#48FB78',
+    },
+  })
 });
 
 // Utility functions
@@ -305,7 +311,7 @@ interface TimerDisplayProps {
 
 const TimerDisplay: React.FC<TimerDisplayProps> = ({ timerDisplay }) => {
   return (
-    <Paper withBorder shadow="md" radius="md" pr="xl">
+    <Paper withBorder shadow="md" radius="md" px="xl">
       <Title
         order={1}
         style={{ fontFamily: theme.fontFamilyMonospace }}
