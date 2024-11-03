@@ -46,12 +46,12 @@ const theme = createTheme({
       h2: { fontSize: rem(32), fontWeight: '900' },
     },
   },
-  globalStyles: (theme) => ({
-    ':root': {
-      '--mantine-color-green-sticker':
-        theme.colorScheme === 'dark' ? '#0EFC61' : '#48FB78',
-    },
-  })
+  // globalStyles: (theme) => ({
+  //   ':root': {
+  //     '--mantine-color-green-sticker':
+  //       theme.colorScheme === 'dark' ? '#0EFC61' : '#48FB78',
+  //   },
+  // })
 });
 
 // Utility functions
