@@ -305,7 +305,7 @@ interface TimerDisplayProps {
 
 const TimerDisplay: React.FC<TimerDisplayProps> = ({ timerDisplay }) => {
   return (
-    <Paper withBorder shadow="md" mb="lg" radius="md" px="xl">
+    <Paper withBorder shadow="md" radius="md" px="xl">
       <Title
         order={1}
         style={{ fontFamily: theme.fontFamilyMonospace }}
@@ -512,7 +512,7 @@ const App: React.FC = () => {
             <Stack align="center" gap="sm">
               <Flex align="center" justify="center" gap="xl">
                 <TimerDisplay timerDisplay={timerDisplay} />
-                <CubeNet scramble={scramble} />
+                <CubeNet scramble={scramble} side={96} />
               </Flex>
               <ScrambleDisplay scramble={scramble} />
               <ChartArea history={history} />

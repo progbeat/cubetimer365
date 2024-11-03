@@ -1,190 +1,184 @@
-import React, { useEffect, useState } from 'react';
+import React, { useMemo } from 'react';
 
-const stickerColors = ['white', 'red', 'green', 'yellow', 'orange', 'blue'];
+type CubeState = Record<string, string>;
 
-type Move = 'U' | 'D' | 'L' | 'R' | 'F' | 'B';
-type Modifier = '' | '\'' | '2';
-
-interface Rotation {
-  cycles: number[][];
-}
-
-const rotations: Record<Move, Rotation> = {
-  U: {
-    cycles: [
-      [0, 2, 8, 6],     // Top face corners
-      [1, 5, 7, 3],     // Top face edges
-      [9, 18, 45, 36],  // Side edges adjacent to top face
-      [10, 19, 46, 37],
-      [11, 20, 47, 38],
-    ],
-  },
-  D: {
-    cycles: [
-      [27, 29, 35, 33],
-      [28, 32, 34, 30],
-      [15, 42, 51, 24],
-      [16, 43, 52, 25],
-      [17, 44, 53, 26],
-    ],
-  },
-  F: {
-    cycles: [
-      [6, 8, 26, 24],
-      [7, 17, 25, 15],
-      [6, 15, 33, 9],
-      [7, 16, 34, 10],
-      [8, 17, 35, 11],
-    ],
-  },
-  B: {
-    cycles: [
-      [0, 2, 20, 18],
-      [1, 11, 19, 9],
-      [0, 9, 27, 18],
-      [1, 10, 28, 19],
-      [2, 11, 29, 20],
-    ],
-  },
-  L: {
-    cycles: [
-      [0, 18, 27, 45],
-      [3, 21, 30, 48],
-      [0, 3, 33, 24],
-      [3, 6, 36, 27],
-      [6, 9, 39, 30],
-    ],
-  },
-  R: {
-    cycles: [
-      [2, 47, 35, 20],
-      [5, 50, 32, 23],
-      [2, 5, 38, 29],
-      [5, 8, 41, 32],
-      [8, 11, 44, 35],
-    ],
-  },
+const adjacentFacesCw: Record<string, string> = {
+  U: 'FLBR',
+  D: 'FRBL',
+  F: 'URDL',
+  B: 'ULDR',
+  L: 'UFDB',
+  R: 'UBDF',
 };
 
-const CubeNet: React.FC<{ scramble: string }> = ({ scramble }) => {
-  const [cubeState, setCubeState] = useState<number[]>([]);
+const modifierPermutations: Record<string, number[]> = {
+  "'": [1, 2, 3, 0],   // Clockwise rotation
+  "": [3, 0, 1, 2],  // Counter-clockwise rotation
+  "2": [2, 3, 0, 1],  // 180-degree rotation
+};
 
-  useEffect(() => {
-    // Initialize the cube state
-    const initialState = Array(54)
-      .fill(0)
-      .map((_, idx) => Math.floor(idx / 9));
-    let state = [...initialState];
+const rotationCycles = (face: string): string[][] => {
+  const [a, b, c, d] = adjacentFacesCw[face].split('');
+  return [
+    [face + a, face + b, face + c, face + d],
+    [a + face, b + face, c + face, d + face],
+    [face + a + b, face + b + c, face + c + d, face + d + a],
+    [a + b + face, b + c + face, c + d + face, d + a + face],
+    [b + face + a, c + face + b, d + face + c, a + face + d],
+  ];
+};
 
-    // Parse the scramble and apply rotations
-    const moves = scramble.match(/([UDLRFB]w?'?2?)/g);
-    if (moves) {
-      moves.forEach((move) => {
-        const parsedMove = parseMove(move);
-        if (parsedMove) {
-          const { face, modifier } = parsedMove;
-          applyRotation(state, face, modifier);
-        }
-      });
+// Generate the initial solved state of the cube
+const generateInitialState = (): CubeState => {
+  const cubeState: CubeState = {
+    U: 'var(--mantine-color-yellow-4)',
+    D: 'var(--mantine-color-gray-2)',
+    F: 'var(--mantine-color-green-6)',
+    B: 'var(--mantine-color-blue-6)',
+    L: 'var(--mantine-color-red-6)',
+    R: 'var(--mantine-color-orange-5)',
+  }
+  Object.entries(adjacentFacesCw).forEach(([face, adjacent]) => {
+    for (let i = 0; i < 4; i++) {
+      const a = adjacent[i], b = adjacent[(i + 1) % 4];
+      cubeState[`${face}${a}`] = cubeState[face];  // Edge stickers
+      cubeState[`${face}${a}${b}`] = cubeState[face];  // Corner stickers
     }
+  });
+  return cubeState;
+};
 
-    setCubeState(state);
-  }, [scramble]);
-
-  const parseMove = (
-    move: string
-  ): { face: Move; modifier: Modifier } | null => {
-    const match = move.match(/([UDLRFB])('?2?)/);
-    if (match) {
-      const face = match[1] as Move;
-      const modifier = match[2] as Modifier;
-      return { face, modifier };
-    }
-    return null;
-  };
-
-  const applyRotation = (
-    state: number[],
-    face: Move,
-    modifier: Modifier
-  ) => {
-    const rotation = rotations[face];
-    let turns = modifier === '2' ? 2 : 1;
-    if (modifier === '\'') {
-      turns = 3;
-    }
-
-    for (let i = 0; i < turns; i++) {
-      rotation.cycles.forEach((cycle) => {
-        const temp = state[cycle[0]];
-        for (let j = 0; j < 3; j++) {
-          state[cycle[j]] = state[cycle[j + 1]];
-        }
-        state[cycle[3]] = temp;
-      });
-    }
-  };
-
-  const S1 = 3.5;
-  const S2 = 2 * S1;
-  const S3 = 3 * S1;
-  const S4 = 4 * S1;
-
-  const renderCube = () => {
-    const positions = [
-      // Top face
-      { x: S1, y: 0 },
-      // Left face
-      { x: 0, y: S1 },
-      // Front face
-      { x: S1, y: S1 },
-      // Right face
-      { x: S2, y: S1 },
-      // Back face
-      { x: S3, y: S1 },
-      // Bottom face
-      { x: S1, y: S2 },
-    ];
-
-    const size = 20;
-    const padding = 1;
-    const stickers = [];
-
-    for (let face = 0; face < 6; face++) {
-      const { x: offsetX, y: offsetY } = positions[face];
-      for (let i = 0; i < 9; i++) {
-        const row = Math.floor(i / 3);
-        const col = i % 3;
-        const x = (offsetX + col) * size;
-        const y = (offsetY + row) * size;
-        const idx = face * 9 + i;
-        const color = stickerColors[cubeState[idx]];
-
-        stickers.push(
-          <rect
-            key={idx}
-            x={x+padding}
-            y={y+padding}
-            width={size-2*padding}
-            height={size-2*padding}
-            fill={color}
-            stroke="black"
-          />
-        );
+// Apply a sequence of moves to the cube, starting from an optional initial state
+const permuteCube = (scramble: string, cube: CubeState = generateInitialState()): CubeState => {
+  scramble.split(' ').forEach((move) => {
+    const cycles = rotationCycles(move[0]);
+    const permutation = modifierPermutations[move.slice(1)];
+    console.log(permutation);
+    cycles.forEach((cycle) => {
+      const permutatedStickers = permutation.map((i) => cube[cycle[i]]);
+      for (let i = 0; i < 4; i++) {
+        cube[cycle[i]] = permutatedStickers[i];
       }
+    });
+  });
+  return cube;
+};
+
+const renderFace = (cube: CubeState, f: string,
+                    luX, luY, luZ,
+                    ruX, ruY, ruZ,
+                    ldX, ldY, ldZ,
+                    rdX, rdY, rdZ,
+                    opacity = 0.8
+                  ) => {
+  const [a, b, c, d] = adjacentFacesCw[f].split('');
+  const colors = [
+    [cube[f + d + a], cube[f + a], cube[f + a + b]],
+    [cube[f + d]    , cube[f]    , cube[f + b]    ],
+    [cube[f + c + d], cube[f + c], cube[f + b + c]],
+  ]
+  const project = (i, j) => {
+    let alpha = (3 - i) / 3, beta = i / 3;
+    const lX = luX * alpha + ldX * beta;
+    const lY = luY * alpha + ldY * beta;
+    const lZ = luZ * alpha + ldZ * beta;
+    const rX = ruX * alpha + rdX * beta;
+    const rY = ruY * alpha + rdY * beta;
+    const rZ = ruZ * alpha + rdZ * beta;
+    alpha = (3 - j) / 3;
+    beta = j / 3;
+    const z = lZ * alpha + rZ * beta;
+    return {
+      x: (lX * alpha + rX * beta) / z,
+      y: (lY * alpha + rY * beta) / z,
     }
+  }
+  const u = 0.025;
+  const v = 1 - u;
+  return (
+    <>
+      <polygon key='bg' fill='var(--mantine-color-default-border)'
+                points={[
+                  project(0, 0),
+                  project(3, 0),
+                  project(3, 3),
+                  project(0, 3),
+                ].map(({ x, y }) => `${x},${y}`).join(' ')} />
+      {colors.flatMap((row, i) => {
+        return row.map((color, j) => {
+          const points = [
+            project(i + u, j + u),
+            project(i + v, j + u),
+            project(i + v, j + v),
+            project(i + u, j + v),
+          ]
+          return (
+            <polygon key={`${f}-${i}-${j}`} fill={color} fillOpacity={opacity}
+                     points={points.map(({ x, y }) => `${x},${y}`).join(' ')} />
+          );
+        })
+      })}
+    </>
+  );
+}
 
-    return (
-      <svg
-        width={S4 * size}
-        height={S3 * size}
-      >
-        {stickers}
-      </svg>
-    );
-  };
-
-  return renderCube()
+const CubeNet: React.FC<{ scramble: string, side: number}> = ({ scramble, side }) => {
+  if (!scramble) {
+    return null;
+  }
+  const cube = permuteCube(scramble);
+  const facePadding = 0;
+  const faceStep = 200;
+  const A0 = facePadding - faceStep * 1.5;
+  const A1 = A0 + faceStep;
+  const A2 = A1 + faceStep;
+  const A3 = A2 + faceStep;
+  const B0 = faceStep - facePadding - faceStep * 1.5;
+  const B1 = B0 + faceStep;
+  const B2 = B1 + faceStep;
+  const B3 = B2 + faceStep;
+  const Z0 = 1;
+  const Z1 = 2;
+  return (
+    <svg width={side*2} height={side*2} viewBox="-150 -150 300 300">
+      {renderFace(
+        cube, 'L',
+        A0, A1, Z1,
+        B0, A1, 1,
+        A0, B1, Z1,
+        B0, B1, 1,
+      )}
+      {renderFace(
+        cube, 'F',
+        A1, A1, 1,
+        B1, A1, 1,
+        A1, B1, 1,
+        B1, B1, 1,
+        1
+      )}
+      {renderFace(
+        cube, 'R',
+        A2, A1, 1,
+        B2, A1, Z1,
+        A2, B1, 1,
+        B2, B1, Z1,
+      )}
+      {renderFace(
+        cube, 'U',
+        B1, B0, 1,
+        A1, B0, 1,
+        B1, A0, Z1,
+        A1, A0, Z1,
+      )}
+      {renderFace(
+        cube, 'D',
+        A1, A2, 1,
+        B1, A2, 1,
+        A1, B2, Z1,
+        B1, B2, Z1,
+      )}
+    </svg>
+  )
 };
 
 export default CubeNet;
