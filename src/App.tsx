@@ -305,7 +305,7 @@ interface TimerDisplayProps {
 
 const TimerDisplay: React.FC<TimerDisplayProps> = ({ timerDisplay }) => {
   return (
-    <Paper withBorder shadow="md" radius="md" px="xl">
+    <Paper withBorder shadow="md" radius="md" pr="xl">
       <Title
         order={1}
         style={{ fontFamily: theme.fontFamilyMonospace }}
