@@ -65,11 +65,11 @@ const permuteCube = (scramble: string, cube: CubeState = generateInitialState())
 };
 
 const renderFace = (cube: CubeState, f: string,
-                    luX, luY, luZ,
-                    ruX, ruY, ruZ,
-                    ldX, ldY, ldZ,
-                    rdX, rdY, rdZ,
-                    opacity = 0.8
+                    luX: number, luY: number, luZ: number,
+                    ruX: number, ruY: number, ruZ: number,
+                    ldX: number, ldY: number, ldZ: number,
+                    rdX: number, rdY: number, rdZ: number,
+                    opacity: number = 0.8
                   ) => {
   const [a, b, c, d] = adjacentFacesCw[f].split('');
   const colors = [
@@ -77,7 +77,7 @@ const renderFace = (cube: CubeState, f: string,
     [cube[f + d]    , cube[f]    , cube[f + b]    ],
     [cube[f + c + d], cube[f + c], cube[f + b + c]],
   ]
-  const project = (i, j) => {
+  const project = (i: number, j: number) => {
     let alpha = (3 - i) / 3, beta = i / 3;
     const lX = luX * alpha + ldX * beta;
     const lY = luY * alpha + ldY * beta;
