@@ -337,7 +337,7 @@ const ScrambleDisplay: React.FC<ScrambleDisplayProps> = ({ scramble }) => {
   );
 };
 
-// ChartArea Component (Updated)
+// ChartArea Component
 interface ChartAreaProps {
   history: number[];
 }
@@ -413,6 +413,9 @@ const ChartArea: React.FC<ChartAreaProps> = ({ history }) => {
   );
 };
 
+const HISTORY_KEY = 'history';
+const HISTORY_DATE_KEY = 'today';
+
 const App: React.FC = () => {
   const preferredColorScheme = useColorScheme();
   const [scramble, setScramble] = useState('');
@@ -422,22 +425,29 @@ const App: React.FC = () => {
 
   const { timerDisplay, timerRef } = useTimer(isTiming, justStopped);
 
-  // Generate today's seed based on the date
   const today = new Date();
   const seed =
     today.getFullYear() * 10000 +
     (today.getMonth() + 1) * 100 +
     today.getDate();
-  const HISTORY_KEY = `cubeTimerHistory_${seed}`; // Use seed in the key
 
   useEffect(() => {
-    // Load history from localStorage using the seed-based key
+    const storedDate = localStorage.getItem(HISTORY_DATE_KEY);
+    const todayString = today.toISOString().split('T')[0];
+
+    // If no date stored or stored date != today, reset history
+    if (storedDate !== todayString) {
+      localStorage.removeItem(HISTORY_KEY);
+      localStorage.setItem(HISTORY_DATE_KEY, todayString);
+    }
+
+    // Load today's history (if any)
     const savedHistory = JSON.parse(
       localStorage.getItem(HISTORY_KEY) || '[]'
     ) as number[];
     setHistory(savedHistory);
 
-    // Generate today's scramble using the seed
+    // Generate today's scramble
     setScramble(generateScramble(seed));
 
     // Keyboard events
@@ -448,7 +458,6 @@ const App: React.FC = () => {
           setIsTiming(false);
           setHistory((prev) => {
             const newHistory = [...prev, timerRef.current];
-            // Save updated history to localStorage
             localStorage.setItem(HISTORY_KEY, JSON.stringify(newHistory));
             return newHistory;
           });
@@ -476,56 +485,55 @@ const App: React.FC = () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [isTiming, justStopped, seed, HISTORY_KEY, timerRef]);
+  }, [isTiming, justStopped, seed, timerRef, today]);
 
   const handleDelete = (index: number) => {
     setHistory((prevHistory) => {
       const newHistory = [...prevHistory];
       newHistory.splice(index, 1);
-      // Save updated history to localStorage
       localStorage.setItem(HISTORY_KEY, JSON.stringify(newHistory));
       return newHistory;
     });
   };
 
   return (
-      <MantineProvider theme={theme} forceColorScheme={preferredColorScheme}>
-        <AppShell
-          aside={{ width: 256, breakpoint: 'sm' }}
-          style={{ height: '100vh' }}
+    <MantineProvider theme={theme} forceColorScheme={preferredColorScheme}>
+      <AppShell
+        aside={{ width: 256, breakpoint: 'sm' }}
+        style={{ height: '100vh' }}
+      >
+        <AppShell.Aside
+          style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
         >
-          <AppShell.Aside
-            style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
-          >
-            <Flex justify="center" direction="row" py={rem(4)} c="yellow">
-              <IconCube3dSphere size={28}/>
-              <Title order={3} style={{ fontFamily: "Rubik Puddles", fontWeight: 700 }}>&nbsp; CubeTimer365&nbsp;</Title>
-            </Flex>
-            <Divider mb={0} />
-            <StatsPanel history={history} />
-            <Divider mb={0} />
-            <HistoryList history={history} handleDelete={handleDelete} />
-          </AppShell.Aside>
+          <Flex justify="center" direction="row" py={rem(4)} c="yellow">
+            <IconCube3dSphere size={28}/>
+            <Title order={3} style={{ fontFamily: "Rubik Puddles", fontWeight: 700 }}>&nbsp; CubeTimer365&nbsp;</Title>
+          </Flex>
+          <Divider mb={0} />
+          <StatsPanel history={history} />
+          <Divider mb={0} />
+          <HistoryList history={history} handleDelete={handleDelete} />
+        </AppShell.Aside>
 
-          <AppShell.Main
-            style={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              height: '100%',
-            }}
-          >
-            <Stack align="center" gap="sm">
-              <Flex align="center" justify="center" gap="xl">
-                <TimerDisplay timerDisplay={timerDisplay} />
-                <CubeNet scramble={scramble} side={96} />
-              </Flex>
-              <ScrambleDisplay scramble={scramble} />
-              <ChartArea history={history} />
-            </Stack>
-          </AppShell.Main>
-        </AppShell>
-      </MantineProvider>
+        <AppShell.Main
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            height: '100%',
+          }}
+        >
+          <Stack align="center" gap="sm">
+            <Flex align="center" justify="center" gap="xl">
+              <TimerDisplay timerDisplay={timerDisplay} />
+              <CubeNet scramble={scramble} side={96} />
+            </Flex>
+            <ScrambleDisplay scramble={scramble} />
+            <ChartArea history={history} />
+          </Stack>
+        </AppShell.Main>
+      </AppShell>
+    </MantineProvider>
   );
 };
 
