@@ -1,10 +1,12 @@
 # Night / Precision local review
 
+The user also rejected the Cyber material in `2e49d92`. The current stage leaves that runtime unchanged and prepares two isolated source/render sticker closeups. See [the staged material review](STICKER_MATERIAL_REVIEW.md); no new material has been propagated to the whole cube.
+
 This is an isolated local redesign on `design/night-precision`. Open `http://127.0.0.1:5173/cubetimer365/`; restart with `npm run dev -- --host 127.0.0.1` from this checkout. No deployment, remote push, merge, publishing or production data modification has occurred.
 
 The charcoal/graphite and lime layout follows the selected Library image `01-night-precision-original-cube.png` (`libfile_c0f1df61b3ec8191ab309213e83aa714`). It was transferred into this Mac workspace, verified as 1,543,460 readable PNG bytes at 1536 × 1024, and visually inspected before implementation. The subsequent ROUND reference is `05-rounded-vs-chamfered-comparison.png` (`libfile_8f5fdef398248191818a0cfba4e68915`), likewise transferred and inspected as 1,678,554 bytes at 1024 × 1536.
 
-## Current revision after visual rejection
+## Runtime revision 2e49d92 (subsequently rejected)
 
 The preceding Cyber render was rejected. Its post-projection curves, constant screen-space strokes, face-wide Gaussian blur, repeated exterior rails and undersampled side texture produced poor corners and seams. That preview is superseded and is not described as accepted.
 
@@ -44,7 +46,7 @@ Populated screenshots use deliberately illustrative solves in the isolated local
 
 Native Library attachment links are recorded below after successful saving. Earlier rounded and fidelity screenshots remain historical rejected drafts; only this revision's attachments should be used for current visual review.
 
-## Current native Library screenshots
+## Runtime screenshots for 2e49d92 (subsequently rejected)
 
 All 19 screenshot saves succeeded and their local Library identities were applied and verified. The current upload helper could not find Library prepare_uploads before any transfer began; the supported direct-create batch completed the saves.
 
