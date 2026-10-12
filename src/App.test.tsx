@@ -130,6 +130,18 @@ it("defaults to rounded Cyber and switches finishes without altering history", (
   expect(screen.queryByText("Solving")).not.toBeInTheDocument();
   expect(saved()).toEqual([12, 15]);
 });
+it("keeps history to number, time and delete after removing the comparison column", () => {
+  localStorage.setItem("history", "[10,20,30,40,50]");
+  render(<App />);
+  const table = screen.getByRole("table");
+  expect(table.querySelectorAll("th")).toHaveLength(3);
+  expect(
+    table.querySelectorAll("tbody tr")[0].querySelectorAll("td"),
+  ).toHaveLength(3);
+  expect(screen.queryByText("±")).not.toBeInTheDocument();
+  expect(screen.getByTestId("chart-data").textContent).toContain('"ao5":30');
+  expect(saved()).toEqual([10, 20, 30, 40, 50]);
+});
 describe("Space timer lifecycle", () => {
   it("starts on release, stops on press, consumes stop release and repeat events", () => {
     render(<App />);

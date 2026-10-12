@@ -65,7 +65,7 @@ function CubeStyleReview({ scramble }: { scramble: string }) {
     [
       "cyber",
       "05 / Cyber · Round",
-      "Fine scanlines, colored rims, and cyan/magenta rails.",
+      "Rounded screen plates, colored bevels and varied rim highlights.",
     ],
   ];
   return (
@@ -581,7 +581,6 @@ const App: React.FC = () => {
                       <tr>
                         <th>#</th>
                         <th>Time</th>
-                        <th>±</th>
                         <th>
                           <span className="sr-only">Delete</span>
                         </th>
@@ -593,8 +592,6 @@ const App: React.FC = () => {
                         .reverse()
                         .map((time, row) => {
                           const index = history.length - 1 - row;
-                          const delta =
-                            index > 0 ? time - history[index - 1] : null;
                           return (
                             <tr
                               key={index}
@@ -603,11 +600,6 @@ const App: React.FC = () => {
                               <td>{index + 1}</td>
                               <td className={time === best ? "best-solve" : ""}>
                                 {formatTime(time)}
-                              </td>
-                              <td className="delta">
-                                {delta === null
-                                  ? "—"
-                                  : `${delta > 0 ? "+" : ""}${delta.toFixed(2)}`}
                               </td>
                               <td>
                                 <button

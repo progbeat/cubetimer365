@@ -1,5 +1,5 @@
-import React, { useId } from "react";
-import { cyberStickerPath, roundedStickerPath } from "./cubeFinish";
+import React, { useEffect, useId, useRef, useState } from "react";
+import { projectedSticker, roundedStickerPath } from "./cubeFinish";
 
 export type CubeStyle = "original" | "flat" | "neon" | "cyber";
 
@@ -88,6 +88,7 @@ const renderFace = (
   opacity: number = 0.8,
   style: CubeStyle = "original",
   id: string = "cube",
+  pixelsPerUnit: number = 1,
 ) => {
   const [a, b, c, d] = adjacentFacesCw[f].split("");
   const colors = [
@@ -146,10 +147,17 @@ const renderFace = (
               />
             );
           }
-          const path =
+          const screen =
             style === "cyber"
-              ? cyberStickerPath(points)
-              : roundedStickerPath(points);
+              ? projectedSticker(project, i, j, pixelsPerUnit)
+              : null;
+          const path = screen ? screen.outer : roundedStickerPath(points);
+          const cellId = `${id}-${sticker}`;
+          const variation = ((f.charCodeAt(0) + i * 7 + j * 13) % 11) / 10;
+          const rim = color.replace("--mantine-color-", "--cube-rim-");
+          const lightA = project(i + 0.12 + variation * 0.1, j + 0.1);
+          const lightB = project(i + 0.95, j + 0.75 + variation * 0.2);
+
           return (
             <g key={sticker}>
               <path
@@ -161,59 +169,151 @@ const renderFace = (
                 fillOpacity={style === "cyber" ? 1 : opacity}
                 data-source-opacity={opacity}
               />
-              {style !== "flat" && <path d={path} fill={`url(#${id}-shade)`} />}
-              {style === "cyber" && <path d={path} fill={`url(#${id}-scan)`} />}
+              {style === "neon" && <path d={path} fill={`url(#${id}-shade)`} />}
+              {screen && (
+                <>
+                  <defs>
+                    <linearGradient
+                      id={`${cellId}-shade`}
+                      gradientUnits="userSpaceOnUse"
+                      x1={lightA.x}
+                      y1={lightA.y}
+                      x2={lightB.x}
+                      y2={lightB.y}
+                    >
+                      <stop
+                        offset="0"
+                        stopColor="#eafaff"
+                        stopOpacity={0.006 + variation * 0.006}
+                      />
+                      <stop
+                        offset=".45"
+                        stopColor="#010611"
+                        stopOpacity=".014"
+                      />
+                      <stop
+                        offset="1"
+                        stopColor="#010611"
+                        stopOpacity={0.09 + variation * 0.035}
+                      />
+                    </linearGradient>
+                    <clipPath id={`${cellId}-plate`}>
+                      <path d={screen.outer} />
+                    </clipPath>
+                    <clipPath id={`${cellId}-rim`}>
+                      <path d={screen.ring} clipRule="evenodd" />
+                    </clipPath>
+                    <linearGradient
+                      id={`${cellId}-light`}
+                      gradientUnits="userSpaceOnUse"
+                      x1={lightA.x}
+                      y1={lightA.y}
+                      x2={lightB.x}
+                      y2={lightB.y}
+                    >
+                      <stop
+                        offset="0"
+                        stopColor={rim}
+                        stopOpacity={1 - variation * 0.025}
+                      />
+                      <stop
+                        offset={0.22 + variation * 0.09}
+                        stopColor={rim}
+                        stopOpacity={0.78 + variation * 0.17}
+                      />
+                      <stop
+                        offset={0.5 + variation * 0.08}
+                        stopColor={rim}
+                        stopOpacity={0.45 + variation * 0.1}
+                      />
+                      <stop
+                        offset="1"
+                        stopColor={rim}
+                        stopOpacity={0.8 + variation * 0.14}
+                      />
+                    </linearGradient>
+                  </defs>
+                  <g clipPath={`url(#${cellId}-plate)`}>
+                    <path d={path} fill={`url(#${cellId}-shade)`} />
+                    <path
+                      d={screen.bands}
+                      fill="#020917"
+                      opacity={0.12 + variation * 0.035}
+                    />
+                    <path
+                      d={screen.bevel}
+                      fill={rim}
+                      fillRule="evenodd"
+                      opacity={0.08 + variation * 0.025}
+                    />
+                    <path
+                      d={screen.ring}
+                      fill={`url(#${cellId}-light)`}
+                      fillRule="evenodd"
+                    />
+                    <g clipPath={`url(#${cellId}-rim)`}>
+                      {variation > 0.35 && (
+                        <path
+                          d={[
+                            project(screen.top + 0.01, screen.left + 0.06),
+                            project(
+                              screen.top + 0.01,
+                              screen.left + 0.31 + variation * 0.13,
+                            ),
+                          ]
+                            .map(
+                              ({ x, y }, point) =>
+                                `${point ? "L" : "M"}${x},${y}`,
+                            )
+                            .join(" ")}
+                          fill="none"
+                          stroke="#e7ffff"
+                          strokeWidth="1.1"
+                          opacity={0.32 + variation * 0.22}
+                        />
+                      )}
+                      <path
+                        d={[
+                          project(screen.top + 0.12, screen.right - 0.005),
+                          project(
+                            screen.top + 0.31 + variation * 0.19,
+                            screen.right - 0.005,
+                          ),
+                        ]
+                          .map(
+                            ({ x, y }, point) =>
+                              `${point ? "L" : "M"}${x},${y}`,
+                          )
+                          .join(" ")}
+                        fill="none"
+                        stroke={rim}
+                        strokeWidth="1"
+                        opacity={0.38 + variation * 0.22}
+                      />
+                    </g>
+                  </g>
+                </>
+              )}
             </g>
           );
         }),
       )}
-      {style !== "original" && style !== "flat" && (
+      {style === "neon" && (
         <g filter={`url(#${id}-glow)`} className="cube-rims">
           {colors.flatMap((row, i) =>
-            row.map((color, j) => {
-              const points = [
-                project(i + u, j + u),
-                project(i + v, j + u),
-                project(i + v, j + v),
-                project(i + u, j + v),
-              ];
-              const path =
-                style === "cyber"
-                  ? cyberStickerPath(points)
-                  : roundedStickerPath(points);
-              const rim =
-                style === "cyber"
-                  ? color.replace("--mantine-color-", "--cube-rim-")
-                  : color;
-              return (
-                <g key={`${f}-rim-${i}-${j}`}>
-                  {style === "cyber" && (
-                    <path
-                      d={path}
-                      fill="none"
-                      stroke={rim}
-                      strokeWidth="5"
-                      opacity="0.22"
-                    />
-                  )}
-                  <path
-                    className="cube-rim-core"
-                    d={path}
-                    fill="none"
-                    stroke={rim}
-                  />
-                  {style === "cyber" && (
-                    <path
-                      d={path}
-                      fill="none"
-                      stroke="#ecffff"
-                      strokeWidth="0.55"
-                      opacity="0.025"
-                    />
-                  )}
-                </g>
-              );
-            }),
+            row.map((color, j) => (
+              <path
+                key={`${f}-rim-${i}-${j}`}
+                d={roundedStickerPath([
+                  project(i + u, j + u),
+                  project(i + v, j + u),
+                  project(i + v, j + v),
+                  project(i + u, j + v),
+                ])}
+                fill="none"
+                stroke={color}
+              />
+            )),
           )}
         </g>
       )}
@@ -227,6 +327,23 @@ const CubeNet: React.FC<{
   style?: CubeStyle;
 }> = ({ scramble, side, style = "original" }) => {
   const id = useId().replace(/:/g, "");
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [renderedWidth, setRenderedWidth] = useState(side * 2);
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) {
+      return undefined;
+    }
+    const observer = new window.ResizeObserver((entries) => {
+      const width = Math.round(entries[0]?.contentRect.width || 0);
+      if (width > 0) {
+        setRenderedWidth((previous) => (previous === width ? previous : width));
+      }
+    });
+    observer.observe(svg);
+    return () => observer.disconnect();
+  }, []);
+  const pixelsPerUnit = renderedWidth / 300;
   if (!scramble) {
     return null;
   }
@@ -242,6 +359,7 @@ const CubeNet: React.FC<{
   const Z1 = 2;
   return (
     <svg
+      ref={svgRef}
       className={`cube-net cube-net--${style}`}
       role="img"
       aria-label={`Daily scramble cube, ${style === "original" ? "original" : `rounded ${style}`} finish`}
@@ -254,46 +372,29 @@ const CubeNet: React.FC<{
           <clipPath id={`${id}-outline`}>
             <polygon points="-50,-150 50,-150 150,-50 150,50 50,150 -50,150 -150,50 -150,-50" />
           </clipPath>
-          {style === "cyber" ? (
-            <radialGradient id={`${id}-shade`} cx="50%" cy="32%" r="82%">
-              <stop offset="0" stopColor="#ffffff" stopOpacity="0.0055" />
-              <stop offset="0.65" stopColor="#010710" stopOpacity="0.015" />
-              <stop offset="1" stopColor="#010710" stopOpacity="0.19" />
-            </radialGradient>
-          ) : (
+          {style === "neon" && (
             <linearGradient id={`${id}-shade`} x1="0" y1="0" x2="0.15" y2="1">
               <stop offset="0" stopColor="#ffffff" stopOpacity="0.08" />
               <stop offset="0.25" stopColor="#040c12" stopOpacity="0.5" />
               <stop offset="1" stopColor="#040c12" stopOpacity="0.72" />
             </linearGradient>
           )}
-          <pattern
-            id={`${id}-scan`}
-            width="2.7"
-            height="2.7"
-            patternUnits="userSpaceOnUse"
-          >
-            <path
-              d="M0 0.6H2.7"
-              stroke="#010b15"
-              strokeWidth="0.58"
-              opacity="0.13"
-            />
-          </pattern>
-          <filter
-            id={`${id}-glow`}
-            x="-10%"
-            y="-10%"
-            width="120%"
-            height="120%"
-            colorInterpolationFilters="sRGB"
-          >
-            <feGaussianBlur stdDeviation={style === "neon" ? 1.6 : 1.45} />
-            <feMerge>
-              <feMergeNode />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
+          {style === "neon" && (
+            <filter
+              id={`${id}-glow`}
+              x="-10%"
+              y="-10%"
+              width="120%"
+              height="120%"
+              colorInterpolationFilters="sRGB"
+            >
+              <feGaussianBlur stdDeviation="1.6" />
+              <feMerge>
+                <feMergeNode />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          )}
         </defs>
       )}
       <g clipPath={style === "original" ? undefined : `url(#${id}-outline)`}>
@@ -315,6 +416,7 @@ const CubeNet: React.FC<{
           0.8,
           style,
           id,
+          pixelsPerUnit,
         )}
         {renderFace(
           cube,
@@ -334,6 +436,7 @@ const CubeNet: React.FC<{
           1,
           style,
           id,
+          pixelsPerUnit,
         )}
         {renderFace(
           cube,
@@ -353,6 +456,7 @@ const CubeNet: React.FC<{
           0.8,
           style,
           id,
+          pixelsPerUnit,
         )}
         {renderFace(
           cube,
@@ -372,6 +476,7 @@ const CubeNet: React.FC<{
           0.8,
           style,
           id,
+          pixelsPerUnit,
         )}
         {renderFace(
           cube,
@@ -391,48 +496,9 @@ const CubeNet: React.FC<{
           0.8,
           style,
           id,
+          pixelsPerUnit,
         )}
       </g>
-      {style === "cyber" && (
-        <g
-          className="cube-chassis"
-          fill="none"
-          strokeLinejoin="round"
-          strokeLinecap="butt"
-        >
-          <defs>
-            <filter
-              id={`${id}-chassis-glow`}
-              x="-20%"
-              y="-20%"
-              width="140%"
-              height="140%"
-              colorInterpolationFilters="sRGB"
-            >
-              <feGaussianBlur stdDeviation="3" />
-              <feMerge>
-                <feMergeNode />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-          </defs>
-          <polygon
-            stroke="#030910"
-            strokeWidth="7"
-            points="-50,-150 50,-150 150,-50 150,50 50,150 -50,150 -150,50 -150,-50"
-          />
-          <g filter={`url(#${id}-chassis-glow)`} strokeWidth="3.8">
-            <path
-              stroke="#10ddff"
-              d="M22 -150H39 M66 -134L90 -110 M130 -70L148 -52 M150 -42V-12 M150 -5V27 M128 72L107 93 M63 137L53 147 M37 150H10 M-29 150H-44 M-68 132L-91 109 M-133 67L-150 50 M-150 40V15 M-150 -18V-44 M-147 -53L-129 -71 M-108 -92L-86 -114"
-            />
-            <path
-              stroke="#ff24d8"
-              d="M-46 -150H-18 M-12 -150H15 M51 -149L61 -139 M96 -104L119 -81 M150 34V45 M148 52L136 64 M102 98L73 127 M47 150H43 M2 150H-20 M-51 149L-64 136 M-99 101L-124 76 M-150 7V-10 M-123 -77L-113 -87 M-80 -120L-56 -144"
-            />
-          </g>
-        </g>
-      )}
     </svg>
   );
 };

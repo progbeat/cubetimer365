@@ -15,27 +15,98 @@ export function roundedStickerPath(points: Point[]): string {
     .join(" ")} Z`;
 }
 
-// The illuminated screen is inset inside its original logical sticker cell.
-export function cyberStickerPath(points: Point[]): string {
-  const center = points.reduce(
-    (sum, point) => ({ x: sum.x + point.x / 4, y: sum.y + point.y / 4 }),
-    { x: 0, y: 0 },
+type Project = (row: number, column: number) => Point;
+
+// Round in the physical face plane, then apply the original perspective to each sample.
+export function projectedSticker(
+  project: Project,
+  row: number,
+  column: number,
+  pixelsPerUnit = 1,
+) {
+  const distance = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.y - b.y);
+  const width = distance(
+    project(row + 0.5, column),
+    project(row + 0.5, column + 1),
   );
-  const plate = points.map((point) => ({
-    x: center.x + (point.x - center.x) * 0.96,
-    y: center.y + (point.y - center.y) * 0.96,
-  }));
-  const toward = (from: Point, to: Point, fraction: number) => ({
-    x: from.x + (to.x - from.x) * fraction,
-    y: from.y + (to.y - from.y) * fraction,
-  });
-  return `${plate
-    .map((corner, index) => {
-      const entry = toward(corner, plate[(index + 3) % 4], 0.12);
-      const exit = toward(corner, plate[(index + 1) % 4], 0.12);
-      const controlIn = toward(entry, corner, 0.55228475);
-      const controlOut = toward(exit, corner, 0.55228475);
-      return `${index === 0 ? "M" : "L"}${entry.x},${entry.y}C${controlIn.x},${controlIn.y} ${controlOut.x},${controlOut.y} ${exit.x},${exit.y}`;
-    })
-    .join(" ")} Z`;
+  const height = distance(
+    project(row, column + 0.5),
+    project(row + 1, column + 0.5),
+  );
+  const gx = Math.max(0.04, Math.min(0.105, 0.45 / pixelsPerUnit / width));
+  const gy = Math.max(0.04, Math.min(0.105, 0.45 / pixelsPerUnit / height));
+  const thicknessX = Math.max(0.034, Math.min(0.085, 0.85 / width));
+  const thicknessY = Math.max(0.034, Math.min(0.085, 0.85 / height));
+  const radius = Math.max(
+    0.14,
+    Math.min(0.24, 0.9 / (Math.min(width, height) * pixelsPerUnit)),
+  );
+  const left = column + gx,
+    right = column + 1 - gx;
+  const top = row + gy,
+    bottom = row + 1 - gy;
+  const rounded = (insetX: number, insetY: number) => {
+    const l = left + insetX,
+      r = right - insetX,
+      t = top + insetY,
+      b = bottom - insetY;
+    const rx = radius - insetX,
+      ry = radius - insetY;
+    const corners = [
+      [r - rx, t + ry, -Math.PI / 2],
+      [r - rx, b - ry, 0],
+      [l + rx, b - ry, Math.PI / 2],
+      [l + rx, t + ry, Math.PI],
+    ];
+    const points = corners.flatMap(([cx, cy, start]) =>
+      Array.from({ length: 9 }, (_, step) => {
+        const angle = start + (step * Math.PI) / 16;
+        return project(cy + Math.sin(angle) * ry, cx + Math.cos(angle) * rx);
+      }),
+    );
+    return `${points
+      .map(({ x, y }, index) => `${index ? "L" : "M"}${x},${y}`)
+      .join(" ")} Z`;
+  };
+  const outer = rounded(0, 0),
+    inner = rounded(thicknessX, thicknessY);
+  const bandCount = Math.max(
+    0,
+    Math.min(width, height) * pixelsPerUnit <
+      (Math.max(width, height) / Math.min(width, height) > 1.5 ? 18 : 10)
+      ? 0
+      : Math.min(21, Math.floor((height * (1 - gy * 2) * pixelsPerUnit) / 2.2)),
+  );
+  const halfBand = 0.09 / (height * pixelsPerUnit);
+  const bands = Array.from({ length: bandCount }, (_, index) => {
+    const phase =
+      (index + 0.5 + 0.04 * Math.sin(index * 1.7 + row * 4 + column * 6)) /
+      Math.max(1, bandCount);
+    const y = top + (bottom - top) * phase;
+    const points = [
+      project(y - halfBand, left),
+      project(y + halfBand, left),
+      project(y + halfBand, right),
+      project(y - halfBand, right),
+    ];
+    return `${points
+      .map(({ x, y }, point) => `${point ? "L" : "M"}${x},${y}`)
+      .join(" ")} Z`;
+  }).join(" ");
+  return {
+    radius,
+    bandCount,
+    outer,
+    inner,
+    ring: `${outer} ${inner}`,
+    bevel: `${outer} ${rounded(
+      Math.min(0.092, thicknessX * 1.8),
+      Math.min(0.092, thicknessY * 1.8),
+    )}`,
+    bands,
+    left,
+    right,
+    top,
+    bottom,
+  };
 }

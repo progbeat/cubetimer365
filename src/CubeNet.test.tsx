@@ -2,7 +2,7 @@ import { cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import CubeNet, { CubeStyle } from "./CubeNet";
 import original from "./fixtures/originalCube.json";
-import { roundedStickerPath } from "./cubeFinish";
+import { projectedSticker, roundedStickerPath } from "./cubeFinish";
 
 afterEach(cleanup);
 const styles: CubeStyle[] = ["original", "flat", "neon", "cyber"];
@@ -52,8 +52,8 @@ describe.each(styles)(
               expect(
                 sticker
                   ?.getAttribute("d")
-                  ?.match(style === "cyber" ? /C/g : /Q/g),
-              ).toHaveLength(4);
+                  ?.match(style === "cyber" ? /L/g : /Q/g),
+              ).toHaveLength(style === "cyber" ? 35 : 4);
             }
           }
         });
@@ -70,7 +70,7 @@ describe.each(styles)(
   },
 );
 
-it("keeps Cyber screen curves and control points inside the original sticker cells", () => {
+it("keeps Cyber rounded paths inside the original sticker cells", () => {
   const { container } = render(
     <CubeNet scramble={original.scenes[0].scramble} side={85} style="cyber" />,
   );
@@ -95,6 +95,59 @@ it("keeps Cyber screen curves and control points inside the original sticker cel
       ).toBe(true);
     }
   });
+});
+
+it("does not blur Cyber stickers or paint a dashed external contour", () => {
+  const { container } = render(
+    <CubeNet scramble={original.scenes[0].scramble} side={62} style="cyber" />,
+  );
+  expect(container.querySelector("[filter]")).not.toBeInTheDocument();
+  expect(container.querySelector("feGaussianBlur")).not.toBeInTheDocument();
+  expect(container.querySelector(".cube-chassis")).not.toBeInTheDocument();
+  expect(container.querySelector("[stroke-dasharray]")).not.toBeInTheDocument();
+});
+it("projects each corner from its rounded face coordinates", () => {
+  const project = (row: number, column: number) => ({
+    x: column / (1 + column * 0.35),
+    y: row / (1 + column * 0.35),
+  });
+  const screen = projectedSticker(project, 0, 0);
+  const coordinates = screen.outer
+    .match(/-?\d*\.?\d+(?:e[-+]?\d+)?/gi)!
+    .map(Number);
+  expect(coordinates[0]).toBeCloseTo(
+    project(screen.top, screen.right - screen.radius).x,
+    12,
+  );
+  expect(coordinates[1]).toBeCloseTo(
+    project(screen.top, screen.right - screen.radius).y,
+    12,
+  );
+  const midpoint = project(
+    screen.top + screen.radius - screen.radius / Math.sqrt(2),
+    screen.right - screen.radius + screen.radius / Math.sqrt(2),
+  );
+  expect(coordinates[8]).toBeCloseTo(midpoint.x, 12);
+  expect(coordinates[9]).toBeCloseTo(midpoint.y, 12);
+});
+
+it("limits texture frequency at native phone size", () => {
+  const screen = projectedSticker(
+    (row, column) => ({ x: column * 10, y: row * 33 }),
+    0,
+    0,
+    124 / 300,
+  );
+  expect(screen.bandCount).toBe(0);
+  expect(screen.radius).toBeGreaterThan(0.14);
+  const front = projectedSticker(
+    (row, column) => ({ x: column * 33, y: row * 33 }),
+    0,
+    0,
+    124 / 300,
+  );
+  expect(front.bandCount).toBeGreaterThan(0);
+  expect(front.bandCount).toBeLessThanOrEqual(6);
 });
 
 it("keeps effect ids unique when multiple comparison cubes render together", () => {
