@@ -33,14 +33,27 @@ describe.each(styles)(
             );
             expect(sticker).toHaveAttribute("data-color", colors[index]);
             expect(sticker).toHaveAttribute("fill", colors[index]);
-            expect(sticker).toHaveAttribute("fill-opacity", geometry.opacity);
+            expect(sticker).toHaveAttribute(
+              "fill-opacity",
+              style === "cyber" ? "1" : geometry.opacity,
+            );
+            if (style === "cyber") {
+              expect(sticker).toHaveAttribute(
+                "data-source-opacity",
+                geometry.opacity,
+              );
+            }
             if (style === "original") {
               expect(sticker?.tagName).toBe("polygon");
               expect(sticker).toHaveAttribute("points", geometry.points);
             } else {
               expect(sticker?.tagName).toBe("path");
               expect(sticker).toHaveAttribute("data-points", geometry.points);
-              expect(sticker?.getAttribute("d")?.match(/Q/g)).toHaveLength(4);
+              expect(
+                sticker
+                  ?.getAttribute("d")
+                  ?.match(style === "cyber" ? /C/g : /Q/g),
+              ).toHaveLength(4);
             }
           }
         });
@@ -56,6 +69,33 @@ describe.each(styles)(
     );
   },
 );
+
+it("keeps Cyber screen curves and control points inside the original sticker cells", () => {
+  const { container } = render(
+    <CubeNet scramble={original.scenes[0].scramble} side={85} style="cyber" />,
+  );
+  container.querySelectorAll("[data-sticker]").forEach((sticker) => {
+    const cell = sticker
+      .getAttribute("data-points")!
+      .split(" ")
+      .map((pair) => pair.split(",").map(Number));
+    const values = sticker
+      .getAttribute("d")!
+      .match(/-?\d*\.?\d+(?:e[-+]?\d+)?/gi)!
+      .map(Number);
+    for (let index = 0; index < values.length; index += 2) {
+      const [x, y] = values.slice(index, index + 2);
+      const signs = cell.map(([ax, ay], edge) => {
+        const [bx, by] = cell[(edge + 1) % 4];
+        return (bx - ax) * (y - ay) - (by - ay) * (x - ax);
+      });
+      expect(
+        signs.every((value) => value >= -1e-7) ||
+          signs.every((value) => value <= 1e-7),
+      ).toBe(true);
+    }
+  });
+});
 
 it("keeps effect ids unique when multiple comparison cubes render together", () => {
   const { container } = render(

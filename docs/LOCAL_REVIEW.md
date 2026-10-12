@@ -10,9 +10,9 @@ Graphite panels, lime accents, locally bundled Chakra Petch timer digits, an ind
 
 The selected rounded reference is `05-rounded-vs-chamfered-comparison.png` (`libfile_8f5fdef398248191818a0cfba4e68915`), materialized into this Mac workspace and visually inspected as a readable 1,678,554-byte PNG at 1024 × 1536. The left-hand ROUND 01 Flat / 03 Neon / 05 Cyber directions are implemented procedurally in SVG, with Cyber selected as the local default. No baked cube image is used.
 
-The original five-face projection, octagonal outline, front square, four trapezoidal surrounding faces, sticker assignments and permutations are preserved. The new rounded quadratic curves stay inside each original projected sticker quadrilateral. Original still renders its square polygons. Fixed fixtures derived directly from original commit `330a59f` verify every face boundary and sticker vertex/color/opacity for three scramble sequences, across all four runtime styles. The original file is now extended with rendering options; it is no longer byte-identical. There are no mechanical or sticker-permutation changes.
+The original five-face projection, octagonal outline, front square, four trapezoidal surrounding faces, sticker assignments and permutations are preserved. Cyber now uses circular cubic corner curves and inset screen plates contained inside each original projected sticker quadrilateral. Flat and Neon retain their earlier quadratic corner curves. Original still renders its square polygons. Fixed fixtures derived directly from original commit `330a59f` verify every face boundary, logical sticker vertex/color assignment and original-opacity metadata for three scramble sequences across all four runtime styles. Original preserves its original paint opacity; Cyber uses opaque emissive screen material. The original file is now extended with rendering options; it is no longer byte-identical. There are no mechanical or sticker-permutation changes.
 
-Flat has quiet graphite separators. Neon uses darker centers and restrained colored rims. Cyber adds fine scanlines and cyan/magenta rails clipped to the exact octagonal boundary. Colors remain distinguishable at the actual 170 px desktop / 124 px phone display sizes. SVG patterns/gradients/filters are shared by face groups, IDs are unique between comparison cubes, and the memoized component does not recompute the unchanged scramble on each timer tick. These are restrained runtime translations of the image exploration, rather than pixel-for-pixel copies of a raster render.
+Flat has quiet graphite separators. Neon uses darker centers and restrained colored rims. Cyber adds fine scanlines and segmented cyan/magenta chassis rails. The solid body keeps the exact original octagonal boundary; decorative rail glow is allowed outside the body instead of clipping the reference's halo. Colors remain distinguishable at the actual 170 px desktop / 124 px phone display sizes. SVG patterns/gradients/filters are shared by face groups, IDs are unique between comparison cubes, and the memoized component does not recompute the unchanged scramble on each timer tick. These are restrained runtime translations of the image exploration, rather than pixel-for-pixel copies of a raster render.
 
 The ± history column is unchanged by this update.
 
@@ -39,7 +39,21 @@ Necessary differences: this product retains numeric times rather than adding csT
 
 Existing repository-wide checks were also run against the unchanged source baseline. Baseline ESLint had 19 errors and one warning; the redesigned source now passes the full ESLint command after removing unused bindings and logging in the cube rendering work. Repository Prettier still reports the three unchanged files (`main.tsx` and both test-utils files). The stylelint command has no configuration in the original repo and fails in both the baseline and redesign. The original repo had no test files. These pre-existing check failures have not been hidden or weakened to obtain a green aggregate command.
 
-## Current local evidence
+## Fidelity correction after user rejection
+
+The user rejected the earlier rounded preview's visual fidelity; that implementation was not treated as accepted. The selected CYBER ROUND panel 05 was re-inspected against the actual component at matched 440 px, 170 px desktop and 124 px phone scales.
+
+Concrete discrepancies were hairline rims, uniformly thin and clipped perimeter decoration, shallow corner treatment, insufficient black chassis/seams, a vertical gradient turning yellow olive, and a pale scanline/wire-grid appearance. The correction uses inset screen plates with circular cubic corners, wider dark separation, independent saturated fill/rim colors, local radial edge shading, finer low-contrast scanlines, layered illuminated rims, and separate cyan/magenta chassis segments with an unclipped halo. The effects remain procedural SVG and apply to every dynamically permuted sticker.
+
+Representative 11 × 11 interior samples from the actual reference and same-scale SVG screenshot: reference green `(1.0,160.4,60.1)` / corrected SVG `(1.5,161.7,61.6)`; reference red `(237.5,18.7,40.8)` / corrected SVG `(238.9,19.3,41.6)`. These samples substantiate color calibration, not a claim of pixel-identical overall reproduction.
+
+**Geometric constraint:** the image-to-image concept has front plates wider than tall, whereas the protected source projection has a square front face. The reference also depicts a fixed illustrative sticker arrangement. Exact grid/proportion matching would require a different projection, and matching its sticker placement would require substituting the actual scramble. The current implementation retains the original projection and real scramble, and exposes the difference in the comparison. SVG itself supports the required borders, glow, screen texture and shading. A separate projection variant would require an explicit change to the original geometry requirement.
+
+Current evidence: `cyber-fidelity-reference-vs-svg.png` shows the exact CSS crop of the unchanged Library image alongside the running CubeNet component imported with its actual app stylesheet. `cyber-fidelity-desktop.png` and `cyber-fidelity-mobile.png` show the real interface; `cyber-fidelity-before.png` retains the diagnostic view of the rejected renderer. `cyber-fidelity.html`, `capture-fidelity.js`, `fidelity-color-samples.txt` and `fidelity-*.log` make the checks reviewable locally in `output/playwright/`.
+
+Validation: 31 Vitest tests pass, including an added actual-path containment test for all Cyber curve/control points inside the original cells; the existing source geometry/permutation fixtures and functional timer tests remain. All 29 keyboard/touch/persistence/deletion/responsive browser checks pass again. Typecheck, full ESLint, changed-file formatting and build pass. Existing stylelint configuration and unrelated file-formatting limitations remain. The ± column and timer mechanics are unchanged. No production publication or remote update was performed. This remains a visual review draft.
+
+## Earlier local evidence (superseded by fidelity correction)
 
 Generated files are in `output/playwright/` (ignored by Git):
 
@@ -57,7 +71,16 @@ Populated screenshots contain deliberately illustrative local sample solves, inc
 
 To restart the local preview after the task session ends, run `npm run dev -- --host 127.0.0.1` from this checkout. There is no production publication.
 
-## Current Library screenshots
+## Current fidelity review screenshots
+
+- [Reference crop versus corrected real SVG](https://chatgpt.com/api/library/files/libfile_d86990e1d6748191ab4104b9d0a6185f/download) — `cyber-fidelity-reference-vs-svg.png`.
+- [Corrected desktop context](https://chatgpt.com/api/library/files/libfile_dfa16bf8cad48191be99538f1ffc8d72/download) — `cyber-fidelity-desktop.png`.
+- [Corrected phone context](https://chatgpt.com/api/library/files/libfile_96ccc63c49988191bf4785a44a0ccd4f/download) — `cyber-fidelity-mobile.png`.
+- [Diagnosis: reference versus rejected prior renderer](https://chatgpt.com/api/library/files/libfile_6c3cacb3c28481918077bd49ef237282/download) — `cyber-fidelity-before.png`.
+
+All four saves succeeded; local Library identities were persisted. The executor's prepared upload helper was unavailable before any transfer began, and the supported direct-create route completed the saves.
+
+## Earlier rounded preview screenshots (rejected; superseded)
 
 All eight saves succeeded and local Library metadata was persisted. The prepared-upload helper was unavailable in this executor before any transfer began; the supported direct create batch saved the deliverables.
 

@@ -1,5 +1,5 @@
 import React, { useId } from "react";
-import { roundedStickerPath } from "./cubeFinish";
+import { cyberStickerPath, roundedStickerPath } from "./cubeFinish";
 
 export type CubeStyle = "original" | "flat" | "neon" | "cyber";
 
@@ -146,7 +146,10 @@ const renderFace = (
               />
             );
           }
-          const path = roundedStickerPath(points);
+          const path =
+            style === "cyber"
+              ? cyberStickerPath(points)
+              : roundedStickerPath(points);
           return (
             <g key={sticker}>
               <path
@@ -155,7 +158,8 @@ const renderFace = (
                 data-color={color}
                 d={path}
                 fill={color}
-                fillOpacity={opacity}
+                fillOpacity={style === "cyber" ? 1 : opacity}
+                data-source-opacity={opacity}
               />
               {style !== "flat" && <path d={path} fill={`url(#${id}-shade)`} />}
               {style === "cyber" && <path d={path} fill={`url(#${id}-scan)`} />}
@@ -166,19 +170,50 @@ const renderFace = (
       {style !== "original" && style !== "flat" && (
         <g filter={`url(#${id}-glow)`} className="cube-rims">
           {colors.flatMap((row, i) =>
-            row.map((color, j) => (
-              <path
-                key={`${f}-rim-${i}-${j}`}
-                d={roundedStickerPath([
-                  project(i + u, j + u),
-                  project(i + v, j + u),
-                  project(i + v, j + v),
-                  project(i + u, j + v),
-                ])}
-                fill="none"
-                stroke={color}
-              />
-            )),
+            row.map((color, j) => {
+              const points = [
+                project(i + u, j + u),
+                project(i + v, j + u),
+                project(i + v, j + v),
+                project(i + u, j + v),
+              ];
+              const path =
+                style === "cyber"
+                  ? cyberStickerPath(points)
+                  : roundedStickerPath(points);
+              const rim =
+                style === "cyber"
+                  ? color.replace("--mantine-color-", "--cube-rim-")
+                  : color;
+              return (
+                <g key={`${f}-rim-${i}-${j}`}>
+                  {style === "cyber" && (
+                    <path
+                      d={path}
+                      fill="none"
+                      stroke={rim}
+                      strokeWidth="5"
+                      opacity="0.22"
+                    />
+                  )}
+                  <path
+                    className="cube-rim-core"
+                    d={path}
+                    fill="none"
+                    stroke={rim}
+                  />
+                  {style === "cyber" && (
+                    <path
+                      d={path}
+                      fill="none"
+                      stroke="#ecffff"
+                      strokeWidth="0.55"
+                      opacity="0.025"
+                    />
+                  )}
+                </g>
+              );
+            }),
           )}
         </g>
       )}
@@ -219,30 +254,30 @@ const CubeNet: React.FC<{
           <clipPath id={`${id}-outline`}>
             <polygon points="-50,-150 50,-150 150,-50 150,50 50,150 -50,150 -150,50 -150,-50" />
           </clipPath>
-          <linearGradient id={`${id}-shade`} x1="0" y1="0" x2="0.15" y2="1">
-            <stop offset="0" stopColor="#ffffff" stopOpacity="0.08" />
-            <stop
-              offset="0.25"
-              stopColor="#040c12"
-              stopOpacity={style === "neon" ? 0.5 : 0.15}
-            />
-            <stop
-              offset="1"
-              stopColor="#040c12"
-              stopOpacity={style === "neon" ? 0.72 : 0.48}
-            />
-          </linearGradient>
+          {style === "cyber" ? (
+            <radialGradient id={`${id}-shade`} cx="50%" cy="32%" r="82%">
+              <stop offset="0" stopColor="#ffffff" stopOpacity="0.0055" />
+              <stop offset="0.65" stopColor="#010710" stopOpacity="0.015" />
+              <stop offset="1" stopColor="#010710" stopOpacity="0.19" />
+            </radialGradient>
+          ) : (
+            <linearGradient id={`${id}-shade`} x1="0" y1="0" x2="0.15" y2="1">
+              <stop offset="0" stopColor="#ffffff" stopOpacity="0.08" />
+              <stop offset="0.25" stopColor="#040c12" stopOpacity="0.5" />
+              <stop offset="1" stopColor="#040c12" stopOpacity="0.72" />
+            </linearGradient>
+          )}
           <pattern
             id={`${id}-scan`}
-            width="5"
-            height="5"
+            width="2.7"
+            height="2.7"
             patternUnits="userSpaceOnUse"
           >
             <path
-              d="M0 0.75H5"
+              d="M0 0.6H2.7"
               stroke="#010b15"
-              strokeWidth="0.8"
-              opacity="0.16"
+              strokeWidth="0.58"
+              opacity="0.13"
             />
           </pattern>
           <filter
@@ -253,7 +288,7 @@ const CubeNet: React.FC<{
             height="120%"
             colorInterpolationFilters="sRGB"
           >
-            <feGaussianBlur stdDeviation={style === "neon" ? 1.6 : 0.8} />
+            <feGaussianBlur stdDeviation={style === "neon" ? 1.6 : 1.45} />
             <feMerge>
               <feMergeNode />
               <feMergeNode in="SourceGraphic" />
@@ -357,25 +392,47 @@ const CubeNet: React.FC<{
           style,
           id,
         )}
-        {style === "cyber" && (
-          <g
-            className="cube-rails"
-            fill="none"
-            strokeWidth="3"
-            strokeDasharray="20 24"
-          >
-            <polygon
-              stroke="#48e6ff"
-              points="-50,-150 50,-150 150,-50 150,50 50,150 -50,150 -150,50 -150,-50"
+      </g>
+      {style === "cyber" && (
+        <g
+          className="cube-chassis"
+          fill="none"
+          strokeLinejoin="round"
+          strokeLinecap="butt"
+        >
+          <defs>
+            <filter
+              id={`${id}-chassis-glow`}
+              x="-20%"
+              y="-20%"
+              width="140%"
+              height="140%"
+              colorInterpolationFilters="sRGB"
+            >
+              <feGaussianBlur stdDeviation="3" />
+              <feMerge>
+                <feMergeNode />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+          <polygon
+            stroke="#030910"
+            strokeWidth="7"
+            points="-50,-150 50,-150 150,-50 150,50 50,150 -50,150 -150,50 -150,-50"
+          />
+          <g filter={`url(#${id}-chassis-glow)`} strokeWidth="3.8">
+            <path
+              stroke="#10ddff"
+              d="M22 -150H39 M66 -134L90 -110 M130 -70L148 -52 M150 -42V-12 M150 -5V27 M128 72L107 93 M63 137L53 147 M37 150H10 M-29 150H-44 M-68 132L-91 109 M-133 67L-150 50 M-150 40V15 M-150 -18V-44 M-147 -53L-129 -71 M-108 -92L-86 -114"
             />
-            <polygon
-              stroke="#ec47c6"
-              strokeDashoffset="-22"
-              points="-50,-150 50,-150 150,-50 150,50 50,150 -50,150 -150,50 -150,-50"
+            <path
+              stroke="#ff24d8"
+              d="M-46 -150H-18 M-12 -150H15 M51 -149L61 -139 M96 -104L119 -81 M150 34V45 M148 52L136 64 M102 98L73 127 M47 150H43 M2 150H-20 M-51 149L-64 136 M-99 101L-124 76 M-150 7V-10 M-123 -77L-113 -87 M-80 -120L-56 -144"
             />
           </g>
-        )}
-      </g>
+        </g>
+      )}
     </svg>
   );
 };
