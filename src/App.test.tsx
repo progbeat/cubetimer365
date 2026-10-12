@@ -109,6 +109,27 @@ describe("preserved scramble and daily data", () => {
     expect(saved()).toEqual([10, 20, 40, 50]);
   });
 });
+it("defaults to rounded Cyber and switches finishes without altering history", () => {
+  localStorage.setItem("history", "[12,15]");
+  render(<App />);
+  const select = screen.getByRole("combobox", { name: "Cube finish" });
+  expect(select).toHaveValue("cyber");
+  expect(
+    screen.getByRole("img", {
+      name: "Daily scramble cube, rounded cyber finish",
+    }),
+  ).toBeInTheDocument();
+  fireEvent.change(select, { target: { value: "original" } });
+  expect(
+    screen.getByRole("img", { name: "Daily scramble cube, original finish" }),
+  ).toBeInTheDocument();
+  fireEvent.change(select, { target: { value: "neon" } });
+  fireEvent.keyDown(select, { code: "Space" });
+  advance(310);
+  fireEvent.keyUp(select, { code: "Space" });
+  expect(screen.queryByText("Solving")).not.toBeInTheDocument();
+  expect(saved()).toEqual([12, 15]);
+});
 describe("Space timer lifecycle", () => {
   it("starts on release, stops on press, consumes stop release and repeat events", () => {
     render(<App />);

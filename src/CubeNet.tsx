@@ -1,24 +1,27 @@
-import React, { useMemo } from 'react';
+import React, { useId } from "react";
+import { roundedStickerPath } from "./cubeFinish";
+
+export type CubeStyle = "original" | "flat" | "neon" | "cyber";
 
 type CubeState = Record<string, string>;
 
 const adjacentFacesCw: Record<string, string> = {
-  U: 'FLBR',
-  D: 'FRBL',
-  F: 'URDL',
-  B: 'ULDR',
-  L: 'UFDB',
-  R: 'UBDF',
+  U: "FLBR",
+  D: "FRBL",
+  F: "URDL",
+  B: "ULDR",
+  L: "UFDB",
+  R: "UBDF",
 };
 
 const modifierPermutations: Record<string, number[]> = {
-  "'": [1, 2, 3, 0],   // Clockwise rotation
-  "": [3, 0, 1, 2],  // Counter-clockwise rotation
-  "2": [2, 3, 0, 1],  // 180-degree rotation
+  "'": [1, 2, 3, 0], // Clockwise rotation
+  "": [3, 0, 1, 2], // Counter-clockwise rotation
+  "2": [2, 3, 0, 1], // 180-degree rotation
 };
 
 const rotationCycles = (face: string): string[][] => {
-  const [a, b, c, d] = adjacentFacesCw[face].split('');
+  const [a, b, c, d] = adjacentFacesCw[face].split("");
   return [
     [face + a, face + b, face + c, face + d],
     [a + face, b + face, c + face, d + face],
@@ -31,29 +34,32 @@ const rotationCycles = (face: string): string[][] => {
 // Generate the initial solved state of the cube
 const generateInitialState = (): CubeState => {
   const cubeState: CubeState = {
-    U: 'var(--mantine-color-yellow-4)',
-    D: 'var(--mantine-color-gray-2)',
-    F: 'var(--mantine-color-green-6)',
-    B: 'var(--mantine-color-blue-6)',
-    L: 'var(--mantine-color-red-6)',
-    R: 'var(--mantine-color-orange-5)',
-  }
+    U: "var(--mantine-color-yellow-4)",
+    D: "var(--mantine-color-gray-2)",
+    F: "var(--mantine-color-green-6)",
+    B: "var(--mantine-color-blue-6)",
+    L: "var(--mantine-color-red-6)",
+    R: "var(--mantine-color-orange-5)",
+  };
   Object.entries(adjacentFacesCw).forEach(([face, adjacent]) => {
     for (let i = 0; i < 4; i++) {
-      const a = adjacent[i], b = adjacent[(i + 1) % 4];
-      cubeState[`${face}${a}`] = cubeState[face];  // Edge stickers
-      cubeState[`${face}${a}${b}`] = cubeState[face];  // Corner stickers
+      const a = adjacent[i],
+        b = adjacent[(i + 1) % 4];
+      cubeState[`${face}${a}`] = cubeState[face]; // Edge stickers
+      cubeState[`${face}${a}${b}`] = cubeState[face]; // Corner stickers
     }
   });
   return cubeState;
 };
 
 // Apply a sequence of moves to the cube, starting from an optional initial state
-const permuteCube = (scramble: string, cube: CubeState = generateInitialState()): CubeState => {
-  scramble.split(' ').forEach((move) => {
+const permuteCube = (
+  scramble: string,
+  cube: CubeState = generateInitialState(),
+): CubeState => {
+  scramble.split(" ").forEach((move) => {
     const cycles = rotationCycles(move[0]);
     const permutation = modifierPermutations[move.slice(1)];
-    console.log(permutation);
     cycles.forEach((cycle) => {
       const permutatedStickers = permutation.map((i) => cube[cycle[i]]);
       for (let i = 0; i < 4; i++) {
@@ -64,21 +70,34 @@ const permuteCube = (scramble: string, cube: CubeState = generateInitialState())
   return cube;
 };
 
-const renderFace = (cube: CubeState, f: string,
-                    luX: number, luY: number, luZ: number,
-                    ruX: number, ruY: number, ruZ: number,
-                    ldX: number, ldY: number, ldZ: number,
-                    rdX: number, rdY: number, rdZ: number,
-                    opacity: number = 0.8
-                  ) => {
-  const [a, b, c, d] = adjacentFacesCw[f].split('');
+const renderFace = (
+  cube: CubeState,
+  f: string,
+  luX: number,
+  luY: number,
+  luZ: number,
+  ruX: number,
+  ruY: number,
+  ruZ: number,
+  ldX: number,
+  ldY: number,
+  ldZ: number,
+  rdX: number,
+  rdY: number,
+  rdZ: number,
+  opacity: number = 0.8,
+  style: CubeStyle = "original",
+  id: string = "cube",
+) => {
+  const [a, b, c, d] = adjacentFacesCw[f].split("");
   const colors = [
     [cube[f + d + a], cube[f + a], cube[f + a + b]],
-    [cube[f + d]    , cube[f]    , cube[f + b]    ],
+    [cube[f + d], cube[f], cube[f + b]],
     [cube[f + c + d], cube[f + c], cube[f + b + c]],
-  ]
+  ];
   const project = (i: number, j: number) => {
-    let alpha = (3 - i) / 3, beta = i / 3;
+    let alpha = (3 - i) / 3,
+      beta = i / 3;
     const lX = luX * alpha + ldX * beta;
     const lY = luY * alpha + ldY * beta;
     const lZ = luZ * alpha + ldZ * beta;
@@ -91,38 +110,88 @@ const renderFace = (cube: CubeState, f: string,
     return {
       x: (lX * alpha + rX * beta) / z,
       y: (lY * alpha + rY * beta) / z,
-    }
-  }
+    };
+  };
   const u = 0.025;
   const v = 1 - u;
   return (
     <>
-      <polygon key='bg' fill='var(--mantine-color-default-border)'
-                points={[
-                  project(0, 0),
-                  project(3, 0),
-                  project(3, 3),
-                  project(0, 3),
-                ].map(({ x, y }) => `${x},${y}`).join(' ')} />
-      {colors.flatMap((row, i) => {
-        return row.map((color, j) => {
+      <polygon
+        key="bg"
+        data-face={f}
+        fill="var(--mantine-color-default-border)"
+        points={[project(0, 0), project(3, 0), project(3, 3), project(0, 3)]
+          .map(({ x, y }) => `${x},${y}`)
+          .join(" ")}
+      />
+      {colors.flatMap((row, i) =>
+        row.map((color, j) => {
           const points = [
             project(i + u, j + u),
             project(i + v, j + u),
             project(i + v, j + v),
             project(i + u, j + v),
-          ]
+          ];
+          const vertices = points.map(({ x, y }) => `${x},${y}`).join(" ");
+          const sticker = `${f}-${i}-${j}`;
+          if (style === "original") {
+            return (
+              <polygon
+                key={sticker}
+                data-sticker={sticker}
+                data-color={color}
+                fill={color}
+                fillOpacity={opacity}
+                points={vertices}
+              />
+            );
+          }
+          const path = roundedStickerPath(points);
           return (
-            <polygon key={`${f}-${i}-${j}`} fill={color} fillOpacity={opacity}
-                     points={points.map(({ x, y }) => `${x},${y}`).join(' ')} />
+            <g key={sticker}>
+              <path
+                data-sticker={sticker}
+                data-points={vertices}
+                data-color={color}
+                d={path}
+                fill={color}
+                fillOpacity={opacity}
+              />
+              {style !== "flat" && <path d={path} fill={`url(#${id}-shade)`} />}
+              {style === "cyber" && <path d={path} fill={`url(#${id}-scan)`} />}
+            </g>
           );
-        })
-      })}
+        }),
+      )}
+      {style !== "original" && style !== "flat" && (
+        <g filter={`url(#${id}-glow)`} className="cube-rims">
+          {colors.flatMap((row, i) =>
+            row.map((color, j) => (
+              <path
+                key={`${f}-rim-${i}-${j}`}
+                d={roundedStickerPath([
+                  project(i + u, j + u),
+                  project(i + v, j + u),
+                  project(i + v, j + v),
+                  project(i + u, j + v),
+                ])}
+                fill="none"
+                stroke={color}
+              />
+            )),
+          )}
+        </g>
+      )}
     </>
   );
-}
+};
 
-const CubeNet: React.FC<{ scramble: string, side: number}> = ({ scramble, side }) => {
+const CubeNet: React.FC<{
+  scramble: string;
+  side: number;
+  style?: CubeStyle;
+}> = ({ scramble, side, style = "original" }) => {
+  const id = useId().replace(/:/g, "");
   if (!scramble) {
     return null;
   }
@@ -132,53 +201,183 @@ const CubeNet: React.FC<{ scramble: string, side: number}> = ({ scramble, side }
   const A0 = facePadding - faceStep * 1.5;
   const A1 = A0 + faceStep;
   const A2 = A1 + faceStep;
-  const A3 = A2 + faceStep;
   const B0 = faceStep - facePadding - faceStep * 1.5;
   const B1 = B0 + faceStep;
   const B2 = B1 + faceStep;
-  const B3 = B2 + faceStep;
-  const Z0 = 1;
   const Z1 = 2;
   return (
-    <svg width={side*2} height={side*2} viewBox="-150 -150 300 300">
-      {renderFace(
-        cube, 'L',
-        A0, A1, Z1,
-        B0, A1, 1,
-        A0, B1, Z1,
-        B0, B1, 1,
+    <svg
+      className={`cube-net cube-net--${style}`}
+      role="img"
+      aria-label={`Daily scramble cube, ${style === "original" ? "original" : `rounded ${style}`} finish`}
+      width={side * 2}
+      height={side * 2}
+      viewBox="-150 -150 300 300"
+    >
+      {style !== "original" && (
+        <defs>
+          <clipPath id={`${id}-outline`}>
+            <polygon points="-50,-150 50,-150 150,-50 150,50 50,150 -50,150 -150,50 -150,-50" />
+          </clipPath>
+          <linearGradient id={`${id}-shade`} x1="0" y1="0" x2="0.15" y2="1">
+            <stop offset="0" stopColor="#ffffff" stopOpacity="0.08" />
+            <stop
+              offset="0.25"
+              stopColor="#040c12"
+              stopOpacity={style === "neon" ? 0.5 : 0.15}
+            />
+            <stop
+              offset="1"
+              stopColor="#040c12"
+              stopOpacity={style === "neon" ? 0.72 : 0.48}
+            />
+          </linearGradient>
+          <pattern
+            id={`${id}-scan`}
+            width="5"
+            height="5"
+            patternUnits="userSpaceOnUse"
+          >
+            <path
+              d="M0 0.75H5"
+              stroke="#010b15"
+              strokeWidth="0.8"
+              opacity="0.16"
+            />
+          </pattern>
+          <filter
+            id={`${id}-glow`}
+            x="-10%"
+            y="-10%"
+            width="120%"
+            height="120%"
+            colorInterpolationFilters="sRGB"
+          >
+            <feGaussianBlur stdDeviation={style === "neon" ? 1.6 : 0.8} />
+            <feMerge>
+              <feMergeNode />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
       )}
-      {renderFace(
-        cube, 'F',
-        A1, A1, 1,
-        B1, A1, 1,
-        A1, B1, 1,
-        B1, B1, 1,
-        1
-      )}
-      {renderFace(
-        cube, 'R',
-        A2, A1, 1,
-        B2, A1, Z1,
-        A2, B1, 1,
-        B2, B1, Z1,
-      )}
-      {renderFace(
-        cube, 'U',
-        B1, B0, 1,
-        A1, B0, 1,
-        B1, A0, Z1,
-        A1, A0, Z1,
-      )}
-      {renderFace(
-        cube, 'D',
-        A1, A2, 1,
-        B1, A2, 1,
-        A1, B2, Z1,
-        B1, B2, Z1,
-      )}
+      <g clipPath={style === "original" ? undefined : `url(#${id}-outline)`}>
+        {renderFace(
+          cube,
+          "L",
+          A0,
+          A1,
+          Z1,
+          B0,
+          A1,
+          1,
+          A0,
+          B1,
+          Z1,
+          B0,
+          B1,
+          1,
+          0.8,
+          style,
+          id,
+        )}
+        {renderFace(
+          cube,
+          "F",
+          A1,
+          A1,
+          1,
+          B1,
+          A1,
+          1,
+          A1,
+          B1,
+          1,
+          B1,
+          B1,
+          1,
+          1,
+          style,
+          id,
+        )}
+        {renderFace(
+          cube,
+          "R",
+          A2,
+          A1,
+          1,
+          B2,
+          A1,
+          Z1,
+          A2,
+          B1,
+          1,
+          B2,
+          B1,
+          Z1,
+          0.8,
+          style,
+          id,
+        )}
+        {renderFace(
+          cube,
+          "U",
+          B1,
+          B0,
+          1,
+          A1,
+          B0,
+          1,
+          B1,
+          A0,
+          Z1,
+          A1,
+          A0,
+          Z1,
+          0.8,
+          style,
+          id,
+        )}
+        {renderFace(
+          cube,
+          "D",
+          A1,
+          A2,
+          1,
+          B1,
+          A2,
+          1,
+          A1,
+          B2,
+          Z1,
+          B1,
+          B2,
+          Z1,
+          0.8,
+          style,
+          id,
+        )}
+        {style === "cyber" && (
+          <g
+            className="cube-rails"
+            fill="none"
+            strokeWidth="3"
+            strokeDasharray="20 24"
+          >
+            <polygon
+              stroke="#48e6ff"
+              points="-50,-150 50,-150 150,-50 150,50 50,150 -50,150 -150,50 -150,-50"
+            />
+            <polygon
+              stroke="#ec47c6"
+              strokeDashoffset="-22"
+              points="-50,-150 50,-150 150,-50 150,50 50,150 -50,150 -150,50 -150,-50"
+            />
+          </g>
+        )}
+      </g>
     </svg>
-  )
+  );
 };
 
 export default CubeNet;

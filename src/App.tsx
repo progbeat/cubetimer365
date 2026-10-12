@@ -12,7 +12,7 @@ import {
   IconStopwatch,
   IconTrash,
 } from "@tabler/icons-react";
-import CubeNet from "./CubeNet";
+import CubeNet, { CubeStyle } from "./CubeNet";
 import { generateScramble } from "./scramble";
 
 const theme = createTheme({
@@ -46,26 +46,26 @@ const isControl = (target: EventTarget | null) =>
   );
 
 function CubeStyleReview({ scramble }: { scramble: string }) {
-  const options = [
+  const options: [CubeStyle, string, string][] = [
     [
       "original",
-      "01 / Original",
-      "Unchanged source rendering. Current baseline.",
+      "Original / Baseline",
+      "Original square stickers and unchanged color assignment.",
     ],
     [
-      "clear",
-      "02 / Clear separators",
-      "Original palette, stronger graphite separators.",
+      "flat",
+      "01 / Flat · Round",
+      "Clean rounded stickers with quiet graphite separators.",
     ],
     [
-      "soft",
-      "03 / Soft enamel",
-      "Softer six-color palette and quiet separators.",
+      "neon",
+      "03 / Neon · Round",
+      "Darker centers and restrained colored rims.",
     ],
     [
-      "depth",
-      "04 / Subtle depth",
-      "Original palette with a restrained shadow and fine edges.",
+      "cyber",
+      "05 / Cyber · Round",
+      "Fine scanlines, colored rims, and cyan/magenta rails.",
     ],
   ];
   return (
@@ -74,11 +74,11 @@ function CubeStyleReview({ scramble }: { scramble: string }) {
         ← Back to timer
       </a>
       <p className="eyebrow">CUBE APPEARANCE / REVIEW ONLY</p>
-      <h1>Same projection. A few finishing touches.</h1>
+      <h1>Rounded finishes. In your daily practice.</h1>
       <p className="review-intro">
         Every option renders the same daily scramble with the original front
-        square and four perspective faces. The timer keeps the original until
-        you choose.
+        square and four perspective faces. Cyber is the current local preview
+        default; Original remains available.
       </p>
       <div className="cube-options">
         {options.map(([style, title, description]) => (
@@ -87,12 +87,15 @@ function CubeStyleReview({ scramble }: { scramble: string }) {
             key={style}
           >
             <div className="option-cube">
-              <ScrambleCube scramble={scramble} side={115} />
+              <ScrambleCube scramble={scramble} side={85} style={style} />
             </div>
             <h2>{title}</h2>
             <p>{description}</p>
-            {style === "original" && (
-              <span className="baseline-tag">CURRENT BASELINE</span>
+            <a className="finish-preview-link" href={`?cube=${style}`}>
+              View in timer ↗
+            </a>
+            {style === "cyber" && (
+              <span className="baseline-tag">CURRENT PREVIEW DEFAULT</span>
             )}
           </section>
         ))}
@@ -106,6 +109,14 @@ function CubeStyleReview({ scramble }: { scramble: string }) {
 }
 
 const App: React.FC = () => {
+  const [cubeStyle, setCubeStyle] = useState<CubeStyle>(() => {
+    const requested = new URLSearchParams(window.location.search).get("cube");
+    return requested === "original" ||
+      requested === "flat" ||
+      requested === "neon"
+      ? requested
+      : "cyber";
+  });
   const [today, setToday] = useState(() => new Date());
   const todayString = today.toISOString().split("T")[0];
   const seed =
@@ -458,10 +469,25 @@ const App: React.FC = () => {
                 </p>
               </div>
               <div className="cube-display">
-                <ScrambleCube scramble={scramble} side={96} />
-                <a href="?cube-options" className="cube-review-link">
-                  Explore cube finishes ↗
-                </a>
+                <ScrambleCube scramble={scramble} side={96} style={cubeStyle} />
+                <div className="cube-tools">
+                  <select
+                    className="cube-finish-select"
+                    aria-label="Cube finish"
+                    value={cubeStyle}
+                    onChange={(event) =>
+                      setCubeStyle(event.target.value as CubeStyle)
+                    }
+                  >
+                    <option value="cyber">Cyber · Round</option>
+                    <option value="neon">Neon · Round</option>
+                    <option value="flat">Flat · Round</option>
+                    <option value="original">Original</option>
+                  </select>
+                  <a href="?cube-options" className="cube-review-link">
+                    Compare ↗
+                  </a>
+                </div>
               </div>
             </section>
             <section
