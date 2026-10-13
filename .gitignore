@@ -34,3 +34,6 @@ yarn-error.log*
 .eslintcache
 .stylelintcache
 /.playwright-cli/
+
+# Consumer-local Library reference bytes (see docs/CLOUD_REFERENCES.json)
+/reference/

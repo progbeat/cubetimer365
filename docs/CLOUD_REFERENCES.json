@@ -1,0 +1,96 @@
+{
+  "checkpoint": "1895e83d336315722394d72afca5eddbd125d082",
+  "assets": [
+    {
+      "file_name": "01-night-precision-original-cube.png",
+      "library_file_id": "libfile_c0f1df61b3ec8191ab309213e83aa714",
+      "file_id": "file_000000000f5081f88ede2e8474aaa3e4",
+      "size_bytes": 1543460,
+      "sha256": "33a31a3cd186b44154a73476aaed6de8d05f86a177a57faa21aad032428c5d06",
+      "dimensions": [
+        1536,
+        1024
+      ],
+      "cloud_relative_path": "reference/01-night-precision-original-cube.png",
+      "purpose": "Selected surrounding-layout concept"
+    },
+    {
+      "file_name": "05-rounded-vs-chamfered-comparison.png",
+      "library_file_id": "libfile_8f5fdef398248191818a0cfba4e68915",
+      "file_id": "file_00000000fbfc81fd808601eef337bd30",
+      "size_bytes": 1678554,
+      "sha256": "7417fd81e5e7de14c4fa0cd003e57196ff04b1d434e19cbab10b9a62b963065c",
+      "dimensions": [
+        1024,
+        1536
+      ],
+      "cloud_relative_path": "reference/05-rounded-vs-chamfered-comparison.png",
+      "purpose": "Panel 05 CYBER ROUND; left column ROUND, not right column CUT"
+    },
+    {
+      "file_name": "cyber-precision-desktop.png",
+      "library_file_id": "libfile_94991a3c838081919b3a206a855ebc13",
+      "file_id": "file_0000000030d081fda992256d9ae3c1b5",
+      "size_bytes": 274019,
+      "sha256": "0216b7300a5ed66b6df4e0fb105b3459002a5dd499e2f805b33ede4fce69d984",
+      "dimensions": [
+        1440,
+        1160
+      ],
+      "cloud_relative_path": "reference/evidence/cyber-precision-desktop.png",
+      "purpose": "Rounded runtime baseline, illustrative local solves"
+    },
+    {
+      "file_name": "cyber-precision-mobile.png",
+      "library_file_id": "libfile_d13dc47afd7c8191a23d5e8880be0cda",
+      "file_id": "file_00000000493481fd8428ae80372ab21e",
+      "size_bytes": 86268,
+      "sha256": "99196cf61565149bc1fcab15f42585a936326dec7faef4f3b8bb163c67c237d8",
+      "dimensions": [
+        390,
+        844
+      ],
+      "cloud_relative_path": "reference/evidence/cyber-precision-mobile.png",
+      "purpose": "Rounded runtime baseline at 390x844, illustrative local solves"
+    },
+    {
+      "file_name": "sticker-material-front-review.png",
+      "library_file_id": "libfile_bf3eee17bcd081919c3c32c17d0418ca",
+      "file_id": "file_000000001eb481f5b6573ef76b9d16a1",
+      "size_bytes": 35339,
+      "sha256": "a15b5d97a3ba13c10bcd251d4cc74000488f378a42ae5176939035aea1c02ca6",
+      "dimensions": [
+        1364,
+        617
+      ],
+      "cloud_relative_path": "reference/evidence/sticker-material-front-review.png",
+      "purpose": "Reference versus isolated procedural front specimen"
+    },
+    {
+      "file_name": "sticker-material-side-review.png",
+      "library_file_id": "libfile_a4701ed5d8d081918a8cd9bf661f3332",
+      "file_id": "file_00000000a50c8230a21845eccf7ebcfa",
+      "size_bytes": 28065,
+      "sha256": "532147802c5f275b7157cee198637a7048716d50d72ee791c97bdef65932188a",
+      "dimensions": [
+        1364,
+        617
+      ],
+      "cloud_relative_path": "reference/evidence/sticker-material-side-review.png",
+      "purpose": "Reference versus isolated procedural side specimen"
+    },
+    {
+      "file_name": "sticker-material-comparison-review.png",
+      "library_file_id": "libfile_cf78ad64025481918e1de21830ebc3fd",
+      "file_id": "file_000000002bdc822fa5f5f40763e1694c",
+      "size_bytes": 154906,
+      "sha256": "60c8693b9469bac293f00b32f96e7dbc1037f082936846f512f788f4354498c0",
+      "dimensions": [
+        1420,
+        1735
+      ],
+      "cloud_relative_path": "reference/evidence/sticker-material-comparison-review.png",
+      "purpose": "Study 1895e83 combined reference/render comparison"
+    }
+  ]
+}
