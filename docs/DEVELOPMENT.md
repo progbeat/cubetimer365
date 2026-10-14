@@ -8,8 +8,9 @@ yarn install --immutable
 yarn dev
 ```
 
-Open `http://localhost:5173/cubetimer365/`. CI uses Yarn's `node-modules` linker;
-set `YARN_NODE_LINKER=node-modules` for the same local installation mode.
+Open `http://localhost:5173/cubetimer365/`. Yarn's `node-modules` linker is
+configured in `.yarnrc.yml` for local development and CI. Generated Plug'n'Play
+loaders are excluded from source control.
 
 ## Checks
 
@@ -48,7 +49,10 @@ yarn build
 
 Vite writes `dist/` and retains the existing `/cubetimer365/` asset base. The
 existing GitHub Pages workflow deploys only on pushes to `master`; the PR checks
-do not deploy. The build retains its existing JavaScript chunk-size warning.
+do not deploy. Vite 7 and Vitest 4 use the locked dependency versions. The
+production build uses Terser and explicitly retains the original browser targets. The single
+JavaScript chunk still exceeds the default warning threshold; changing that
+threshold would not improve loading.
 
 ## Assets and license
 
@@ -56,3 +60,17 @@ Application code is MIT licensed; see [LICENSE](../LICENSE). Bundled Chakra Petc
 and Roboto fonts include their licenses in `public/fonts/`. The current header
 and favicon use Tabler's IconCube; its MIT license is included in
 `public/licenses/tabler-icons.txt`.
+
+## Dependency review
+
+The 2026-10-14 lockfile audit reports no production advisories and one tooling
+advisory: [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm)
+in `braces` 3.0.3 via Stylelint's matcher dependencies. No patch is published.
+It affects deeply nested, attacker-controlled brace patterns; the CSS check
+uses a fixed pattern. The package is not included in the browser bundle.
+
+ESLint 9, Recharts 2 and jsdom's `whatwg-encoding` dependency also emit
+deprecation notices, which are distinct from security advisories. ESLint 9
+retains compatibility with the Mantine lint preset; the existing chart and
+React versions retain the tested appearance. Dependency changes should be
+followed by the checks above and a fresh production/complete-lockfile audit.
