@@ -415,11 +415,11 @@ const App: React.FC = () => {
       const gesture = consumedTouch.current;
       const touch = event.pointerType === "touch";
       const stopping = phaseRef.current === "running" && event.button === 0;
-      if (!touch || gesture.pointers.size === 0) {
+      if (!touch || !consumingTouchEvents) {
         // A new physical interaction is independent of the previous stop.
         gesture.pendingClick = false;
       }
-      if (!touch || (!stopping && gesture.pointers.size === 0)) {
+      if (!touch || (!stopping && !consumingTouchEvents)) {
         return;
       }
       gesture.pointers.add(event.pointerId);

@@ -266,7 +266,16 @@ export default async (page) => {
         `${input}: non-primary stopping contact does not activate the control`,
       );
       await page.waitForTimeout(350);
-      await contact("touchEnd", [held]);
+      await contact("touchEnd", [stopping]);
+      const later = { ...(await point(".cube-style-trigger")), id: 4 };
+      await contact("touchStart", [held, later]);
+      await contact("touchEnd", [later]);
+      assert(
+        (await history()).length === 2 &&
+          !(await solving()) &&
+          !(await page.locator(".cube-finish-popover").isVisible()),
+        `${input}: later fingers remain consumed while the older finger is held`,
+      );
       await contact("touchEnd", []);
       assert(
         (await history()).length === 2 && !(await solving()),

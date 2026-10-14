@@ -467,6 +467,7 @@ describe("large touch surface lifecycle", () => {
     pointerEvent("pointerdown");
     expect(saved()[0]).toBeCloseTo(0.85);
     pointerEvent("pointerup");
+    fireEvent.touchEnd(surface(), { touches: [] });
     advance(500);
     expect(saved()).toHaveLength(1);
     expect(screen.queryByText("Solving")).not.toBeInTheDocument();
@@ -474,6 +475,7 @@ describe("large touch surface lifecycle", () => {
     advance(400);
     pointerEvent("pointerdown");
     pointerEvent("pointerup");
+    fireEvent.touchEnd(surface(), { touches: [] });
     expect(saved()).toHaveLength(2);
   });
   it.each(["pointercancel", "lostpointercapture", "blur", "resize"])(
@@ -678,11 +680,16 @@ describe("page-wide touchscreen stop", () => {
       expect(saved()).toEqual([12, 0.04]);
       advance(350);
       pointerEvent("pointerup", contact, picker);
-      pointerEvent(
-        "pointerup",
-        { pointerId: input === "keyboard" ? 1 : 2 },
-        document.body,
-      );
+      const heldId = input === "keyboard" ? 1 : 2;
+      fireEvent.touchEnd(picker, { touches: [{ identifier: heldId }] });
+      const laterContact = { pointerId: 4, isPrimary: false };
+      expect(
+        pointerEvent("pointerdown", laterContact, picker).defaultPrevented,
+      ).toBe(true);
+      pointerEvent("pointerup", laterContact, picker);
+      fireEvent.touchEnd(picker, { touches: [{ identifier: heldId }] });
+      pointerEvent("pointerup", { pointerId: heldId }, document.body);
+      fireEvent.touchEnd(document.body, { touches: [] });
       fireEvent.click(picker, { detail: 1 });
       fireEvent.click(picker, { detail: 1 });
       expect(saved()).toEqual([12, 0.04]);
