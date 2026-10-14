@@ -12,6 +12,8 @@ declare global {
 
 let initialized = false;
 let previousPage = "";
+// A failed preference write must not revive a readable grant in this document.
+let consentBlocked = false;
 const base = import.meta.env.BASE_URL;
 const disable = () => {
   (window as unknown as Record<string, unknown>)[
@@ -25,6 +27,9 @@ export const privacySignalEnabled = () =>
     .globalPrivacyControl === true;
 
 export function readAnalyticsConsent(): AnalyticsConsent {
+  if (consentBlocked) {
+    return "denied";
+  }
   try {
     const value = localStorage.getItem(ANALYTICS_CONSENT_KEY);
     return value === "granted" || value === "denied" ? value : null;
@@ -34,13 +39,15 @@ export function readAnalyticsConsent(): AnalyticsConsent {
 }
 
 export function saveAnalyticsConsent(consent: Exclude<AnalyticsConsent, null>) {
-  try {
-    localStorage.setItem(ANALYTICS_CONSENT_KEY, consent);
-  } catch {
-    // Analytics fails closed when the preference cannot be stored.
-  }
+  consentBlocked = true;
+  disable();
   if (consent === "denied") {
-    disable();
+    try {
+      // Remove the old grant first: a failed denial write then leaves no consent.
+      localStorage.removeItem(ANALYTICS_CONSENT_KEY);
+    } catch {
+      // Still attempt denial; the in-document block covers storage failure.
+    }
     // Only this app's cookies, at this app's path, are removed.
     for (const cookie of document.cookie.split(";")) {
       const name = cookie.trim().split("=")[0];
@@ -50,6 +57,15 @@ export function saveAnalyticsConsent(consent: Exclude<AnalyticsConsent, null>) {
         document.cookie = `${expired}; Domain=${window.location.hostname}`;
       }
     }
+  }
+  try {
+    localStorage.setItem(ANALYTICS_CONSENT_KEY, consent);
+    const persisted = localStorage.getItem(ANALYTICS_CONSENT_KEY) === consent;
+    consentBlocked = !persisted;
+    return persisted;
+  } catch {
+    // Keep delivery disabled, including if both removal and writing fail.
+    return false;
   }
 }
 

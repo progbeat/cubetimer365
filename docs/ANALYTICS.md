@@ -13,6 +13,10 @@ the app does not load the Google tag or send cookieless analytics pings. A local
 preference key (`cubetimer365:analytics-consent`) remembers the choice. Withdrawal
 disables delivery before reload and removes only `ct365_ga*` cookies at this
 app's path. The existing solve storage keys and timer interactions are unchanged.
+Before saving denial, the app removes the previous grant. It reloads only after
+confirming the saved denial. If storage fails, analytics stays disabled in the
+current page and Privacy asks the visitor to allow storage and retry before
+reloading. A failed grant write also leaves analytics off.
 
 After consent, GA4 receives page views and its standard session/engagement data.
 Application code emits only `page_view`: one initial view and one per distinct

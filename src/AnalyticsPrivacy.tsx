@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button, Group, Modal, Stack, Text } from "@mantine/core";
 import {
   analyticsConfigured,
@@ -13,8 +13,10 @@ import "./AnalyticsPrivacy.css";
 
 export default function AnalyticsPrivacy() {
   const [opened, setOpened] = useState(false);
+  const [storageFailed, setStorageFailed] = useState(false);
   const [consent, setConsent] =
     useState<AnalyticsConsent>(readAnalyticsConsent);
+  const withdrawalNeedsReload = useRef(false);
   const blocked = privacySignalEnabled();
   useEffect(() => {
     startAnalytics();
@@ -29,12 +31,18 @@ export default function AnalyticsPrivacy() {
     return () => window.removeEventListener("storage", syncConsent);
   }, []);
   const choose = (choice: Exclude<AnalyticsConsent, null>) => {
-    saveAnalyticsConsent(choice);
+    if (consent === "granted" && choice === "denied") {
+      withdrawalNeedsReload.current = true;
+    }
+    const persisted = saveAnalyticsConsent(choice);
+    setStorageFailed(!persisted);
     setConsent(readAnalyticsConsent());
     // A fresh document removes the Google tag and its listeners after withdrawal.
     // The disable flag is set before reload, including for unload events.
-    if (consent === "granted" && choice === "denied") {
+    if (persisted && choice === "denied" && withdrawalNeedsReload.current) {
       window.location.reload();
+    } else if (persisted && choice === "granted") {
+      withdrawalNeedsReload.current = false;
     }
   };
   const choices = (
@@ -147,6 +155,13 @@ export default function AnalyticsPrivacy() {
                 Analytics: {consent === "granted" ? "allowed" : "off"}.
               </Text>
               {choices}
+              {storageFailed && (
+                <Text size="sm" role="alert">
+                  Analytics is off on this page, but your browser could not save
+                  your choice. Allow site storage and choose again before
+                  reloading.
+                </Text>
+              )}
             </>
           )}
         </Stack>

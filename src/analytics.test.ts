@@ -210,6 +210,44 @@ describe("opt-in visit analytics", () => {
     expect(commands()).toEqual([]);
   });
 
+  it.each([false, true])(
+    "keeps withdrawal closed when denial writes fail (removal blocked: %s)",
+    async (removalBlocked) => {
+      analytics.saveAnalyticsConsent("granted");
+      analytics.startAnalytics();
+      vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+        throw new Error("write blocked");
+      });
+      if (removalBlocked) {
+        vi.spyOn(Storage.prototype, "removeItem").mockImplementation(() => {
+          throw new Error("removal blocked");
+        });
+      }
+      const persisted = analytics.saveAnalyticsConsent("denied");
+      expect(analytics.readAnalyticsConsent()).toBe("denied");
+      expect(persisted).toBe(false);
+      analytics.startAnalytics();
+      window.history.replaceState({}, "", "/cubetimer365/#history");
+      window.dispatchEvent(new Event("hashchange"));
+      expect(pageViews()).toHaveLength(1);
+      expect(
+        (window as unknown as Record<string, unknown>)["ga-disable-G-TEST365"],
+      ).toBe(true);
+      expect(localStorage.getItem(analytics.ANALYTICS_CONSENT_KEY)).toBe(
+        removalBlocked ? "granted" : null,
+      );
+      if (!removalBlocked) {
+        vi.resetModules();
+        const freshDocument = await import("./analytics");
+        freshDocument.startAnalytics();
+        expect(pageViews()).toHaveLength(1);
+      }
+      vi.restoreAllMocks();
+      expect(analytics.saveAnalyticsConsent("granted")).toBe(true);
+      expect(analytics.readAnalyticsConsent()).toBe("granted");
+    },
+  );
+
   it("stops on cross-tab withdrawal or storage clearing and resumes without duplicating the tag", () => {
     analytics.saveAnalyticsConsent("granted");
     analytics.startAnalytics();
