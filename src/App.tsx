@@ -195,6 +195,10 @@ const App: React.FC = () => {
   } | null>(null);
   const lastStopAt = useRef(-Infinity);
   const holdTimeout = useRef<number | null>(null);
+  const consumedTouch = useRef({
+    pointers: new Set<number>(),
+    pendingClick: false,
+  });
 
   const changePhase = (next: typeof phase) => {
     phaseRef.current = next;
@@ -208,10 +212,10 @@ const App: React.FC = () => {
     setTimerDisplay(0);
     changePhase("running");
   };
-  const stop = () => {
+  const stop = (respectStartDebounce = true) => {
     if (
       phaseRef.current !== "running" ||
-      performance.now() - startedAt.current < 200
+      (respectStartDebounce && performance.now() - startedAt.current < 200)
     ) {
       return;
     }
@@ -367,7 +371,58 @@ const App: React.FC = () => {
     const blur = () => {
       keyboardHeld.current = null;
       pointer.current = null;
+      consumedTouch.current.pointers.clear();
+      consumedTouch.current.pendingClick = false;
       cancel();
+    };
+    const consume = (event: Event) => {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    };
+    const pagePointerDown = (event: PointerEvent) => {
+      const gesture = consumedTouch.current;
+      const touch = event.pointerType === "touch";
+      const stopping =
+        phaseRef.current === "running" && event.isPrimary && event.button === 0;
+      if (!touch || gesture.pointers.size === 0) {
+        // A new physical interaction is independent of the previous stop.
+        gesture.pendingClick = false;
+      }
+      if (!touch || (!stopping && gesture.pointers.size === 0)) {
+        return;
+      }
+      gesture.pointers.add(event.pointerId);
+      gesture.pendingClick = true;
+      consume(event);
+      keyboardHeld.current = null;
+      pointer.current = null;
+      clearHold();
+      // A fresh touch contact is already a separate gesture from the release
+      // that starts timing. Keep the existing keyboard/mouse debounce.
+      stop(false);
+    };
+    const pagePointerEvent = (event: PointerEvent) => {
+      const gesture = consumedTouch.current;
+      if (!gesture.pointers.has(event.pointerId)) {
+        return;
+      }
+      consume(event);
+      if (event.type === "pointerup" || event.type === "pointercancel") {
+        gesture.pointers.delete(event.pointerId);
+      }
+    };
+    const pageTouch = (event: TouchEvent) => {
+      const gesture = consumedTouch.current;
+      if (gesture.pointers.size || gesture.pendingClick) {
+        consume(event);
+      }
+    };
+    const pageClick = (event: MouseEvent) => {
+      // Cancel compatibility clicks from the stopping touch, including
+      // duplicates. Keyboard activation has detail 0 and remains available.
+      if (consumedTouch.current.pendingClick && event.detail !== 0) {
+        consume(event);
+      }
     };
     const visibility = () => {
       if (document.hidden) {
@@ -386,6 +441,15 @@ const App: React.FC = () => {
     window.addEventListener("resize", blur);
     document.addEventListener("visibilitychange", visibility);
     document.addEventListener("focusin", focus);
+    window.addEventListener("pointerdown", pagePointerDown, true);
+    window.addEventListener("pointermove", pagePointerEvent, true);
+    window.addEventListener("pointerup", pagePointerEvent, true);
+    window.addEventListener("pointercancel", pagePointerEvent, true);
+    window.addEventListener("click", pageClick, true);
+    const touchOptions = { capture: true, passive: false };
+    for (const type of ["touchstart", "touchmove", "touchend", "touchcancel"]) {
+      window.addEventListener(type, pageTouch as EventListener, touchOptions);
+    }
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
@@ -393,6 +457,19 @@ const App: React.FC = () => {
       window.removeEventListener("resize", blur);
       document.removeEventListener("visibilitychange", visibility);
       document.removeEventListener("focusin", focus);
+      window.removeEventListener("pointerdown", pagePointerDown, true);
+      window.removeEventListener("pointermove", pagePointerEvent, true);
+      window.removeEventListener("pointerup", pagePointerEvent, true);
+      window.removeEventListener("pointercancel", pagePointerEvent, true);
+      window.removeEventListener("click", pageClick, true);
+      for (const type of [
+        "touchstart",
+        "touchmove",
+        "touchend",
+        "touchcancel",
+      ]) {
+        window.removeEventListener(type, pageTouch as EventListener, true);
+      }
       clearHold();
     };
   }, [review]);
@@ -601,7 +678,7 @@ const App: React.FC = () => {
                 className="timer-surface"
                 role="button"
                 tabIndex={0}
-                aria-label="Timer surface. Hold Space or touch until ready, release to start. Press Space or touch to stop and save. Escape cancels the attempt."
+                aria-label="Timer surface. Hold Space or touch until ready, release to start. Press Space to stop and save, or tap anywhere on a touchscreen. Escape cancels the attempt."
                 onPointerDown={onPointerDown}
                 onPointerMove={onPointerMove}
                 onPointerUp={onPointerUp}
@@ -643,7 +720,7 @@ const App: React.FC = () => {
                 </p>
                 <p className="touch-hint">
                   {phase === "running"
-                    ? "Touch anywhere here to stop"
+                    ? "Tap anywhere to stop and save"
                     : ready
                       ? "Release to start"
                       : phase === "holding"

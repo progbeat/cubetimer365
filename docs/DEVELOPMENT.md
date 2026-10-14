@@ -35,6 +35,11 @@ solves. The PR workflow runs these checks with Chromium and read-only repository
 permissions. Reports, downloaded references, generated dist and local hosting
 configuration are excluded from source control.
 
+Touch checks also cover stopping a running solve over the timer, page
+background, scramble, cube control, delete control and navigation links. The
+stopping gesture and compatibility clicks are consumed; starting still uses
+the timer area's hold/release gesture, and desktop keyboard behavior is retained.
+
 ## Cube materials
 
 Flat, Neon and Cyber use the same projected sticker geometry and material
