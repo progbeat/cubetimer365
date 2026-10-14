@@ -28,3 +28,15 @@ yarn-error.log*
 !.yarn/sdks
 !.yarn/patches
 !.yarn/versions
+
+# Local review screenshots and verification artifacts
+/output/
+.eslintcache
+.stylelintcache
+/.playwright-cli/
+
+# Local reference images
+/reference/
+
+# Private hosting configuration
+/.openai/

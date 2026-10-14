@@ -7,7 +7,7 @@ window.HTMLElement.prototype.scrollIntoView = () => {};
 
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
-  value: vi.fn().mockImplementation((query) => ({
+  value: (query) => ({
     matches: false,
     media: query,
     onchange: null,
@@ -16,7 +16,7 @@ Object.defineProperty(window, 'matchMedia', {
     addEventListener: vi.fn(),
     removeEventListener: vi.fn(),
     dispatchEvent: vi.fn(),
-  })),
+  }),
 });
 
 class ResizeObserver {

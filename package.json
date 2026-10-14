@@ -18,7 +18,8 @@
     "vitest:watch": "vitest",
     "test": "npm run typecheck && npm run prettier && npm run lint && npm run vitest && npm run build",
     "storybook": "storybook dev -p 6006",
-    "storybook:build": "storybook build"
+    "storybook:build": "storybook build",
+    "browser-check": "node scripts/review/run-browser-checks.mjs"
   },
   "dependencies": {
     "@mantine/charts": "^7.13.4",
@@ -51,6 +52,7 @@
     "eslint-plugin-react": "^7.37.1",
     "identity-obj-proxy": "^3.0.0",
     "jsdom": "^25.0.1",
+    "playwright": "1.64.0",
     "postcss": "^8.4.47",
     "postcss-preset-mantine": "1.17.0",
     "postcss-simple-vars": "^7.0.1",

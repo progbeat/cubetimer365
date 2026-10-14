@@ -1,103 +1,72 @@
 # CubeTimer365
 
-CubeTimer365 is a minimalistic Rubik's Cube timer built with React. It generates a new scramble each day and keeps track of your solving history for that day's scramble. The timer also supports dark/light mode based on your system preferences.
+A daily Rubik's Cube practice timer with a dark graphite/lime interface.
+Each day has one deterministic 20-move scramble and a projected five-face cube.
+Cyber is the default finish, with horizontal screen-space interference; Neon
+and Flat are available from the cube thumbnail picker.
 
-## Features
+## Timing and history
 
-- **Daily Scramble:** Generates a unique scramble each day. The scramble remains the same throughout the day and changes daily.
-- **Timer Precision:** The timer has a precision of 10ms.
-- **History:** Keeps track of your solve times for the current day's scramble.
-- **Dark/Light Mode:** Automatically adjusts to your system's dark or light mode.
+- Hold Space or the large touch surface for 300 ms, then release to start.
+- Press a key outside interactive controls, or touch the timer, to stop.
+- An early release cancels readiness; Escape cancels an unsaved attempt.
+- After choosing a finish or closing its picker, Space is ready to use again.
+- Native buttons and editable controls retain their keyboard behavior.
 
-## Usage
+Daily numeric solve history is saved in browser localStorage using the existing
+`history` and `today` keys. Best, AO5, AO12, total time and solve charts use that
+history. Each solve can be deleted. The date/history boundary retains the
+original UTC behavior, while the daily scramble seed uses the local date.
 
-- **Start Timer:** Press and release the `Space` key to start the timer.
-- **Stop Timer:** Press and hold the `Space` key to stop the timer.
-- **View History:** Your solve times are saved in a list below the timer.
+## Development
 
-## Random Scramble Rules
+Use Node 24 and the repository's pinned Yarn 4.5.1:
 
-- **Non-redundant Rotations:** Two consecutive moves should not affect the same face (e.g., `U U2` is invalid as it can be simplified).
-- **Perpendicular Face Rule:** Any sequence of three moves must involve at least two perpendicular faces. For example, `R L R` is not allowed as it can be simplified.
+```sh
+corepack enable
+yarn install --immutable
+yarn dev
+```
 
-## How It Works
+Open `http://localhost:5173/cubetimer365/`. CI uses Yarn's `node-modules` linker;
+set `YARN_NODE_LINKER=node-modules` for the same local installation mode.
 
-1. **Daily Scramble Generation:**
-   The scramble for each day is generated based on the current date. The same scramble will appear for the entire day, ensuring consistency for all solves on the same day.
+## Checks
 
-2. **Timer Controls:**
-   The timer starts when the `Space` key is released and stops when the `Space` key is pressed again. It accurately tracks the time with a precision of 10 milliseconds.
+```sh
+yarn test
+```
 
-3. **History:**
-   All solve times for the current day's scramble are stored in the history section, which displays your solve times in the order they were recorded.
+This runs TypeScript, Prettier, ESLint, CSS syntax/rule checks, unit tests and the
+production build. The browser checks cover Space/repeat/focus, real touch input,
+persistence/deletion, style selection and responsive widths:
 
-## Getting Started
+```sh
+yarn build
+yarn playwright install chromium
+yarn preview --host 127.0.0.1 --port 4173 --strictPort
+# In another terminal:
+yarn browser-check
+```
 
-To run the app locally, follow these steps:
+Browser fixtures require an isolated localhost context and use illustrative
+solves. The PR workflow runs these checks with Chromium and read-only repository
+permissions. Reports, downloaded references, generated dist and local hosting
+configuration are excluded from source control.
 
-### Prerequisites
+## Build and hosting
 
-- Node.js (version 20 or higher)
-- yarn
-
-### Installation
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/progbeat/cubetimer365.git
-   cd cubetimer365
-   ```
-
-2. Install dependencies:
-   ```bash
-   yarn install
-   ```
-
-3. Run the app:
-   ```bash
-   yarn dev
-   ```
-
-   The app will run locally at [http://localhost:5173](http://localhost:5173).
-
-### Build for Production
-
-To create an optimized production build:
-
-```bash
+```sh
 yarn build
 ```
 
-The optimized build will be available in the `build` directory.
+Vite writes `dist/` and retains the existing `/cubetimer365/` asset base. The
+existing GitHub Pages workflow deploys only on pushes to `master`; the PR checks
+do not deploy. The build retains its existing JavaScript chunk-size warning.
 
-## Deployment
+## Assets and license
 
-The project uses GitHub Actions to automatically deploy the app to GitHub Pages whenever the `master` branch is updated.
-
-To manually deploy:
-
-1. Run the build command:
-   ```bash
-   yarn build
-   ```
-
-2. Deploy to GitHub Pages:
-   ```bash
-   yarn deploy
-   ```
-
-## GitHub Pages
-
-The app is published and accessible at [progbeat.github.io/cubetimer365](https://progbeat.github.io/cubetimer365/).
-
-## Contributing
-
-Feel free to fork this repository, make updates, and submit pull requests. Contributions are welcome!
-
-## License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more details.
-
-## Acknowledgments
-
-This project was created as a simple, daily Rubik's Cube timer to track solve times with random scrambles that follow common cubing rules. The app features light and dark mode support and is optimized for use in browsers.
+Application code is MIT licensed; see [LICENSE](LICENSE). Bundled Chakra Petch
+and Roboto fonts include their licenses in `public/fonts/`. The current header
+and favicon use Tabler's IconCube; its MIT license is included in
+`public/licenses/tabler-icons.txt`.

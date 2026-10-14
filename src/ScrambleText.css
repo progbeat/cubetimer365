@@ -1,0 +1,9 @@
+@font-face {
+  font-family: 'Scramble Roboto';
+  src: url('/fonts/Roboto-Latin-700.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: block;
+}
+
+.scramble-move { display: inline-block; white-space: nowrap; }
