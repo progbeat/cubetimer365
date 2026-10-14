@@ -28,6 +28,7 @@ try {
     "browser-check",
     "browser-feedback-check",
     "browser-date-check",
+    "browser-material-check",
   ]) {
     const context = await browser.newContext();
     try {

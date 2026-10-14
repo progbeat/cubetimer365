@@ -2,6 +2,8 @@ import { cleanup, render } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import CubeNet, { CubeStyle } from "./CubeNet";
 import original from "./fixtures/originalCube.json";
+import { cubeMaterials } from "./cubeMaterials";
+import { fillAt, rgbCss } from "./cubeRenderer";
 import {
   projectedSticker,
   projectedRoundedStickerPath,
@@ -71,12 +73,24 @@ describe.each(styles)(
               `[data-sticker="${geometry.id}"]`,
             );
             expect(sticker).toHaveAttribute("data-color", colors[index]);
-            expect(sticker).toHaveAttribute("fill", colors[index]);
+            expect(sticker).toHaveAttribute(
+              "fill",
+              style === "original"
+                ? colors[index]
+                : rgbCss(
+                    fillAt(
+                      0.5,
+                      0.5,
+                      colors[index],
+                      cubeMaterials[style].parameters,
+                    ),
+                  ),
+            );
             expect(sticker).toHaveAttribute(
               "fill-opacity",
-              style === "cyber" ? "1" : geometry.opacity,
+              style === "original" ? geometry.opacity : "1",
             );
-            if (style === "cyber") {
+            if (style !== "original") {
               expect(sticker).toHaveAttribute(
                 "data-source-opacity",
                 geometry.opacity,
@@ -88,11 +102,7 @@ describe.each(styles)(
             } else {
               expect(sticker?.tagName).toBe("path");
               expect(sticker).toHaveAttribute("data-points", geometry.points);
-              expect(
-                sticker
-                  ?.getAttribute("d")
-                  ?.match(style === "cyber" || style === "neon" ? /L/g : /Q/g),
-              ).toHaveLength(style === "cyber" || style === "neon" ? 35 : 4);
+              expect(sticker?.getAttribute("d")?.match(/L/g)).toHaveLength(35);
             }
           }
         });

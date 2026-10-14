@@ -108,9 +108,8 @@ kbd { border: 1px solid #43505a; border-radius: 4px; padding: 4px 7px; font: inh
 .cube-option p { color: var(--muted); font-size: 12px; line-height: 1.7; min-height: 42px; }
 .baseline-tag { display: block; font-size: 9px; letter-spacing: 1px; color: var(--lime); margin-top: 16px; }
 .review-footnote { color: var(--muted); font-size: 11px; margin-top: 28px; }
-.cube-net--flat, .cube-net--neon, .cube-net--cyber { --mantine-color-default-border: #081018; --mantine-color-yellow-4: #ffe145; --mantine-color-gray-2: #e1edf3; --mantine-color-green-6: #27dd72; --mantine-color-blue-6: #299cff; --mantine-color-red-6: #ff4056; --mantine-color-orange-5: #ffa135; }
-.cube-net--neon .cube-rims { stroke-width: 2.2px; }
-.cube-net--cyber { overflow: visible; --mantine-color-default-border: #030911; --mantine-color-yellow-4: #dfbb2c; --mantine-color-gray-2: #bfcbe2; --mantine-color-green-6: #00a63e; --mantine-color-blue-6: #0062ed; --mantine-color-red-6: #f71229; --mantine-color-orange-5: #ff7009; --cube-rim-yellow-4: #fff8a6; --cube-rim-gray-2: #f0faff; --cube-rim-green-6: #00f788; --cube-rim-blue-6: #00acff; --cube-rim-red-6: #ff91a4; --cube-rim-orange-5: #ffd17a; }
+.cube-net { overflow: visible; }
+.cube-material-image { pointer-events: none; }
 .cube-style-trigger { display: flex; border: 0; padding: 0; background: transparent; border-radius: 8px; cursor: pointer; touch-action: manipulation; }
 .cube-finish-popover { padding: 12px; background: #151c21; border: 1px solid #39454e; border-radius: 8px; }
 .cube-finish-popover .eyebrow { font-size: 10px; margin-bottom: 6px; }
