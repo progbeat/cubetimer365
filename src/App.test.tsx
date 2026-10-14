@@ -577,7 +577,7 @@ describe("page-wide touchscreen stop", () => {
         true,
       );
       const touch = (type: string) => {
-        const event = new Event(type, { bubbles: true, cancelable: true });
+        const event = new TouchEvent(type, { bubbles: true, cancelable: true });
         fireEvent(target, event);
         expect(event.defaultPrevented).toBe(true);
       };

@@ -368,16 +368,48 @@ const App: React.FC = () => {
     if (review) {
       return undefined;
     }
+    const consume = (event: Event) => {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    };
+    const touchTypes = ["touchstart", "touchmove", "touchend", "touchcancel"];
+    const touchOptions = { capture: true, passive: false };
+    let consumingTouchEvents = false;
+    const removeTouchListeners = () => {
+      for (const type of touchTypes) {
+        window.removeEventListener(type, pageTouch as EventListener, true);
+      }
+      consumingTouchEvents = false;
+    };
+    const pageTouch = (event: TouchEvent) => {
+      const gesture = consumedTouch.current;
+      if (gesture.pointers.size || gesture.pendingClick) {
+        consume(event);
+      }
+      if (
+        (event.type === "touchend" || event.type === "touchcancel") &&
+        event.touches.length === 0
+      ) {
+        removeTouchListeners();
+      }
+    };
+    const installTouchListeners = () => {
+      if (consumingTouchEvents) {
+        return;
+      }
+      // Pointerdown precedes touchstart, so only a consumed stop needs blockers.
+      for (const type of touchTypes) {
+        window.addEventListener(type, pageTouch as EventListener, touchOptions);
+      }
+      consumingTouchEvents = true;
+    };
     const blur = () => {
       keyboardHeld.current = null;
       pointer.current = null;
       consumedTouch.current.pointers.clear();
       consumedTouch.current.pendingClick = false;
+      removeTouchListeners();
       cancel();
-    };
-    const consume = (event: Event) => {
-      event.preventDefault();
-      event.stopImmediatePropagation();
     };
     const pagePointerDown = (event: PointerEvent) => {
       const gesture = consumedTouch.current;
@@ -392,6 +424,7 @@ const App: React.FC = () => {
       }
       gesture.pointers.add(event.pointerId);
       gesture.pendingClick = true;
+      installTouchListeners();
       consume(event);
       keyboardHeld.current = null;
       pointer.current = null;
@@ -408,12 +441,6 @@ const App: React.FC = () => {
       consume(event);
       if (event.type === "pointerup" || event.type === "pointercancel") {
         gesture.pointers.delete(event.pointerId);
-      }
-    };
-    const pageTouch = (event: TouchEvent) => {
-      const gesture = consumedTouch.current;
-      if (gesture.pointers.size || gesture.pendingClick) {
-        consume(event);
       }
     };
     const pageClick = (event: MouseEvent) => {
@@ -445,10 +472,6 @@ const App: React.FC = () => {
     window.addEventListener("pointerup", pagePointerEvent, true);
     window.addEventListener("pointercancel", pagePointerEvent, true);
     window.addEventListener("click", pageClick, true);
-    const touchOptions = { capture: true, passive: false };
-    for (const type of ["touchstart", "touchmove", "touchend", "touchcancel"]) {
-      window.addEventListener(type, pageTouch as EventListener, touchOptions);
-    }
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
@@ -461,14 +484,7 @@ const App: React.FC = () => {
       window.removeEventListener("pointerup", pagePointerEvent, true);
       window.removeEventListener("pointercancel", pagePointerEvent, true);
       window.removeEventListener("click", pageClick, true);
-      for (const type of [
-        "touchstart",
-        "touchmove",
-        "touchend",
-        "touchcancel",
-      ]) {
-        window.removeEventListener(type, pageTouch as EventListener, true);
-      }
+      removeTouchListeners();
       clearHold();
     };
   }, [review]);
