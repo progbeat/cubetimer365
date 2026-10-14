@@ -120,6 +120,9 @@ const App: React.FC = () => {
   const scramblePanel = useRef<HTMLElement>(null);
   const [today, setToday] = useState(() => new Date());
   const todayString = today.toISOString().split("T")[0];
+  const localDateString = `${today.getFullYear()}-${String(
+    today.getMonth() + 1,
+  ).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
   const seed =
     today.getFullYear() * 10000 +
     (today.getMonth() + 1) * 100 +
@@ -497,7 +500,7 @@ const App: React.FC = () => {
               </span>
             </a>
             <span className="header-caption">One day. One scramble.</span>
-            <time dateTime={todayString}>
+            <time dateTime={localDateString}>
               {today.toLocaleDateString("en-GB", {
                 day: "2-digit",
                 month: "short",
@@ -598,7 +601,7 @@ const App: React.FC = () => {
                 className="timer-surface"
                 role="button"
                 tabIndex={0}
-                aria-label="Timer surface. Hold Space or touch until ready, release to start. Press any key or touch to stop. Escape cancels the attempt."
+                aria-label="Timer surface. Hold Space or touch until ready, release to start. Press Space or touch to stop and save. Escape cancels the attempt."
                 onPointerDown={onPointerDown}
                 onPointerMove={onPointerMove}
                 onPointerUp={onPointerUp}
@@ -630,7 +633,7 @@ const App: React.FC = () => {
                   <kbd>SPACE</kbd>
                   <span>
                     {phase === "running"
-                      ? "Press any key to stop"
+                      ? "Press Space to save · Esc to cancel"
                       : ready
                         ? "Release to start"
                         : phase === "holding"

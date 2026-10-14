@@ -124,6 +124,27 @@ describe("preserved scramble and daily data", () => {
     expect(saved()).toEqual([10, 20, 40, 50]);
   });
 });
+it("distinguishes saving with Space from cancelling with Escape in the timer instructions", () => {
+  render(<App />);
+  expect(surface()).toHaveAccessibleName(
+    /Press Space or touch to stop and save\. Escape cancels the attempt\./,
+  );
+  touchStart();
+  advance(250);
+  expect(
+    screen.getByText("Press Space to save · Esc to cancel"),
+  ).toBeInTheDocument();
+  fireEvent.keyDown(window, { code: "Escape" });
+  expect(saved()).toEqual([]);
+  expect(screen.queryByText("Solving")).not.toBeInTheDocument();
+  advance(200);
+  touchStart();
+  advance(250);
+  fireEvent.keyDown(window, { code: "Space" });
+  fireEvent.keyUp(window, { code: "Space" });
+  expect(saved()).toHaveLength(1);
+  expect(saved()[0]).toBeCloseTo(0.25);
+});
 it("defaults to screen-space Cyber without a query and switches finishes without altering history", () => {
   localStorage.setItem("history", "[12,15]");
   const { container } = render(<App />);

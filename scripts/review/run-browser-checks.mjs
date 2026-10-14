@@ -24,7 +24,11 @@ const browser = await chromium.launch({
     : {}),
 });
 try {
-  for (const name of ["browser-check", "browser-feedback-check"]) {
+  for (const name of [
+    "browser-check",
+    "browser-feedback-check",
+    "browser-date-check",
+  ]) {
     const context = await browser.newContext();
     try {
       const page = await context.newPage();
