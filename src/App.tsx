@@ -15,6 +15,7 @@ import {
 import CubeNet, { CubeStyle } from "./CubeNet";
 import ScrambleText from "./ScrambleText";
 import { generateScramble } from "./scramble";
+import AnalyticsPrivacy from "./AnalyticsPrivacy";
 
 const theme = createTheme({
   fontFamily:
@@ -810,6 +811,7 @@ const App: React.FC = () => {
           </nav>
         </div>
       )}
+      <AnalyticsPrivacy />
     </MantineProvider>
   );
 };
