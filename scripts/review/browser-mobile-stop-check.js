@@ -159,10 +159,10 @@ export default async (page) => {
         );
       }
     }
-    for (const ending of ["touchCancel", "blur"]) {
+    for (const ending of ["touchCancel", "blur", "resize"]) {
       await reset();
       await start();
-      await contact("touchStart", [{ x: 3, y: 3, id: 1 }]);
+      await contact("touchStart", [await point(".cube-style-trigger")]);
       await page.waitForFunction(
         () => JSON.parse(localStorage.getItem("history") || "[]").length === 2,
       );
@@ -170,8 +170,11 @@ export default async (page) => {
         (await scrollBlockers()) > 0,
         `${ending}: stop gesture initially has scroll blockers`,
       );
-      if (ending === "blur") {
-        await page.evaluate(() => window.dispatchEvent(new Event("blur")));
+      if (ending !== "touchCancel") {
+        await page.evaluate(
+          (type) => window.dispatchEvent(new Event(type)),
+          ending,
+        );
         await contact("touchEnd", []);
       } else {
         await contact("touchCancel", []);
@@ -180,6 +183,29 @@ export default async (page) => {
       assert(
         (await scrollBlockers()) === 0 && (await history()).length === 2,
         `${ending}: canceled/interrupted gestures remove scroll blockers without another save`,
+      );
+      await page.locator(".cube-style-trigger").evaluate((target) => {
+        for (let n = 0; n < 2; n++)
+          target.dispatchEvent(
+            new MouseEvent("click", {
+              bubbles: true,
+              cancelable: true,
+              detail: 1,
+            }),
+          );
+      });
+      assert(
+        (await history()).length === 2 &&
+          !(await solving()) &&
+          !(await page.locator(".cube-finish-popover").isVisible()),
+        `${ending}: delayed compatibility clicks still cannot activate controls`,
+      );
+      await contact("touchStart", [await point(".cube-style-trigger")]);
+      await contact("touchEnd", []);
+      await page.locator(".cube-finish-popover").waitFor({ state: "visible" });
+      assert(
+        (await history()).length === 2 && !(await solving()),
+        `${ending}: the next independent tap uses controls normally`,
       );
     }
     await reset();

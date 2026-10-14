@@ -407,7 +407,7 @@ const App: React.FC = () => {
       keyboardHeld.current = null;
       pointer.current = null;
       consumedTouch.current.pointers.clear();
-      consumedTouch.current.pendingClick = false;
+      // Late compatibility clicks remain consumed until a new physical input.
       removeTouchListeners();
       cancel();
     };

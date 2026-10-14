@@ -551,6 +551,49 @@ describe("large touch surface lifecycle", () => {
 });
 
 describe("page-wide touchscreen stop", () => {
+  it.each([
+    ["blur", "cube"],
+    ["blur", "delete"],
+    ["blur", "link"],
+    ["resize", "cube"],
+    ["resize", "delete"],
+    ["resize", "link"],
+  ])("keeps delayed clicks consumed after %s over %s", (interruption, area) => {
+    localStorage.setItem("history", "[12]");
+    render(<App />);
+    touchStart();
+    advance(40);
+    const picker = screen.getByRole("button", { name: "Choose cube finish" });
+    const target =
+      area === "cube"
+        ? picker
+        : area === "delete"
+          ? screen.getByRole("button", { name: "Delete solve 1" })
+          : screen.getByRole("link", { name: "CubeTimer365 timer" });
+    const activated = vi.fn((event: Event) => event.preventDefault());
+    target.addEventListener("click", activated);
+    pointerEvent("pointerdown", {}, target);
+    fireEvent(window, new Event(interruption));
+    pointerEvent("pointerup", {}, target);
+    fireEvent(target, new TouchEvent("touchend", { bubbles: true }));
+    advance(350);
+    fireEvent.click(target, { detail: 1 });
+    fireEvent.click(target, { detail: 1 });
+    expect(activated).not.toHaveBeenCalled();
+    expect(saved()).toEqual([12, 0.04]);
+    expect(screen.queryByText("Solving")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Flat · Round" }),
+    ).not.toBeInTheDocument();
+    target.removeEventListener("click", activated);
+    pointerEvent("pointerdown", {}, picker);
+    pointerEvent("pointerup", {}, picker);
+    fireEvent.click(picker, { detail: 1 });
+    expect(
+      screen.getByRole("button", { name: "Flat · Round" }),
+    ).toBeInTheDocument();
+  });
+
   it.each(["background", "scramble", "cube", "delete", "link"])(
     "stops over %s and consumes the complete touch and compatibility clicks",
     (area) => {
