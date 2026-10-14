@@ -382,8 +382,7 @@ const App: React.FC = () => {
     const pagePointerDown = (event: PointerEvent) => {
       const gesture = consumedTouch.current;
       const touch = event.pointerType === "touch";
-      const stopping =
-        phaseRef.current === "running" && event.isPrimary && event.button === 0;
+      const stopping = phaseRef.current === "running" && event.button === 0;
       if (!touch || gesture.pointers.size === 0) {
         // A new physical interaction is independent of the previous stop.
         gesture.pendingClick = false;

@@ -138,6 +138,72 @@ export default async (page) => {
       (await history()).length === 3 && !(await solving()),
       "Additional fingers during the stopping gesture do not create another solve",
     );
+    for (const input of ["keyboard", "touch"]) {
+      await reset();
+      let held = { x: 3, y: 3, id: 1 };
+      if (input === "keyboard") {
+        await contact("touchStart", [held]);
+        await page.locator(".timer-surface").focus();
+        await page.keyboard.down("Space");
+        await page.waitForTimeout(360);
+        await page.keyboard.up("Space");
+      } else {
+        const starting = await point(".timer-surface");
+        held = { ...held, id: 2 };
+        await contact("touchStart", [starting]);
+        await page.waitForTimeout(360);
+        await contact("touchStart", [starting, held]);
+        // CDP touchEnd points identify the released contacts, not those retained.
+        await contact("touchEnd", [starting]);
+      }
+      assert(
+        await solving(),
+        `${input}: solve starts with another finger held`,
+      );
+      assert(
+        (await history()).length === 1,
+        `${input}: retained finger does not save on start`,
+      );
+      const stopping = { ...(await point(".cube-style-trigger")), id: 3 };
+      await contact("touchStart", [held, stopping]);
+      assert(
+        (await history()).length === 2 && !(await solving()),
+        `${input}: non-primary contact stops and saves`,
+      );
+      assert(
+        !(await page.locator(".cube-finish-popover").isVisible()),
+        `${input}: non-primary stopping contact does not activate the control`,
+      );
+      await page.waitForTimeout(350);
+      await contact("touchEnd", [held]);
+      await contact("touchEnd", []);
+      assert(
+        (await history()).length === 2 && !(await solving()),
+        `${input}: all releases cannot restart or save twice`,
+      );
+      await page.locator(".cube-style-trigger").evaluate((target) => {
+        for (let n = 0; n < 2; n++)
+          target.dispatchEvent(
+            new MouseEvent("click", {
+              bubbles: true,
+              cancelable: true,
+              detail: 1,
+            }),
+          );
+      });
+      assert(
+        (await history()).length === 2 &&
+          !(await page.locator(".cube-finish-popover").isVisible()),
+        `${input}: non-primary compatibility clicks are consumed`,
+      );
+      await contact("touchStart", [await point(".cube-style-trigger")]);
+      await contact("touchEnd", []);
+      await page.locator(".cube-finish-popover").waitFor({ state: "visible" });
+      assert(
+        (await history()).length === 2,
+        `${input}: next independent tap uses controls normally`,
+      );
+    }
     await cdp.send("Emulation.setTouchEmulationEnabled", { enabled: false });
     await page.setViewportSize({ width: 1440, height: 1000 });
     await reset();

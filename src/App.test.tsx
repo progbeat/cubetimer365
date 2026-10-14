@@ -493,7 +493,7 @@ describe("large touch surface lifecycle", () => {
       expect(screen.queryByText("Solving")).not.toBeInTheDocument();
     },
   );
-  it("cancels drags and leaving the target; ignores second fingers", () => {
+  it("cancels drags and leaving the target; ignores second fingers while arming", () => {
     render(<App />);
     pointerEvent("pointerdown");
     pointerEvent("pointermove", { clientY: 125 });
@@ -514,7 +514,8 @@ describe("large touch surface lifecycle", () => {
     advance(700);
     pointerEvent("pointerdown", { pointerId: 2, isPrimary: false });
     pointerEvent("pointerup", { pointerId: 2, isPrimary: false });
-    expect(saved()).toEqual([]);
+    expect(saved()[0]).toBeCloseTo(0.7);
+    expect(screen.queryByText("Solving")).not.toBeInTheDocument();
     pointerEvent("pointerdown");
     pointerEvent("pointerup");
     expect(saved()).toHaveLength(1);
@@ -600,6 +601,58 @@ describe("page-wide touchscreen stop", () => {
       fireEvent.click(remove, { detail: 1 });
       expect(saved()).toEqual([0.75]);
       target.removeEventListener("click", activated);
+    },
+  );
+
+  it.each(["keyboard", "touch"])(
+    "stops on a non-primary contact after %s start with another finger held",
+    (input) => {
+      localStorage.setItem("history", "[12]");
+      render(<App />);
+      if (input === "keyboard") {
+        pointerEvent("pointerdown", {}, document.body);
+        fireEvent.keyDown(window, { code: "Space" });
+        advance(310);
+        fireEvent.keyUp(window, { code: "Space" });
+      } else {
+        pointerEvent("pointerdown");
+        advance(310);
+        pointerEvent(
+          "pointerdown",
+          { pointerId: 2, isPrimary: false },
+          document.body,
+        );
+        pointerEvent("pointerup");
+      }
+      expect(screen.getByText("Solving")).toBeInTheDocument();
+      expect(saved()).toEqual([12]);
+      advance(40);
+      const picker = screen.getByRole("button", { name: "Choose cube finish" });
+      const contact = { pointerId: 3, isPrimary: false };
+      expect(
+        pointerEvent("pointerdown", contact, picker).defaultPrevented,
+      ).toBe(true);
+      expect(saved()).toEqual([12, 0.04]);
+      advance(350);
+      pointerEvent("pointerup", contact, picker);
+      pointerEvent(
+        "pointerup",
+        { pointerId: input === "keyboard" ? 1 : 2 },
+        document.body,
+      );
+      fireEvent.click(picker, { detail: 1 });
+      fireEvent.click(picker, { detail: 1 });
+      expect(saved()).toEqual([12, 0.04]);
+      expect(screen.queryByText("Solving")).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Flat · Round" }),
+      ).not.toBeInTheDocument();
+      pointerEvent("pointerdown", {}, picker);
+      pointerEvent("pointerup", {}, picker);
+      fireEvent.click(picker, { detail: 1 });
+      expect(
+        screen.getByRole("button", { name: "Flat · Round" }),
+      ).toBeInTheDocument();
     },
   );
 
