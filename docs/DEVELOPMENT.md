@@ -35,6 +35,24 @@ solves. The PR workflow runs these checks with Chromium and read-only repository
 permissions. Reports, downloaded references, generated dist and local hosting
 configuration are excluded from source control.
 
+## Cube materials
+
+Flat, Neon and Cyber use the same projected sticker geometry and material
+renderer. Their paint parameters live in `src/cubeMaterials.ts`; the shared
+fill, contour and glow pipeline lives in `src/cubeRenderer.ts`.
+
+`CubeNet` keeps an accessible SVG and a projected fallback, then paints the
+material at the displayed size. It redraws when the scramble, finish, size or
+device pixel ratio changes, with the pixel ratio capped at 2. Timer ticks do
+not trigger material redraws.
+
+Cyber's static interference is a final SVG pass in screen space: 3.4 px pitch,
+0.6 px bands, 0.7 px phase and 0.18 opacity. Browser checks cover the approved
+Neon color/glow samples, all 45 sticker paths across the three finishes, the
+170/132/124 px cube sizes and the 76 px chooser previews. Material checks run
+at DPR 1, 2 and 3, verifying bitmap dimensions, approved pixel samples and the
+DPR 2 cap while keeping the interference spacing in screen pixels.
+
 ## Daily data
 
 Solve history uses the existing numeric `history` and `today` localStorage keys.

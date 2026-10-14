@@ -1,7 +1,7 @@
 {
   "name": "mantine-vite-template",
   "version": "1.0.0",
-  "homepage": "https://progbeat.github.io/cubetimer365/",
+  "homepage": "https://progbeat.dev/cubetimer365/",
   "private": true,
   "type": "module",
   "scripts": {
