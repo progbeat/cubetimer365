@@ -30,16 +30,21 @@ try {
     "browser-date-check",
     "browser-material-check",
   ]) {
-    const context = await browser.newContext();
-    try {
-      const page = await context.newPage();
-      page.setDefaultTimeout(15000);
-      await page.goto(root);
-      const { default: runChecks } = await import(`./${name}.js`);
-      const result = await runChecks(page);
-      console.log(`${name}: ${result.passed} checks passed`);
-    } finally {
-      await context.close();
+    const scales = name === "browser-material-check" ? [1, 2, 3] : [1];
+    for (const deviceScaleFactor of scales) {
+      const context = await browser.newContext({ deviceScaleFactor });
+      try {
+        const page = await context.newPage();
+        page.setDefaultTimeout(15000);
+        await page.goto(root);
+        const { default: runChecks } = await import(`./${name}.js`);
+        const result = await runChecks(page, { deviceScaleFactor });
+        console.log(
+          `${name} (DPR ${deviceScaleFactor}): ${result.passed} checks passed`,
+        );
+      } finally {
+        await context.close();
+      }
     }
   }
 } finally {

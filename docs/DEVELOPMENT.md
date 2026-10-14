@@ -49,7 +49,9 @@ not trigger material redraws.
 Cyber's static interference is a final SVG pass in screen space: 3.4 px pitch,
 0.6 px bands, 0.7 px phase and 0.18 opacity. Browser checks cover the approved
 Neon color/glow samples, all 45 sticker paths across the three finishes, the
-170/132/124 px cube sizes and the 76 px chooser previews.
+170/132/124 px cube sizes and the 76 px chooser previews. Material checks run
+at DPR 1, 2 and 3, verifying bitmap dimensions, approved pixel samples and the
+DPR 2 cap while keeping the interference spacing in screen pixels.
 
 ## Daily data
 
