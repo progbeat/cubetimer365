@@ -416,5 +416,88 @@ export default async (page) => {
   } finally {
     await delayed.close();
   }
+  // Hold the real save acknowledgement after the write, then refresh the UTC day.
+  // Playwright's clock belongs to the context, including the paused tab above.
+  await page.clock.resume();
+  for (const choice of ["imported", "ignored"]) {
+    await page.clock.setFixedTime("2026-10-12T23:59:50Z");
+    snapshot = await seed();
+    await page.evaluate(() => {
+      const complete = Object.getOwnPropertyDescriptor(
+        IDBTransaction.prototype,
+        "oncomplete",
+      );
+      Object.defineProperty(IDBTransaction.prototype, "oncomplete", {
+        configurable: true,
+        get: complete.get,
+        set(callback) {
+          complete.set.call(this, function (event) {
+            if (
+              this.db.name === "cubetimer365:storage-locks:v1" &&
+              !window.releaseStorageAcknowledgement
+            ) {
+              window.releaseStorageAcknowledgement = () =>
+                callback.call(this, event);
+            } else callback.call(this, event);
+          });
+        },
+      });
+    });
+    await review().click();
+    await page
+      .getByRole("button", {
+        name:
+          choice === "imported" ? "Import into CubeTimer365" : "Keep separate",
+      })
+      .click();
+    await page.waitForFunction(
+      () => typeof window.releaseStorageAcknowledgement === "function",
+    );
+    assert(
+      (await read()).date === "2026-10-12" &&
+        (await read()).legacyMigration === choice,
+      `${choice}: real persistence completes before the delayed acknowledgement`,
+    );
+    await page.clock.setFixedTime("2026-10-13T00:00:01Z");
+    await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+    await page.waitForFunction(
+      () =>
+        document.querySelector(".app-header time")?.getAttribute("datetime") ===
+        "2026-10-13",
+    );
+    await page.evaluate(
+      () =>
+        new Promise((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(resolve)),
+        ),
+    );
+    await page.evaluate(() => window.releaseStorageAcknowledgement());
+    await page.waitForFunction(
+      ({ key, choice }) => {
+        const record = JSON.parse(localStorage.getItem(key) || "null");
+        return (
+          record?.date === "2026-10-13" &&
+          record.history.length === 0 &&
+          record.legacyMigration === choice
+        );
+      },
+      { key, choice },
+    );
+    await settled();
+    assert(
+      (await page.getByText("No solves yet.", { exact: true }).isVisible()) &&
+        (await page
+          .getByText("Saved on this device", { exact: true })
+          .isVisible()),
+      `${choice}: a late acknowledgement preserves the new day and finishes saving`,
+    );
+    await page.reload();
+    await page.locator(".history-panel").waitFor();
+    assert(
+      (await review().count()) === 0 &&
+        JSON.stringify(await original()) === JSON.stringify(snapshot),
+      `${choice}: the migration decision survives reload without altering shared originals`,
+    );
+  }
   return { passed: checks.length, checks };
 };

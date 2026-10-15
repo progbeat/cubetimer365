@@ -275,10 +275,21 @@ const App: React.FC = () => {
         if (mounted.current && expectedRaw.current === snapshot) {
           expectedRaw.current = JSON.stringify(next);
           persistedState.current = expectedRaw.current;
-          dailyRef.current = next;
-          setDaily(next);
+          // A rollover may have updated state while this acknowledgement waited.
+          setDaily((latest) =>
+            latest === current
+              ? next
+              : {
+                  ...latest,
+                  legacyMigration: choice,
+                },
+          );
         }
-      } else if (canCommit() && !reconcileExternal()) {
+      } else if (
+        expectedRaw.current === snapshot &&
+        canCommit() &&
+        !reconcileExternal()
+      ) {
         blockStorage();
       }
     }).finally(() => {
@@ -417,7 +428,11 @@ const App: React.FC = () => {
           expectedRaw.current = encoded;
           persistedState.current = encoded;
         }
-      } else if (canCommit() && !reconcileExternal()) {
+      } else if (
+        expectedRaw.current === snapshot &&
+        canCommit() &&
+        !reconcileExternal()
+      ) {
         blockStorage();
       }
     });

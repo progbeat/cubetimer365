@@ -11,6 +11,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 import { generateScramble } from "./scramble";
 import { SOLVE_STORAGE_KEY, type DailyHistory } from "./solveStorage";
+import * as solveStorage from "./solveStorage";
 
 vi.mock("@mantine/charts", () => ({
   LineChart: ({
@@ -123,6 +124,108 @@ afterEach(() => {
 });
 
 describe("preserved scramble and daily data", () => {
+  it.each(["imported", "ignored"] as const)(
+    "keeps the new UTC day when a %s acknowledgement arrives after rollover",
+    async (choice) => {
+      vi.setSystemTime(new Date("2026-10-12T23:59:50Z"));
+      localStorage.removeItem(SOLVE_STORAGE_KEY);
+      localStorage.setItem("history", "[12,23]");
+      localStorage.setItem("today", "2026-10-12");
+      const first = render(<App />);
+      await flushStorage();
+      const save = solveStorage.saveDailyHistory;
+      let acknowledge: (() => void) | undefined;
+      vi.spyOn(solveStorage, "saveDailyHistory").mockImplementationOnce(
+        async (...args) => {
+          const result = await save(...args);
+          await new Promise<void>((resolve) => {
+            acknowledge = resolve;
+          });
+          return result;
+        },
+      );
+      fireEvent.click(
+        screen.getByRole("button", { name: "Review previous browser results" }),
+      );
+      advance(250);
+      fireEvent.click(
+        screen.getByRole("button", {
+          name:
+            choice === "imported"
+              ? "Import into CubeTimer365"
+              : "Keep separate",
+        }),
+      );
+      for (let turn = 0; !acknowledge && turn < 200; turn += 1) {
+        await act(async () => {
+          await nextTask();
+        });
+      }
+      expect(acknowledge).toBeTypeOf("function");
+      expect(stored()?.legacyMigration).toBe(choice);
+      advance(10_000);
+      expect(screen.getByText("No solves yet.")).toBeInTheDocument();
+      await act(async () => {
+        acknowledge?.();
+      });
+      await flushStorage();
+      expect(stored()).toEqual({
+        version: 1,
+        date: "2026-10-13",
+        history: [],
+        legacyMigration: choice,
+      });
+      expect(screen.getByText("No solves yet.")).toBeInTheDocument();
+      expect(screen.getByText("Saved on this device")).toBeInTheDocument();
+      first.unmount();
+      render(<App />);
+      await flushStorage();
+      expect(
+        screen.queryByRole("button", {
+          name: "Review previous browser results",
+        }),
+      ).not.toBeInTheDocument();
+      expect(localStorage.getItem("history")).toBe("[12,23]");
+    },
+  );
+  it("keeps persistence enabled when another tab is adopted before a stale write rejects", async () => {
+    localStorage.removeItem(SOLVE_STORAGE_KEY);
+    let rejectStale: (() => void) | undefined;
+    let competing: DailyHistory | undefined;
+    vi.spyOn(solveStorage, "saveDailyHistory").mockImplementationOnce(
+      (record) => {
+        competing = record;
+        return new Promise<boolean>((resolve) => {
+          rejectStale = () => resolve(false);
+        });
+      },
+    );
+    render(<App />);
+    for (let turn = 0; !rejectStale && turn < 200; turn += 1) {
+      await act(async () => {
+        await nextTask();
+      });
+    }
+    expect(rejectStale).toBeTypeOf("function");
+    const raw = JSON.stringify(competing);
+    localStorage.setItem(SOLVE_STORAGE_KEY, raw);
+    fireEvent(
+      window,
+      new StorageEvent("storage", { key: SOLVE_STORAGE_KEY, newValue: raw }),
+    );
+    await act(async () => {
+      rejectStale?.();
+    });
+    await flushStorage();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    touchStart();
+    advance(500);
+    pointerEvent("pointerdown");
+    pointerEvent("pointerup");
+    await flushStorage();
+    expect(saved()).toEqual([0.5]);
+    expect(screen.getByText("Saved on this device")).toBeInTheDocument();
+  });
   it("shows pending persistence immediately and saves the latest rapid deletion", async () => {
     seedHistory("[10,20,30]");
     render(<App />);

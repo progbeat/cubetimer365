@@ -69,7 +69,7 @@ scripts on the same origin. No other app or repository was modified for this fix
 
 Unknown or malformed data at the owned key is not overwritten. An initial read
 failure keeps writes blocked for this mount even if storage later recovers; reload
-or reconcile after preserving in-memory results. Unreadable storage and rejected
+after preserving in-memory results. Unreadable storage and rejected
 localStorage writes leave previous serialized data intact. The timer continues
 in memory and displays a storage warning; those new in-memory results will not
 survive reload until persistence is repaired. Export/recover the old raw record
@@ -97,3 +97,10 @@ Reconciliation and saving use the actual current UTC date rather than a cached
 render date. A delayed midnight refresh preserves a record already adopted for
 the current day. Loading or writing with an older date never relabels or replaces
 a persisted newer-day record; unexpected future data is retained for recovery.
+
+A late migration acknowledgement updates the saved snapshot separately from the
+current daily state. Its decision is carried into the latest state without
+restoring yesterday's date or imported history after a rollover. A stale failed
+write also leaves persistence enabled when a storage notification has already
+adopted a newer snapshot. Regressions control both notification/completion order
+and acknowledgement delivery across UTC midnight.
