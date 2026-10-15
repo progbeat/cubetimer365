@@ -26,51 +26,84 @@ export default function AnalyticsPrivacy() {
         className="analytics-privacy-modal"
         opened={opened}
         onClose={() => setOpened(false)}
-        title="Privacy & analytics"
+        title="Privacy notice"
       >
-        <Stack>
-          <Text size="sm">
-            Your solve history and daily date are stored in this browser on this
-            device. Clearing browser data removes them. The app does not send
-            your solve times or scrambles to analytics.
-          </Text>
-          <Text size="sm">
-            When enabled, Cloudflare Web Analytics measures page visits and
-            loading performance. Cloudflare states that it uses no analytics
-            cookies, localStorage identifiers or visitor fingerprinting.
-            Requests still reach Cloudflare with network and browser
-            information; page and referrer information and performance metrics
-            are measured.
-          </Text>
-          <Text size="sm">
-            Google Analytics has been removed. This app expires its old Google
-            analytics cookies. Do Not Track and Global Privacy Control prevent
-            the Cloudflare beacon from loading.
-          </Text>
-          <Text size="sm">
-            {!import.meta.env.PROD || !analyticsConfigured
-              ? "Visit analytics is not configured on this version of the site."
-              : blocked
-                ? "Visit analytics is off because your browser sends a privacy signal."
-                : "Cloudflare Web Analytics is enabled on this version of the site."}
-          </Text>
-          <Text size="sm">
-            <a
-              href="https://www.cloudflare.com/web-analytics/"
-              target="_blank"
-              rel="noreferrer"
+        <Stack gap="md">
+          <section aria-labelledby="privacy-local">
+            <Text
+              component="h3"
+              id="privacy-local"
+              fw={600}
+              size="sm"
+              mt={0}
+              mb="xs"
             >
-              Cloudflare Web Analytics privacy
-            </a>
-            {" · "}
-            <a
-              href="https://github.com/progbeat/cubetimer365/issues"
-              target="_blank"
-              rel="noreferrer"
+              Local data
+            </Text>
+            <Text size="sm">
+              Your daily results are saved in this browser. Clearing site data
+              removes them. Cube appearance is a local setting.
+            </Text>
+          </section>
+          <section aria-labelledby="privacy-analytics">
+            <Text
+              component="h3"
+              id="privacy-analytics"
+              fw={600}
+              size="sm"
+              mt={0}
+              mb="xs"
             >
-              Contact the site maintainer
-            </a>
-          </Text>
+              Analytics
+            </Text>
+            <Text size="sm" mb="xs">
+              {!import.meta.env.PROD || !analyticsConfigured
+                ? "Visit analytics is off."
+                : blocked
+                  ? "Visit analytics is off because your browser sends a privacy signal."
+                  : "Visit analytics is enabled through Cloudflare."}
+            </Text>
+            <Text size="sm">
+              When enabled, Cloudflare Web Analytics receives page and referrer
+              information, browser details, network information including your
+              IP address, and page performance measurements. It uses no
+              analytics cookies or visitor fingerprinting. Solve times and
+              scrambles are not sent to analytics.
+            </Text>
+          </section>
+          <section aria-labelledby="privacy-choices">
+            <Text
+              component="h3"
+              id="privacy-choices"
+              fw={600}
+              size="sm"
+              mt={0}
+              mb="xs"
+            >
+              Your choices
+            </Text>
+            <Text size="sm" mb="xs">
+              Your browser's Do Not Track and Global Privacy Control signals
+              keep visit analytics off.
+            </Text>
+            <Text size="sm">
+              <a
+                href="https://www.cloudflare.com/web-analytics/"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Cloudflare privacy
+              </a>
+              {" · "}
+              <a
+                href="https://github.com/progbeat/cubetimer365/issues"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Contact the maintainer
+              </a>
+            </Text>
+          </section>
         </Stack>
       </Modal>
     </footer>

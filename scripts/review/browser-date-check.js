@@ -1,4 +1,6 @@
-export default async (page) => {
+import { interceptAnalytics } from "./browser-network-guards.js";
+
+export default async (page, { configured = false } = {}) => {
   const origin = new URL(page.url());
   if (!["127.0.0.1", "localhost"].includes(origin.hostname)) {
     throw new Error("Use an isolated localhost browser");
@@ -36,6 +38,7 @@ export default async (page) => {
       timezoneId: fixture.timezoneId,
     });
     try {
+      const guard = await interceptAnalytics(context);
       const zonedPage = await context.newPage();
       await zonedPage.clock.setFixedTime(fixture.instant);
       const utcDate = fixture.instant.split("T")[0];
@@ -46,6 +49,16 @@ export default async (page) => {
       await zonedPage.goto(root);
       const headerDate = zonedPage.locator(".app-header time");
       await headerDate.waitFor();
+      if (configured) await zonedPage.waitForLoadState("networkidle");
+      assert(
+        !configured ||
+          guard.intercepted.some((url) =>
+            url.startsWith(
+              "https://static.cloudflareinsights.com/beacon.min.js",
+            ),
+          ),
+        `Analytics requests are intercepted in the separate ${fixture.timezoneId} context`,
+      );
       assert(
         (await headerDate.textContent()) === fixture.label,
         `Visible date uses the local calendar in ${fixture.timezoneId}`,

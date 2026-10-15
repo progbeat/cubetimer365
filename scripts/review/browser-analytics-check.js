@@ -61,7 +61,7 @@ export default async (page, options = {}) => {
         `${choice}: correct beacon count for this build`,
       );
       await page.getByRole("button", { name: "Privacy & analytics" }).click();
-      await page.getByRole("dialog", { name: "Privacy & analytics" }).waitFor();
+      await page.getByRole("dialog", { name: "Privacy notice" }).waitFor();
       assert(
         (await page
           .getByRole("button", { name: "Allow analytics" })
@@ -72,8 +72,8 @@ export default async (page, options = {}) => {
       await page
         .getByText(
           configured
-            ? "Cloudflare Web Analytics is enabled on this version of the site."
-            : "Visit analytics is not configured on this version of the site.",
+            ? "Visit analytics is enabled through Cloudflare."
+            : "Visit analytics is off.",
           { exact: true },
         )
         .waitFor();

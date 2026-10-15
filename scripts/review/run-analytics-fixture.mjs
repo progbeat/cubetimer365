@@ -60,7 +60,10 @@ try {
   // Exercise the normal runner's production-config discovery and option passing.
   process.env.VITE_CLOUDFLARE_WEB_ANALYTICS_TOKEN =
     "0123456789abcdef0123456789abcdef";
-  await runBrowserChecks({ root, suites: ["browser-analytics-check"] });
+  await runBrowserChecks({
+    root,
+    suites: ["browser-date-check", "browser-analytics-check"],
+  });
 } finally {
   if (previousToken === undefined)
     delete process.env.VITE_CLOUDFLARE_WEB_ANALYTICS_TOKEN;

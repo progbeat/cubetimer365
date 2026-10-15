@@ -2,6 +2,7 @@ import { setTimeout } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright";
 import { loadEnv } from "vite";
+import { interceptAnalytics } from "./browser-network-guards.js";
 
 const defaultSuites = [
   "browser-check",
@@ -53,14 +54,7 @@ export async function runBrowserChecks({
         const context = await browser.newContext({ deviceScaleFactor });
         try {
           // Tests never deliver analytics to an owner's real stream.
-          await context.route(
-            /^https:\/\/[^/]*(?:cloudflareinsights\.com|googletagmanager\.com|google-analytics\.com)\//,
-            (route) =>
-              route.fulfill({
-                contentType: "application/javascript",
-                body: "",
-              }),
-          );
+          await interceptAnalytics(context);
           const page = await context.newPage();
           page.setDefaultTimeout(15000);
           await page.goto(root);

@@ -38,16 +38,26 @@ it("keeps an honest privacy notice without Google or consent controls and preser
   ).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Privacy & analytics" }));
   expect(
-    await screen.findByRole("dialog", { name: "Privacy & analytics" }),
+    await screen.findByRole("dialog", { name: "Privacy notice" }),
   ).toBeVisible();
   expect(
-    screen.getByText(
-      "Cloudflare Web Analytics is enabled on this version of the site.",
-    ),
+    screen.getByText("Visit analytics is enabled through Cloudflare."),
   ).toBeVisible();
   expect(
-    screen.getByRole("link", { name: "Cloudflare Web Analytics privacy" }),
+    screen.getByRole("link", { name: "Cloudflare privacy" }),
   ).toHaveAttribute("href", "https://www.cloudflare.com/web-analytics/");
+  expect(
+    screen.getByText(/Your daily results are saved in this browser/),
+  ).toBeVisible();
+  expect(screen.getByText(/including your IP address/)).toBeVisible();
+  expect(
+    screen.queryByText(
+      /Google Analytics|has been removed|version of the site|not configured/,
+    ),
+  ).not.toBeInTheDocument();
+  for (const name of ["Local data", "Analytics", "Your choices"]) {
+    expect(screen.getByRole("heading", { name })).toBeVisible();
+  }
   expect({ ...localStorage }).toEqual(saved);
   rerender(
     <StrictMode>

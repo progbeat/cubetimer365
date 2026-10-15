@@ -83,7 +83,7 @@ cleanup; they must not break the timer. Previously collected Google data and the
 GA4 property are not deleted by removing the tag.
 
 The old Allow / No thanks controls are gone. A compact Privacy & analytics link
-still explains local storage, actual configuration, Cloudflare's data flow and
+still explains local storage, the current enabled/off state, Cloudflare's data flow and
 privacy signals. No new analytics identifier or consent preference is stored.
 
 ## Verification
@@ -96,7 +96,8 @@ no Google queue/requests, cookie cleanup, local data, notice state and signals.
 
 `yarn browser-analytics-fixture` builds a separate ignored output with an explicitly
 synthetic test token, serves it only on localhost, and repeats the browser cases
-with the beacon configured, through the same runner used by `yarn browser-check`.
+with the beacon configured, including every separate timezone browser context,
+through the same runner used by `yarn browser-check`.
 The runner derives its expected configuration from Vite production env inputs
 (including process overrides), so activation does not leave disabled-build
 assertions enabled. Rebuild after changing those inputs. Vendor responses are stubbed; the fixture sends no
@@ -120,3 +121,10 @@ Sources checked 2026-10-15:
 - [Data origin and collection](https://developers.cloudflare.com/web-analytics/data-metrics/data-origin-and-collection/)
 - [SPA behavior](https://developers.cloudflare.com/web-analytics/get-started/web-analytics-spa/)
 - [Beacon configuration and FAQ](https://developers.cloudflare.com/web-analytics/faq/)
+
+The short visitor notice uses ordinary local-data, analytics and privacy-choice
+sections. Its structure was checked against the [GOV.UK privacy notice](https://www.gov.uk/help/privacy-notice)
+and [Plausible's data policy](https://plausible.io/data-policy); provider-specific
+statements are based on Cloudflare's guidance and this app's actual behavior, not
+on another service's legal basis, retention, hosting or consent claims. Migration
+history and setup instructions belong here and in the PR, not in the visitor notice.
