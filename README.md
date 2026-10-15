@@ -12,7 +12,7 @@ The idea is to explore more efficient solutions to the same scramble and practis
 the patterns you find through repeated attempts. You can compare attempts from
 the same starting position, then try a new scramble the next day.
 
-<img src="docs/images/timer-preview.webp" alt="CubeTimer365 daily timer with the Cyber cube finish" width="760">
+<img src="docs/images/statistics-desktop.png" alt="CubeTimer365 with rolling averages per solve and daily best single, AO5 and AO12" width="760">
 
 ## Controls
 
@@ -25,8 +25,8 @@ Release early to cancel the hold. **Escape** cancels the current attempt.
 ## Features
 
 - A daily 20-move scramble with a cube preview.
-- Today's solve history, with individual solve deletion.
-- Best time, AO5, AO12 and total solving time.
+- Today's solve history, with rolling AO5/AO12 at each solve and individual deletion.
+- A separate panel for today's best single, best AO5 and best AO12; total solving time stays in the table footer.
 - A chart of solve times and averages.
 - Three cube finishes; click or tap the cube to choose one.
 
@@ -38,3 +38,5 @@ Optional Google Analytics counts visits only after you allow it. Open **Privacy
 is never sent to Analytics. [Analytics setup and behavior](docs/ANALYTICS.md).
 
 [Development and checks](docs/DEVELOPMENT.md) · [License](LICENSE)
+
+[Rolling averages and daily bests](docs/STATISTICS.md).

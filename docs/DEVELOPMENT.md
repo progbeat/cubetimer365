@@ -64,6 +64,12 @@ DPR 2 cap while keeping the interference spacing in screen pixels.
 
 ## Daily data
 
+The results table shows rolling AO5/AO12 at each solve, while the separate summary
+shows daily best single, best AO5 and best AO12. [Statistics rules](STATISTICS.md)
+define chronological windows, trimming, deletion, display precision and the numeric
+history boundary. Browser checks exercise the table and summary at 320/390 px and
+desktop widths, along with the existing timer, materials and consent suites.
+
 Solve history uses the existing numeric `history` and `today` localStorage keys.
 The date/history boundary retains the original UTC behavior; the daily scramble
 seed uses the local date.

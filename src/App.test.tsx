@@ -4,6 +4,7 @@ import {
   render,
   screen,
   cleanup,
+  within,
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
@@ -112,6 +113,13 @@ describe("preserved scramble and daily data", () => {
     expect(moves()).toBe(generateScramble(20261013));
     expect(localStorage.getItem("today")).toBe("2026-10-13");
     expect(saved()).toEqual([]);
+    expect(
+      Array.from(
+        screen
+          .getByRole("region", { name: "Today's best results" })
+          .querySelectorAll(".stat p"),
+      ).map((value) => value.textContent),
+    ).toEqual(["—", "—", "—"]);
   });
   it("loads existing history, keeps averages and deletion persistent", () => {
     localStorage.setItem("history", "[10,20,30,40,50]");
@@ -189,17 +197,66 @@ it("defaults to screen-space Cyber without a query and switches finishes without
   );
   expect(saved()).toEqual([12, 15]);
 });
-it("keeps history to number, time and delete after removing the comparison column", () => {
+it("shows per-solve rolling averages without restoring the comparison column", () => {
   localStorage.setItem("history", "[10,20,30,40,50]");
   render(<App />);
   const table = screen.getByRole("table");
-  expect(table.querySelectorAll("th")).toHaveLength(3);
+  expect(
+    within(table)
+      .getAllByRole("columnheader")
+      .map((cell) => cell.textContent),
+  ).toEqual(["#", "Time", "AO5", "AO12", "Delete"]);
   expect(
     table.querySelectorAll("tbody tr")[0].querySelectorAll("td"),
-  ).toHaveLength(3);
+  ).toHaveLength(5);
+  expect(table.querySelector("tbody tr")?.textContent).toContain("00:30.00");
   expect(screen.queryByText("±")).not.toBeInTheDocument();
   expect(screen.getByTestId("chart-data").textContent).toContain('"ao5":30');
   expect(saved()).toEqual([10, 20, 30, 40, 50]);
+});
+it("shows chronological rolling values and earlier best averages, recalculating after deletion and reload", () => {
+  localStorage.setItem(
+    "history",
+    JSON.stringify(Array.from({ length: 13 }, (_, i) => (i + 1) * 10)),
+  );
+  const first = render(<App />);
+  const row = (attempt: number) =>
+    screen
+      .getByRole("button", { name: `Delete solve ${attempt}` })
+      .closest("tr")!;
+  const cells = (attempt: number) =>
+    Array.from(row(attempt).querySelectorAll("td"))
+      .slice(0, 4)
+      .map((cell) => cell.textContent);
+  const bestValue = (label: string) =>
+    within(screen.getByRole("region", { name: "Today's best results" }))
+      .getByRole("heading", { name: label })
+      .parentElement!.querySelector("p");
+  expect(cells(13)).toEqual(["13", "02:10.00", "01:50.00", "01:15.00"]);
+  expect(cells(5)).toEqual(["5", "00:50.00", "00:30.00", "—"]);
+  expect(cells(1)).toEqual(["1", "00:10.00", "—", "—"]);
+  expect(bestValue("Best single")).toHaveTextContent("00:10.00");
+  expect(bestValue("Best AO5")).toHaveTextContent("00:30.00");
+  expect(bestValue("Best AO12")).toHaveTextContent("01:05.00");
+  fireEvent.click(screen.getByRole("button", { name: "Delete solve 3" }));
+  expect(bestValue("Best AO5")).toHaveTextContent("00:36.67");
+  expect(bestValue("Best AO12")).toHaveTextContent("01:14.00");
+  expect(cells(12)).toEqual(["12", "02:10.00", "01:50.00", "01:14.00"]);
+  first.unmount();
+  render(<App />);
+  expect(bestValue("Best AO12")).toHaveTextContent("01:14.00");
+  fireEvent.click(screen.getByRole("button", { name: "Delete solve 1" }));
+  expect(bestValue("Best single")).toHaveTextContent("00:20.00");
+  expect(bestValue("Best AO12")).toHaveTextContent("—");
+  expect(cells(11)[3]).toBe("—");
+  touchStart();
+  advance(500);
+  pointerEvent("pointerdown", {}, document.body);
+  pointerEvent("pointerup", {}, document.body);
+  fireEvent.touchEnd(document.body, { touches: [] });
+  expect(bestValue("Best single")).toHaveTextContent("00:00.50");
+  expect(bestValue("Best AO12")).toHaveTextContent("01:14.00");
+  expect(cells(12)).toEqual(["12", "00:00.50", "01:50.00", "01:14.00"]);
 });
 it("closes the finish picker with Escape without cancelling a running solve", () => {
   render(<App />);
