@@ -863,7 +863,6 @@ const App: React.FC = () => {
                 </div>
               )}
               <div className="history-footer">
-                <p>Rolling averages end at each solve.</p>
                 <div className="history-meta">
                   <span>Total {formatTime(statistics.totalTime)}</span>
                   <span>
