@@ -1,0 +1,9 @@
+.analytics-privacy { max-width: 1480px; margin: 0 auto; padding: 20px 28px 24px; color: #b1bec7; font-size: 12px; }
+.analytics-choice { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 14px; padding: 16px; border: 1px solid #39454e; border-radius: 10px; background: #151c21; }
+.analytics-choice p { max-width: 640px; margin: 0; line-height: 1.6; }
+.privacy-link { border: 0; padding: 6px 0; background: transparent; color: inherit; font: inherit; text-decoration: underline; cursor: pointer; }
+.analytics-privacy-modal a { color: var(--lime); text-decoration: underline; }
+@media (width <= 760px) {
+  .analytics-privacy { padding: 16px 12px 90px; }
+  .analytics-choice { flex-direction: column; align-items: flex-start; }
+}

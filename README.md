@@ -33,4 +33,8 @@ Release early to cancel the hold. **Escape** cancels the current attempt.
 Solves are saved in this browser on this device. Clearing browser data removes
 them.
 
+Optional Google Analytics counts visits only after you allow it. Open **Privacy
+& analytics** on the site to read the details or change your choice. Solve history
+is never sent to Analytics. [Analytics setup and behavior](docs/ANALYTICS.md).
+
 [Development and checks](docs/DEVELOPMENT.md) · [License](LICENSE)

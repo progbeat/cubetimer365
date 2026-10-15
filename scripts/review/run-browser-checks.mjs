@@ -28,6 +28,7 @@ try {
     "browser-check",
     "browser-feedback-check",
     "browser-date-check",
+    "browser-analytics-check",
     "browser-mobile-stop-check",
     "browser-material-check",
   ]) {
