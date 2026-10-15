@@ -68,6 +68,12 @@ export default async (page) => {
     ),
     "Total time stays available in the results footer",
   );
+  assert(
+    (await page
+      .getByText("Rolling averages end at each solve.", { exact: true })
+      .count()) === 0,
+    "Results footer keeps the total without the explanatory caption",
+  );
   await page
     .getByRole("button", { name: "Delete solve 3", exact: true })
     .click();

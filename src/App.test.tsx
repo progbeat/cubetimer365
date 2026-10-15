@@ -238,6 +238,13 @@ it("shows chronological rolling values and earlier best averages, recalculating 
   expect(bestValue("Best single")).toHaveTextContent("00:10.00");
   expect(bestValue("Best AO5")).toHaveTextContent("00:30.00");
   expect(bestValue("Best AO12")).toHaveTextContent("01:05.00");
+  expect(screen.getByText("Total 15:10.00")).toBeInTheDocument();
+  expect(
+    screen.queryByText("Rolling averages end at each solve."),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("heading", { name: "Total time" }),
+  ).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Delete solve 3" }));
   expect(bestValue("Best AO5")).toHaveTextContent("00:36.67");
   expect(bestValue("Best AO12")).toHaveTextContent("01:14.00");
