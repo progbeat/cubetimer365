@@ -1,74 +1,60 @@
 import { StrictMode } from "react";
 import { MantineProvider } from "@mantine/core";
-import {
-  cleanup,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from "@testing-library/react";
-import { afterEach, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import AnalyticsPrivacy from "./AnalyticsPrivacy";
-import { ANALYTICS_CONSENT_KEY } from "./analytics";
 
 vi.hoisted(() => {
-  vi.stubEnv("VITE_GA4_MEASUREMENT_ID", "G-TEST365");
-  vi.stubEnv("BASE_URL", "/cubetimer365/");
+  vi.stubEnv(
+    "VITE_CLOUDFLARE_WEB_ANALYTICS_TOKEN",
+    "0123456789abcdef0123456789abcdef",
+  );
+  vi.stubEnv("PROD", true);
 });
-
+beforeEach(() => localStorage.clear());
 afterEach(() => {
   cleanup();
-  vi.unstubAllEnvs();
-  localStorage.clear();
   document
-    .querySelectorAll('script[src*="googletagmanager.com"]')
+    .querySelectorAll("script[data-cf-beacon]")
     .forEach((script) => script.remove());
-});
-
-it("requires an explicit choice and keeps Privacy available after refusal", async () => {
   localStorage.clear();
-  const view = () => (
+});
+it("keeps an honest privacy notice without Google or consent controls and preserves local data", async () => {
+  localStorage.setItem("history", "[12.34]");
+  localStorage.setItem("cube-style", "neon");
+  const saved = { ...localStorage };
+  const { rerender } = render(
     <StrictMode>
       <MantineProvider>
         <AnalyticsPrivacy />
       </MantineProvider>
-    </StrictMode>
+    </StrictMode>,
   );
-  const { rerender } = render(view());
-  expect(screen.getByRole("button", { name: "Allow analytics" })).toBeVisible();
-  expect(
-    document.querySelector('script[src*="googletagmanager.com"]'),
-  ).toBeNull();
-  fireEvent.click(screen.getByRole("button", { name: "No thanks" }));
-  expect(localStorage.getItem(ANALYTICS_CONSENT_KEY)).toBe("denied");
   expect(
     screen.queryByRole("button", { name: "Allow analytics" }),
   ).not.toBeInTheDocument();
   expect(
-    document.querySelector('script[src*="googletagmanager.com"]'),
-  ).toBeNull();
+    screen.queryByRole("button", { name: "No thanks" }),
+  ).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Privacy & analytics" }));
-  const dialog = await screen.findByRole("dialog", {
-    name: "Privacy & analytics",
-  });
-  await waitFor(() => expect(dialog).toBeVisible());
-  expect(screen.getByText("Analytics: off.")).toBeVisible();
-  fireEvent.click(screen.getByRole("button", { name: "Allow analytics" }));
-  expect(localStorage.getItem(ANALYTICS_CONSENT_KEY)).toBe("granted");
-  expect(screen.getByText("Analytics: allowed.")).toBeVisible();
-  for (let n = 0; n < 2; n++) {
-    fireEvent.click(screen.getByRole("button", { name: "Allow analytics" }));
-    expect(localStorage.getItem(ANALYTICS_CONSENT_KEY)).toBe("granted");
-    expect(
-      (window as unknown as Record<string, unknown>)["ga-disable-G-TEST365"],
-    ).toBe(false);
-  }
-  rerender(view());
   expect(
-    document.querySelectorAll('script[src*="googletagmanager.com"]'),
-  ).toHaveLength(1);
-  const views = (window.dataLayer || [])
-    .map((args) => Array.from(args))
-    .filter((args) => args[0] === "event" && args[1] === "page_view");
-  expect(views).toHaveLength(1);
+    await screen.findByRole("dialog", { name: "Privacy & analytics" }),
+  ).toBeVisible();
+  expect(
+    screen.getByText(
+      "Cloudflare Web Analytics is enabled on this version of the site.",
+    ),
+  ).toBeVisible();
+  expect(
+    screen.getByRole("link", { name: "Cloudflare Web Analytics privacy" }),
+  ).toHaveAttribute("href", "https://www.cloudflare.com/web-analytics/");
+  expect({ ...localStorage }).toEqual(saved);
+  rerender(
+    <StrictMode>
+      <MantineProvider>
+        <AnalyticsPrivacy />
+      </MantineProvider>
+    </StrictMode>,
+  );
+  expect(document.querySelectorAll("script[data-cf-beacon]")).toHaveLength(1);
 });

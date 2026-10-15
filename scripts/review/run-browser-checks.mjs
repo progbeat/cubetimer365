@@ -37,6 +37,12 @@ try {
     for (const deviceScaleFactor of scales) {
       const context = await browser.newContext({ deviceScaleFactor });
       try {
+        // Tests never deliver analytics to an owner's real stream.
+        await context.route(
+          /^https:\/\/[^/]*(?:cloudflareinsights\.com|googletagmanager\.com|google-analytics\.com)\//,
+          (route) =>
+            route.fulfill({ contentType: "application/javascript", body: "" }),
+        );
         const page = await context.newPage();
         page.setDefaultTimeout(15000);
         await page.goto(root);

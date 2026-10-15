@@ -68,7 +68,7 @@ The results table shows rolling AO5/AO12 at each solve, while the separate summa
 shows daily best single, best AO5 and best AO12. [Statistics rules](STATISTICS.md)
 define chronological windows, trimming, deletion, display precision and the numeric
 history boundary. Browser checks exercise the table and summary at 320/390 px and
-desktop widths, along with the existing timer, materials and consent suites.
+desktop widths, along with the existing timer, materials and analytics suites.
 
 Solve history uses the existing numeric `history` and `today` localStorage keys.
 The date/history boundary retains the original UTC behavior; the daily scramble
@@ -107,3 +107,11 @@ deprecation notices, which are distinct from security advisories. ESLint 9
 retains compatibility with the Mantine lint preset; the existing chart and
 React versions retain the tested appearance. Dependency changes should be
 followed by the checks above and a fresh production/complete-lockfile audit.
+
+## Analytics regression fixture
+
+The shipped build keeps Cloudflare disabled until a verified public site token is
+configured. `yarn browser-analytics-fixture` builds a separate localhost fixture
+with a synthetic token and tests singleton loading, privacy signals and migration
+from the old GA4 state. Vendor requests are stubbed in both browser suites.
+[Analytics setup](ANALYTICS.md) describes activation and verification limits.
