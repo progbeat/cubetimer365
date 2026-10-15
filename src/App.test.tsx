@@ -124,6 +124,73 @@ afterEach(() => {
 });
 
 describe("preserved scramble and daily data", () => {
+  it.each([false, true])(
+    "defers incoming changes until save acknowledgement; additional local edit: %s",
+    async (dirty) => {
+      seedHistory("[12]");
+      render(<App />);
+      await flushStorage();
+      const save = solveStorage.saveDailyHistory;
+      let acknowledge: (() => void) | undefined;
+      vi.spyOn(solveStorage, "saveDailyHistory").mockImplementationOnce(
+        async (...args) => {
+          const result = await save(...args);
+          await new Promise<void>((resolve) => {
+            acknowledge = resolve;
+          });
+          return result;
+        },
+      );
+      touchStart();
+      advance(500);
+      pointerEvent("pointerdown");
+      pointerEvent("pointerup");
+      fireEvent.touchEnd(document.body, { touches: [] });
+      for (let turn = 0; !acknowledge && turn < 200; turn += 1) {
+        await act(async () => {
+          await nextTask();
+        });
+      }
+      expect(acknowledge).toBeTypeOf("function");
+      expect(saved()).toEqual([12, 0.5]);
+      if (dirty) {
+        fireEvent.click(screen.getByRole("button", { name: "Delete solve 1" }));
+      }
+      const newer = JSON.stringify({ ...stored(), history: [12, 0.5, 0.75] });
+      localStorage.setItem(SOLVE_STORAGE_KEY, newer);
+      fireEvent(
+        window,
+        new StorageEvent("storage", {
+          key: SOLVE_STORAGE_KEY,
+          newValue: newer,
+        }),
+      );
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+      await act(async () => {
+        acknowledge?.();
+      });
+      await flushStorage();
+      if (dirty) {
+        expect(screen.getByRole("alert")).toHaveTextContent(
+          "New results remain in this tab",
+        );
+        expect(screen.getByText("1 solve")).toBeInTheDocument();
+        expect(localStorage.getItem(SOLVE_STORAGE_KEY)).toBe(newer);
+      } else {
+        expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+        expect(screen.getByText("3 solves")).toBeInTheDocument();
+        advance(210);
+        touchStart();
+        advance(500);
+        pointerEvent("pointerdown");
+        pointerEvent("pointerup");
+        fireEvent.touchEnd(document.body, { touches: [] });
+        await flushStorage();
+        expect(saved()).toEqual([12, 0.5, 0.75, 0.5]);
+        expect(screen.getByText("Saved on this device")).toBeInTheDocument();
+      }
+    },
+  );
   it("adopts identical simultaneous day resets and still saves subsequent solves", async () => {
     vi.setSystemTime(new Date("2026-10-12T23:59:59.900Z"));
     seedDate("2026-10-12");

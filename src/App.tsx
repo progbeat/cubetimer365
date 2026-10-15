@@ -122,6 +122,7 @@ const App: React.FC = () => {
   const [daily, setDaily] = useState(initialStorage.record);
   const [storageFailed, setStorageFailed] = useState(initialStorage.blocked);
   const [saving, setSaving] = useState(false);
+  const [syncVersion, setSyncVersion] = useState(0);
   const mounted = useRef(true);
   useEffect(() => {
     mounted.current = true;
@@ -137,6 +138,8 @@ const App: React.FC = () => {
   const persistedState = useRef(JSON.stringify(initialStorage.record));
   const writesBlocked = useRef(initialStorage.blocked);
   const writeQueue = useRef(Promise.resolve());
+  const writeInFlight = useRef(false);
+  const externalUpdatePending = useRef(false);
   const pendingWrites = useRef(0);
   const migrationBusy = useRef(false);
   const blockStorage = React.useCallback(() => {
@@ -150,12 +153,22 @@ const App: React.FC = () => {
       pendingWrites.current += 1;
       setSaving(true);
       const queued = writeQueue.current
-        .then(write)
+        .then(async () => {
+          writeInFlight.current = true;
+          try {
+            await write();
+          } finally {
+            writeInFlight.current = false;
+          }
+        })
         .catch(blockStorage)
         .finally(() => {
           pendingWrites.current -= 1;
           if (mounted.current) {
             setSaving(pendingWrites.current > 0);
+            if (externalUpdatePending.current) {
+              setSyncVersion((version) => version + 1);
+            }
           }
         });
       writeQueue.current = queued;
@@ -203,12 +216,22 @@ const App: React.FC = () => {
   useEffect(() => {
     const sync = (event: StorageEvent) => {
       if (event.key === SOLVE_STORAGE_KEY || event.key === null) {
-        reconcileExternal();
+        externalUpdatePending.current = true;
+        if (!writeInFlight.current) {
+          setSyncVersion((version) => version + 1);
+        }
       }
     };
     window.addEventListener("storage", sync);
     return () => window.removeEventListener("storage", sync);
-  }, [reconcileExternal]);
+  }, []);
+  useEffect(() => {
+    // Process acknowledgement state updates before deciding whether a local edit conflicts.
+    if (externalUpdatePending.current && !writeInFlight.current) {
+      externalUpdatePending.current = false;
+      reconcileExternal();
+    }
+  }, [syncVersion, daily, reconcileExternal]);
   const [legacyCandidate] = useState(() =>
     !initialStorage.blocked &&
     initialStorage.record.legacyMigration === "unresolved"

@@ -112,3 +112,11 @@ review control and any open import dialog are removed; unavailable actions are
 not left enabled. The mutex marker may abort after a localStorage write has
 completed. That localStorage write is not rolled back, so its acknowledgement
 reports success; an abort before the write still reports failure.
+
+Storage notifications received during a queued write's execution wait until its
+acknowledgement and React state updates have been processed. Reconciliation then
+re-reads the latest record. A successfully saved local edit can adopt a peer's
+subsequent save without a false conflict; a different local edit still waiting
+for persistence remains protected in memory. Unit tests cover both paths, and a
+native two-tab test withholds a successful save acknowledgement until the peer
+has saved and delivered its newer record, then verifies later saves still work.

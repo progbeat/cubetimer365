@@ -53,6 +53,28 @@ export default async (page) => {
         return result;
       };
     });
+  const holdAcknowledgement = (tab) =>
+    tab.evaluate(() => {
+      const complete = Object.getOwnPropertyDescriptor(
+        IDBTransaction.prototype,
+        "oncomplete",
+      );
+      Object.defineProperty(IDBTransaction.prototype, "oncomplete", {
+        configurable: true,
+        get: complete.get,
+        set(callback) {
+          complete.set.call(this, function (event) {
+            if (
+              this.db.name === "cubetimer365:storage-locks:v1" &&
+              !window.releaseStorageAcknowledgement
+            ) {
+              window.releaseStorageAcknowledgement = () =>
+                callback.call(this, event);
+            } else callback.call(this, event);
+          });
+        },
+      });
+    });
   const original = () =>
     page.evaluate(() => ({
       history: localStorage.getItem("history"),
@@ -426,27 +448,7 @@ export default async (page) => {
   for (const choice of ["imported", "ignored"]) {
     await page.clock.setFixedTime("2026-10-12T23:59:50Z");
     snapshot = await seed();
-    await page.evaluate(() => {
-      const complete = Object.getOwnPropertyDescriptor(
-        IDBTransaction.prototype,
-        "oncomplete",
-      );
-      Object.defineProperty(IDBTransaction.prototype, "oncomplete", {
-        configurable: true,
-        get: complete.get,
-        set(callback) {
-          complete.set.call(this, function (event) {
-            if (
-              this.db.name === "cubetimer365:storage-locks:v1" &&
-              !window.releaseStorageAcknowledgement
-            ) {
-              window.releaseStorageAcknowledgement = () =>
-                callback.call(this, event);
-            } else callback.call(this, event);
-          });
-        },
-      });
-    });
+    await holdAcknowledgement(page);
     await review().click();
     await page
       .getByRole("button", {
@@ -602,5 +604,67 @@ export default async (page) => {
     (await read()).history.length === 0,
     "The deletion confirmed before a mutex-marker abort survives reload",
   );
+  snapshot = await seed({ owned: [12] });
+  tab = await page.context().newPage();
+  try {
+    await tab.goto(root);
+    await tab.getByText("1 solve", { exact: true }).waitFor();
+    await holdAcknowledgement(page);
+    await page.evaluate((key) => {
+      window.observedStorageNotifications = 0;
+      window.addEventListener("storage", (event) => {
+        if (event.key === key) window.observedStorageNotifications += 1;
+      });
+    }, key);
+    const solveIn = async (writer) => {
+      await writer.bringToFront();
+      await writer.keyboard.down("Space");
+      await writer.waitForTimeout(330);
+      await writer.keyboard.up("Space");
+      await writer.waitForTimeout(250);
+      await writer.keyboard.press("Space");
+    };
+    await solveIn(page);
+    await page.waitForFunction(
+      () => typeof window.releaseStorageAcknowledgement === "function",
+    );
+    await tab.getByText("2 solves", { exact: true }).waitFor();
+    await solveIn(tab);
+    await tab.getByText("Saved on this device", { exact: true }).waitFor();
+    await page.waitForFunction(() => window.observedStorageNotifications > 0);
+    assert(
+      (await read()).history.length === 3 &&
+        (await page.getByText("Saving…", { exact: true }).isVisible()) &&
+        (await page
+          .getByRole("alert")
+          .filter({ hasText: "Browser storage" })
+          .count()) === 0,
+      "A different newer solve notification waits for the original successful save acknowledgement",
+    );
+    await page.evaluate(() => window.releaseStorageAcknowledgement());
+    await page.getByText("3 solves", { exact: true }).waitFor();
+    await page.getByText("Saved on this device", { exact: true }).waitFor();
+    assert(
+      (await page
+        .getByRole("alert")
+        .filter({ hasText: "Browser storage" })
+        .count()) === 0,
+      "After acknowledgement the original tab adopts the newer saved record without a false conflict",
+    );
+    await solveIn(page);
+    await page.getByText("Saved on this device", { exact: true }).waitFor();
+    await tab.getByText("4 solves", { exact: true }).waitFor();
+    assert(
+      (await read()).history.length === 4,
+      "The acknowledged tab keeps saving subsequent solves after adopting its peer's update",
+    );
+    assert(
+      JSON.stringify(await original()) === JSON.stringify(snapshot),
+      "Delayed normal-save acknowledgement preserves every shared original",
+    );
+  } finally {
+    await page.evaluate(() => window.releaseStorageAcknowledgement?.());
+    await tab.close();
+  }
   return { passed: checks.length, checks };
 };
