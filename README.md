@@ -34,9 +34,10 @@ Solves are saved in this browser on this device. Clearing browser data removes
 them.
 
 Cloudflare Web Analytics replaces Google Analytics without analytics cookies.
-The public site token is not configured yet, so visit analytics is currently off
-in this build. [Activation and data flow](docs/ANALYTICS.md) are documented for
-the site maintainer. No standalone privacy or consent panel is shown.
+Production builds use the verified public site token for `progbeat.dev`; Do Not
+Track or Global Privacy Control prevents beacon loading. [Setup and data
+flow](docs/ANALYTICS.md) are documented for the site maintainer. No standalone
+privacy or consent panel is shown.
 
 [Development and checks](docs/DEVELOPMENT.md) · [License](LICENSE)
 

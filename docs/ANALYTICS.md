@@ -3,20 +3,19 @@
 ## Status and activation
 
 GA4 loading, configuration, manual page-view events and consent controls have
-been removed. The production token is intentionally empty. This version sends
-no visit analytics until a legitimate Cloudflare site token is verified and
-configured. An empty, invalid or missing token means no beacon request. Local
-Vite development also leaves analytics off. Loading failures or blockers can
-still prevent collection after activation.
+been removed. `.env.production` now contains the public Web Analytics site token
+`0fbe5c9c32da4ea887621042d35546b1`, supplied by the owner after verifying the
+`progbeat.dev` property on 2026-10-15. The owner confirmed manual JS snippet
+installation with automatic injection disabled; DNS-only GitHub Pages hosting
+is unchanged. The token is a public site identifier, not an API credential.
 
-On 2026-10-15 the live page and bundle contained GA4, with no Cloudflare beacon.
-Neither the repository nor the public root-domain page provided a verified site
-token. This cloud environment has no authenticated Cloudflare dashboard tool.
-Reading repository Actions variables returned `403 Resource not accessible by
-integration`; no permission changes were attempted. No account/site creation,
-DNS changes, deployment or real Cloudflare collection has been performed.
+Production builds use the existing guarded loader within the `/cubetimer365/`
+app. An empty, invalid or missing token means no beacon request. Local Vite
+development also leaves analytics off. DNT/GPC, loading failures or blockers can
+prevent collection. This configuration update does not merge or deploy the PR,
+change Cloudflare or DNS settings, or confirm real production collection.
 
-To activate after owner review:
+For future configuration changes and publication:
 
 1. Open Cloudflare **Web Analytics**, select the existing site for hostname
    `progbeat.dev` (or add that hostname if needed), and open **Manage site**.
@@ -30,10 +29,11 @@ To activate after owner review:
    a public site identifier, **not** a Cloudflare API token or account credential.
    Verify the property/hostname before using it. Token syntax alone is not proof
    of ownership or a working property.
-4. Set `VITE_CLOUDFLARE_WEB_ANALYTICS_TOKEN` in `.env.production` to that verified
-   value and rebuild. The current GitHub Pages workflow builds this file; it does
-   not implicitly pick up a GitHub repository variable. No workflow, permission
-   or release-pipeline changes are needed for this configuration.
+4. Keep `VITE_CLOUDFLARE_WEB_ANALYTICS_TOKEN` in `.env.production` set to the
+   verified value and rebuild after any change. The current GitHub Pages workflow
+   builds this file; it does not implicitly pick up a GitHub repository variable.
+   No workflow, permission or release-pipeline changes are needed for this
+   configuration.
 5. Before deployment, assess the applicable privacy/consent requirements for the
    intended audience and collection. Cookie-free operation by itself is not a
    blanket consent exemption. This PR does not make a jurisdiction-specific legal
@@ -83,10 +83,9 @@ cleanup; they must not break the timer. Previously collected Google data and the
 GA4 property are not deleted by removing the tag.
 
 The GA4 consent controls and standalone Privacy Notice UI are omitted from this
-candidate. This is a product decision pending the actual configured data flow,
-not a claim that a privacy notice or consent is universally unnecessary. Keep the
-token empty until the owner verifies the property and applicable requirements.
-No new analytics identifier or consent preference is stored.
+candidate. This is a product decision, not a claim that a privacy notice or
+consent is universally unnecessary. The owner must assess applicable requirements
+before publication. No new analytics identifier or consent preference is stored.
 
 ## Verification
 
@@ -107,11 +106,16 @@ metrics to a real property. CI runs both builds. These tests verify integration
 behavior; they do not prove the externally hosted SDK's full behavior, dashboard
 settings or real production delivery. Production activation needs step 6 above.
 
-The public beacon downloaded on 2026-10-15 was also exercised locally with its
-script response fulfilled from a local copy and every RUM POST intercepted. That
-probe observed one script, no Google requests or new cookies, unchanged local
-solve data, and query parameters omitted from the captured payload. It verifies
-that SDK snapshot, not future vendor updates or real property ingestion.
+The configured production build was exercised in local Chromium on 2026-10-15
+using a downloaded public beacon snapshot, with its script response fulfilled
+locally and every RUM POST intercepted. The probe observed one module script,
+the verified public token in the payload, no Google requests or new cookies,
+unchanged local solve data, and query parameters omitted from reports. The SDK
+emitted an initial navigation report and routing/performance reports during
+interactions. DNT and GPC each prevented script loading and RUM requests.
+Desktop, 390 px and 320 px views were inspected without privacy/consent UI.
+No real metrics were delivered. This verifies that SDK snapshot, not future
+vendor updates or real property ingestion.
 
 Sources checked 2026-10-15:
 
