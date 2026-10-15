@@ -43,6 +43,8 @@ export default function AnalyticsPrivacy() {
       window.location.reload();
     } else if (persisted && choice === "granted") {
       withdrawalNeedsReload.current = false;
+      // The consent effect does not rerun when an existing grant is selected again.
+      startAnalytics();
     }
   };
   const choices = (

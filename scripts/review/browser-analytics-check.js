@@ -52,6 +52,17 @@ export default async (page) => {
       );
       await page.getByRole("button", { name: "Privacy & analytics" }).click();
       await page.getByText("Analytics: allowed.", { exact: true }).waitFor();
+      for (let n = 0; n < 2; n++)
+        await page.getByRole("button", { name: "Allow analytics" }).click();
+      assert(
+        (await page.evaluate(() => window["ga-disable-G-41X5F91WCZ"])) ===
+          false &&
+          (await views()).length === 1 &&
+          (await page
+            .locator('script[src*="googletagmanager.com"]')
+            .count()) === 1,
+        `${failure}: repeated Allow keeps delivery enabled with one tag and initial view`,
+      );
       if (failure !== "none") {
         await page.evaluate(
           ({ key, failure }) => {

@@ -56,6 +56,13 @@ it("requires an explicit choice and keeps Privacy available after refusal", asyn
   fireEvent.click(screen.getByRole("button", { name: "Allow analytics" }));
   expect(localStorage.getItem(ANALYTICS_CONSENT_KEY)).toBe("granted");
   expect(screen.getByText("Analytics: allowed.")).toBeVisible();
+  for (let n = 0; n < 2; n++) {
+    fireEvent.click(screen.getByRole("button", { name: "Allow analytics" }));
+    expect(localStorage.getItem(ANALYTICS_CONSENT_KEY)).toBe("granted");
+    expect(
+      (window as unknown as Record<string, unknown>)["ga-disable-G-TEST365"],
+    ).toBe(false);
+  }
   rerender(view());
   expect(
     document.querySelectorAll('script[src*="googletagmanager.com"]'),
