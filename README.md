@@ -40,3 +40,4 @@ is never sent to Analytics. [Analytics setup and behavior](docs/ANALYTICS.md).
 [Development and checks](docs/DEVELOPMENT.md) · [License](LICENSE)
 
 [Rolling averages and daily bests](docs/STATISTICS.md).
+[Project-scoped storage and safe legacy import](docs/STORAGE.md).

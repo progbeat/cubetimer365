@@ -40,8 +40,15 @@ export default async (page) => {
       await zonedPage.clock.setFixedTime(fixture.instant);
       const utcDate = fixture.instant.split("T")[0];
       await zonedPage.addInitScript((utcDate) => {
-        localStorage.setItem("today", utcDate);
-        localStorage.setItem("history", "[12.34,15.67]");
+        localStorage.setItem(
+          "cubetimer365:daily-history:v1",
+          JSON.stringify({
+            version: 1,
+            date: utcDate,
+            history: JSON.parse("[12.34,15.67]"),
+            legacyMigration: "ignored",
+          }),
+        );
       }, utcDate);
       await zonedPage.goto(root);
       const headerDate = zonedPage.locator(".app-header time");
@@ -55,13 +62,22 @@ export default async (page) => {
         `Machine-readable date matches the local label in ${fixture.timezoneId}`,
       );
       assert(
-        (await zonedPage.evaluate(() => localStorage.getItem("today"))) ===
-          utcDate,
+        (await zonedPage.evaluate(
+          () =>
+            JSON.parse(
+              localStorage.getItem("cubetimer365:daily-history:v1") || "null",
+            )?.date,
+        )) === utcDate,
         `Existing UTC history boundary is retained in ${fixture.timezoneId}`,
       );
       assert(
-        (await zonedPage.evaluate(() => localStorage.getItem("history"))) ===
-          "[12.34,15.67]",
+        (await zonedPage.evaluate(() =>
+          JSON.stringify(
+            JSON.parse(
+              localStorage.getItem("cubetimer365:daily-history:v1") || "null",
+            )?.history || [],
+          ),
+        )) === "[12.34,15.67]",
         `Existing numeric solves are preserved in ${fixture.timezoneId}`,
       );
     } finally {

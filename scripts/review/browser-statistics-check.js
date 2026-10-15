@@ -1,3 +1,4 @@
+import { waitForStorage } from "./browser-storage-helpers.js";
 export default async (page) => {
   const origin = new URL(page.url());
   if (!["127.0.0.1", "localhost"].includes(origin.hostname))
@@ -11,9 +12,17 @@ export default async (page) => {
   const times = Array.from({ length: 13 }, (_, i) => (i + 1) * 10);
   const load = async (history) => {
     await page.goto(root);
+    await waitForStorage(page);
     await page.evaluate((history) => {
-      localStorage.setItem("today", new Date().toISOString().split("T")[0]);
-      localStorage.setItem("history", JSON.stringify(history));
+      localStorage.setItem(
+        "cubetimer365:daily-history:v1",
+        JSON.stringify({
+          version: 1,
+          date: new Date().toISOString().split("T")[0],
+          history: JSON.parse(JSON.stringify(history)),
+          legacyMigration: "ignored",
+        }),
+      );
       localStorage.setItem("cubetimer365:analytics-consent", "denied");
     }, history);
     await page.reload();
@@ -78,7 +87,9 @@ export default async (page) => {
     .getByRole("button", { name: "Delete solve 3", exact: true })
     .click();
   await page.waitForFunction(
-    () => JSON.parse(localStorage.getItem("history")).length === 12,
+    () =>
+      JSON.parse(localStorage.getItem("cubetimer365:daily-history:v1")).history
+        .length === 12,
   );
   assert(
     same(await best(), ["00:10.00", "00:36.67", "01:14.00"]),
@@ -98,7 +109,9 @@ export default async (page) => {
     .getByRole("button", { name: "Delete solve 1", exact: true })
     .click();
   await page.waitForFunction(
-    () => JSON.parse(localStorage.getItem("history")).length === 11,
+    () =>
+      JSON.parse(localStorage.getItem("cubetimer365:daily-history:v1")).history
+        .length === 11,
   );
   assert(
     same(await best(), ["00:20.00", "00:50.00", "—"]),
