@@ -17,14 +17,18 @@ import ScrambleText from "./ScrambleText";
 import { generateScramble } from "./scramble";
 import AnalyticsPrivacy from "./AnalyticsPrivacy";
 import { calculateSolveStatistics, formatTime } from "./solveStatistics";
+import LegacyHistoryImport from "./LegacyHistoryImport";
+import {
+  loadDailyHistory,
+  saveDailyHistory,
+  readLegacyHistory,
+} from "./solveStorage";
 
 const theme = createTheme({
   fontFamily:
     'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
 });
 const ScrambleCube = React.memo(CubeNet);
-const HISTORY_KEY = "history";
-const HISTORY_DATE_KEY = "today";
 const isControl = (target: EventTarget | null) =>
   target instanceof HTMLElement &&
   Boolean(
@@ -113,14 +117,29 @@ const App: React.FC = () => {
     (today.getMonth() + 1) * 100 +
     today.getDate();
   const scramble = React.useMemo(() => generateScramble(seed), [seed]);
-  const [history, setHistory] = useState<number[]>(() => {
-    // Retain the existing storage keys and daily history behavior.
-    if (localStorage.getItem(HISTORY_DATE_KEY) !== todayString) {
-      localStorage.removeItem(HISTORY_KEY);
-      localStorage.setItem(HISTORY_DATE_KEY, todayString);
-    }
-    return JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]") as number[];
-  });
+  const [initialStorage] = useState(() => loadDailyHistory(todayString));
+  const [daily, setDaily] = useState(initialStorage.record);
+  const [storageFailed, setStorageFailed] = useState(initialStorage.blocked);
+  const [legacyCandidate] = useState(() =>
+    !initialStorage.blocked &&
+    initialStorage.record.legacyMigration === "unresolved"
+      ? readLegacyHistory(todayString)
+      : null,
+  );
+  const history = daily.date === todayString ? daily.history : [];
+  const setHistory = React.useCallback(
+    (next: React.SetStateAction<number[]>) => {
+      setDaily((current) => {
+        const previous = current.date === todayString ? current.history : [];
+        return {
+          ...current,
+          date: todayString,
+          history: typeof next === "function" ? next(previous) : next,
+        };
+      });
+    },
+    [todayString],
+  );
   const historyDate = useRef(todayString);
   useEffect(() => {
     let boundaryTimeout: number;
@@ -161,10 +180,9 @@ const App: React.FC = () => {
   useEffect(() => {
     if (historyDate.current !== todayString) {
       historyDate.current = todayString;
-      localStorage.setItem(HISTORY_DATE_KEY, todayString);
       setHistory([]);
     }
-  }, [todayString]);
+  }, [todayString, setHistory]);
   const [phase, setPhase] = useState<"idle" | "holding" | "ready" | "running">(
     "idle",
   );
@@ -231,8 +249,10 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-  }, [history]);
+    if (daily.date === todayString) {
+      setStorageFailed(!saveDailyHistory(daily));
+    }
+  }, [daily, todayString]);
   useEffect(() => {
     if (phase !== "running") {
       return undefined;
@@ -771,6 +791,37 @@ const App: React.FC = () => {
                   {history.length} {history.length === 1 ? "solve" : "solves"}
                 </span>
               </div>
+              {legacyCandidate &&
+                legacyCandidate.date === todayString &&
+                daily.legacyMigration === "unresolved" &&
+                history.length === 0 && (
+                  <LegacyHistoryImport
+                    candidate={legacyCandidate}
+                    onImport={() =>
+                      setDaily((current) =>
+                        current.history.length > 0
+                          ? current
+                          : {
+                              ...current,
+                              history: legacyCandidate.history.slice(),
+                              legacyMigration: "imported",
+                            },
+                      )
+                    }
+                    onIgnore={() =>
+                      setDaily((current) => ({
+                        ...current,
+                        legacyMigration: "ignored",
+                      }))
+                    }
+                  />
+                )}
+              {storageFailed && (
+                <p className="storage-notice" role="alert">
+                  Browser storage could not be saved. New results remain in this
+                  tab; existing stored data was left intact.
+                </p>
+              )}
               {history.length === 0 ? (
                 <div className="empty-history">
                   <IconList size={28} stroke={1.2} />

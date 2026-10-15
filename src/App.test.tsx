@@ -9,6 +9,7 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 import { generateScramble } from "./scramble";
+import { SOLVE_STORAGE_KEY, type DailyHistory } from "./solveStorage";
 
 vi.mock("@mantine/charts", () => ({
   LineChart: ({
@@ -22,9 +23,32 @@ vi.mock("@mantine/charts", () => ({
     }[];
   }) => <div data-testid="chart-data">{JSON.stringify(data)}</div>,
 }));
+const stored = () =>
+  JSON.parse(
+    localStorage.getItem(SOLVE_STORAGE_KEY) || "null",
+  ) as DailyHistory | null;
+const seedHistory = (raw: string) =>
+  localStorage.setItem(
+    SOLVE_STORAGE_KEY,
+    JSON.stringify({
+      version: 1,
+      date: stored()?.date || new Date().toISOString().slice(0, 10),
+      history: JSON.parse(raw),
+      legacyMigration: "ignored",
+    }),
+  );
+const seedDate = (date: string) =>
+  localStorage.setItem(
+    SOLVE_STORAGE_KEY,
+    JSON.stringify({
+      version: 1,
+      date,
+      history: stored()?.history || [],
+      legacyMigration: "ignored",
+    }),
+  );
 const surface = () => screen.getByRole("button", { name: /Timer surface/ });
-const saved = () =>
-  JSON.parse(localStorage.getItem("history") || "[]") as number[];
+const saved = () => stored()?.history || [];
 const pointerEvent = (
   type: string,
   options: Record<string, unknown> = {},
@@ -65,7 +89,7 @@ beforeEach(() => {
     ],
   });
   localStorage.clear();
-  localStorage.setItem("today", new Date().toISOString().split("T")[0]);
+  seedDate(new Date().toISOString().split("T")[0]);
   vi.spyOn(console, "log").mockImplementation(() => {});
   HTMLElement.prototype.setPointerCapture = vi.fn();
   vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockReturnValue({
@@ -88,7 +112,7 @@ afterEach(() => {
 
 describe("preserved scramble and daily data", () => {
   it("carries rounded centiseconds into the next minute without changing stored times", () => {
-    localStorage.setItem("history", "[59.999,119.999]");
+    seedHistory("[59.999,119.999]");
     render(<App />);
     const times = Array.from(
       screen.getByRole("table").querySelectorAll("tbody td:nth-child(2)"),
@@ -104,14 +128,14 @@ describe("preserved scramble and daily data", () => {
   });
   it("updates the daily scramble and existing UTC history boundary while open", () => {
     vi.setSystemTime(new Date("2026-10-12T12:00:00Z"));
-    localStorage.setItem("today", "2026-10-12");
-    localStorage.setItem("history", "[12]");
+    seedDate("2026-10-12");
+    seedHistory("[12]");
     const { container } = render(<App />);
     const moves = () => container.querySelector(".scramble-moves")?.textContent;
     expect(moves()).toBe(generateScramble(20261012));
     advance(24 * 60 * 60 * 1000);
     expect(moves()).toBe(generateScramble(20261013));
-    expect(localStorage.getItem("today")).toBe("2026-10-13");
+    expect(stored()?.date).toBe("2026-10-13");
     expect(saved()).toEqual([]);
     expect(
       Array.from(
@@ -122,7 +146,7 @@ describe("preserved scramble and daily data", () => {
     ).toEqual(["—", "—", "—"]);
   });
   it("loads existing history, keeps averages and deletion persistent", () => {
-    localStorage.setItem("history", "[10,20,30,40,50]");
+    seedHistory("[10,20,30,40,50]");
     const first = render(<App />);
     expect(screen.getByText("5 solves")).toBeInTheDocument();
     expect(screen.getByTestId("chart-data").textContent).toContain('"ao5":30');
@@ -133,6 +157,50 @@ describe("preserved scramble and daily data", () => {
     expect(screen.getByText("4 solves")).toBeInTheDocument();
     expect(saved()).toEqual([10, 20, 40, 50]);
   });
+});
+it("requires a reviewed choice to import ambiguous shared history and never repeats it", () => {
+  localStorage.removeItem(SOLVE_STORAGE_KEY);
+  localStorage.setItem("history", "[12.34,23.45]");
+  localStorage.setItem("today", new Date().toISOString().slice(0, 10));
+  localStorage.setItem("lights-out.reaction-lab.v2", "keep");
+  const first = render(<App />);
+  expect(saved()).toEqual([]);
+  fireEvent.click(
+    screen.getByRole("button", { name: "Review previous browser results" }),
+  );
+  advance(250);
+  expect(screen.getByText(/do not identify the app/)).toBeInTheDocument();
+  fireEvent.click(
+    screen.getByRole("button", { name: "Import into CubeTimer365" }),
+  );
+  expect(saved()).toEqual([12.34, 23.45]);
+  expect(stored()?.legacyMigration).toBe("imported");
+  first.unmount();
+  render(<App />);
+  expect(saved()).toEqual([12.34, 23.45]);
+  expect(
+    screen.queryByRole("button", { name: "Review previous browser results" }),
+  ).not.toBeInTheDocument();
+  expect(localStorage.getItem("history")).toBe("[12.34,23.45]");
+  expect(localStorage.getItem("lights-out.reaction-lab.v2")).toBe("keep");
+});
+it("remembers keeping shared data separate without dropping the original", () => {
+  localStorage.removeItem(SOLVE_STORAGE_KEY);
+  localStorage.setItem("history", "[99]");
+  localStorage.setItem("today", new Date().toISOString().slice(0, 10));
+  const first = render(<App />);
+  fireEvent.click(
+    screen.getByRole("button", { name: "Review previous browser results" }),
+  );
+  advance(250);
+  fireEvent.click(screen.getByRole("button", { name: "Keep separate" }));
+  expect(saved()).toEqual([]);
+  first.unmount();
+  render(<App />);
+  expect(
+    screen.queryByRole("button", { name: "Review previous browser results" }),
+  ).not.toBeInTheDocument();
+  expect(localStorage.getItem("history")).toBe("[99]");
 });
 it("distinguishes saving with Space from cancelling with Escape in the timer instructions", () => {
   render(<App />);
@@ -156,7 +224,7 @@ it("distinguishes saving with Space from cancelling with Escape in the timer ins
   expect(saved()[0]).toBeCloseTo(0.25);
 });
 it("defaults to screen-space Cyber without a query and switches finishes without altering history", () => {
-  localStorage.setItem("history", "[12,15]");
+  seedHistory("[12,15]");
   const { container } = render(<App />);
   expect(container.querySelectorAll("[data-screen-interference]")).toHaveLength(
     1,
@@ -198,7 +266,7 @@ it("defaults to screen-space Cyber without a query and switches finishes without
   expect(saved()).toEqual([12, 15]);
 });
 it("shows per-solve rolling averages without restoring the comparison column", () => {
-  localStorage.setItem("history", "[10,20,30,40,50]");
+  seedHistory("[10,20,30,40,50]");
   render(<App />);
   const table = screen.getByRole("table");
   expect(
@@ -215,8 +283,7 @@ it("shows per-solve rolling averages without restoring the comparison column", (
   expect(saved()).toEqual([10, 20, 30, 40, 50]);
 });
 it("shows chronological rolling values and earlier best averages, recalculating after deletion and reload", () => {
-  localStorage.setItem(
-    "history",
+  seedHistory(
     JSON.stringify(Array.from({ length: 13 }, (_, i) => (i + 1) * 10)),
   );
   const first = render(<App />);
@@ -310,7 +377,7 @@ describe("Space timer lifecycle", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
   it("returns focus to the timer on Escape but preserves intentional outside-control focus", () => {
-    localStorage.setItem("history", "[12]");
+    seedHistory("[12]");
     render(<App />);
     const picker = screen.getByRole("button", { name: "Choose cube finish" });
     act(() => picker.focus());
@@ -509,7 +576,7 @@ describe("Space timer lifecycle", () => {
     window.history.replaceState(null, "", "/");
   });
   it("does not use Space on interactive controls to arm the timer", () => {
-    localStorage.setItem("history", "[12]");
+    seedHistory("[12]");
     render(<App />);
     const button = screen.getByRole("button", { name: "Delete solve 1" });
     fireEvent.keyDown(button, { code: "Space" });
@@ -625,7 +692,7 @@ describe("page-wide touchscreen stop", () => {
     ["resize", "delete"],
     ["resize", "link"],
   ])("keeps delayed clicks consumed after %s over %s", (interruption, area) => {
-    localStorage.setItem("history", "[12]");
+    seedHistory("[12]");
     render(<App />);
     touchStart();
     advance(40);
@@ -663,7 +730,7 @@ describe("page-wide touchscreen stop", () => {
   it.each(["background", "scramble", "cube", "delete", "link"])(
     "stops over %s and consumes the complete touch and compatibility clicks",
     (area) => {
-      localStorage.setItem("history", "[12]");
+      seedHistory("[12]");
       render(<App />);
       touchStart();
       fireEvent.click(surface(), { detail: 1 });
@@ -716,7 +783,7 @@ describe("page-wide touchscreen stop", () => {
   it.each(["keyboard", "touch"])(
     "stops on a non-primary contact after %s start with another finger held",
     (input) => {
-      localStorage.setItem("history", "[12]");
+      seedHistory("[12]");
       render(<App />);
       if (input === "keyboard") {
         pointerEvent("pointerdown", {}, document.body);

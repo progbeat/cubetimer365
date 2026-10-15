@@ -5,11 +5,23 @@ export default async (page) => {
     checks.push(name);
   };
   const history = () =>
-    page.evaluate(() => JSON.parse(localStorage.getItem("history") || "[]"));
+    page.evaluate(
+      () =>
+        JSON.parse(
+          localStorage.getItem("cubetimer365:daily-history:v1") || "null",
+        )?.history || [],
+    );
   const state = () => page.locator(".timer-status").textContent();
   await page.evaluate(() => {
-    localStorage.setItem("today", new Date().toISOString().split("T")[0]);
-    localStorage.setItem("history", "[]");
+    localStorage.setItem(
+      "cubetimer365:daily-history:v1",
+      JSON.stringify({
+        version: 1,
+        date: new Date().toISOString().split("T")[0],
+        history: JSON.parse("[]"),
+        legacyMigration: "ignored",
+      }),
+    );
   });
   await page.reload();
   await page.setViewportSize({ width: 1440, height: 1120 });

@@ -11,12 +11,24 @@ export default async (page) => {
   };
   const state = () => page.locator(".timer-status").textContent();
   const history = () =>
-    page.evaluate(() => JSON.parse(localStorage.getItem("history") || "[]"));
+    page.evaluate(
+      () =>
+        JSON.parse(
+          localStorage.getItem("cubetimer365:daily-history:v1") || "null",
+        )?.history || [],
+    );
   const reset = async () => {
     await page.goto(root);
     await page.evaluate(() => {
-      localStorage.setItem("today", new Date().toISOString().split("T")[0]);
-      localStorage.setItem("history", "[]");
+      localStorage.setItem(
+        "cubetimer365:daily-history:v1",
+        JSON.stringify({
+          version: 1,
+          date: new Date().toISOString().split("T")[0],
+          history: JSON.parse("[]"),
+          legacyMigration: "ignored",
+        }),
+      );
     });
     await page.reload();
     await page.evaluate(() => document.fonts.ready);
@@ -53,13 +65,11 @@ export default async (page) => {
   const measurements = [];
   for (let i = 0; i < 12; i++) {
     measurements.push(
-      await page
-        .locator(".timer-digits")
-        .evaluate((el) => ({
-          width: el.getBoundingClientRect().width,
-          x: el.getBoundingClientRect().x,
-          slots: [...el.children].map((e) => e.getBoundingClientRect().x),
-        })),
+      await page.locator(".timer-digits").evaluate((el) => ({
+        width: el.getBoundingClientRect().width,
+        x: el.getBoundingClientRect().x,
+        slots: [...el.children].map((e) => e.getBoundingClientRect().x),
+      })),
     );
     await page.waitForTimeout(40);
   }
@@ -347,19 +357,17 @@ export default async (page) => {
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 900 });
     await page.waitForTimeout(150);
-    const bands = await page
-      .locator("[data-scanlines]")
-      .evaluateAll((nodes) =>
-        nodes.map((n) => ({
-          id: n.dataset.scanlines,
-          count: Number(n.dataset.bandCount),
-          d: n.getAttribute("d"),
-          opacity: Number(n.getAttribute("opacity")),
-          clip:
-            n.getAttribute("clip-path") ||
-            n.parentElement.getAttribute("clip-path"),
-        })),
-      );
+    const bands = await page.locator("[data-scanlines]").evaluateAll((nodes) =>
+      nodes.map((n) => ({
+        id: n.dataset.scanlines,
+        count: Number(n.dataset.bandCount),
+        d: n.getAttribute("d"),
+        opacity: Number(n.getAttribute("opacity")),
+        clip:
+          n.getAttribute("clip-path") ||
+          n.parentElement.getAttribute("clip-path"),
+      })),
+    );
     assert(
       bands.length === 0 &&
         (await page.locator("[data-screen-interference]").count()) === 1,
