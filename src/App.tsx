@@ -16,6 +16,7 @@ import CubeNet, { CubeStyle } from "./CubeNet";
 import ScrambleText from "./ScrambleText";
 import { generateScramble } from "./scramble";
 import AnalyticsPrivacy from "./AnalyticsPrivacy";
+import { calculateSolveStatistics, formatTime } from "./solveStatistics";
 
 const theme = createTheme({
   fontFamily:
@@ -24,23 +25,6 @@ const theme = createTheme({
 const ScrambleCube = React.memo(CubeNet);
 const HISTORY_KEY = "history";
 const HISTORY_DATE_KEY = "today";
-const formatTime = (seconds: number | null) => {
-  if (seconds === null) {
-    return "—";
-  }
-  const centiseconds = Math.round(seconds * 100);
-  const minutes = Math.floor(centiseconds / 6000);
-  const remainder = (centiseconds % 6000) / 100;
-  return `${String(minutes).padStart(2, "0")}:${remainder.toFixed(2).padStart(5, "0")}`;
-};
-const calculateAO = (history: number[], count: number) => {
-  if (history.length < count) {
-    return null;
-  }
-  const selected = history.slice(-count).sort((a, b) => a - b);
-  const trimmed = count >= 5 ? selected.slice(1, -1) : selected;
-  return trimmed.reduce((sum, time) => sum + time, 0) / trimmed.length;
-};
 const isControl = (target: EventTarget | null) =>
   target instanceof HTMLElement &&
   Boolean(
@@ -555,19 +539,26 @@ const App: React.FC = () => {
     pointer.current = null;
     cancel();
   };
-  const best = history.length ? Math.min(...history) : null;
-  const total = history.reduce((sum, time) => sum + time, 0);
-  const data = history.map((time, index) => ({
-    attempt: index + 1,
-    time,
-    ao5: calculateAO(history.slice(0, index + 1), 5),
-    ao12: calculateAO(history.slice(0, index + 1), 12),
-  }));
+  const statistics = React.useMemo(() => {
+    const calculated = calculateSolveStatistics(history);
+    const chartValue = (value: number | null) =>
+      value !== null && Number.isFinite(value) ? value : null;
+    return {
+      ...calculated,
+      newestFirst: calculated.data.slice().reverse(),
+      chartData: calculated.data.map((row) => ({
+        ...row,
+        time: chartValue(row.time),
+        ao5: chartValue(row.ao5),
+        ao12: chartValue(row.ao12),
+      })),
+    };
+  }, [history]);
+  const best = statistics.bestSingle;
   const stats = [
-    ["Best", best],
-    ["AO5", calculateAO(history, 5)],
-    ["AO12", calculateAO(history, 12)],
-    ["Total time", total],
+    ["Best single", best],
+    ["Best AO5", statistics.bestAO5],
+    ["Best AO12", statistics.bestAO12],
   ] as const;
   const ready = phase === "ready";
   const status =
@@ -748,13 +739,19 @@ const App: React.FC = () => {
             <section
               className="stats-grid"
               id="stats"
-              aria-label="Today's statistics"
+              aria-label="Today's best results"
             >
               {stats.map(([label, value]) => (
                 <div className="stat" key={label}>
                   <h2 className="eyebrow">{label}</h2>
                   <p
-                    className={label === "Best" && best !== null ? "lime" : ""}
+                    className={
+                      label === "Best single" &&
+                      best !== null &&
+                      Number.isFinite(best)
+                        ? "lime"
+                        : ""
+                    }
                   >
                     {formatTime(value)}
                   </p>
@@ -782,29 +779,66 @@ const App: React.FC = () => {
               ) : (
                 <div className="history-scroll">
                   <table className="history-table">
+                    <caption className="sr-only">
+                      Solve times and rolling averages, newest first
+                    </caption>
                     <thead>
                       <tr>
-                        <th>#</th>
-                        <th>Time</th>
-                        <th>
+                        <th scope="col">#</th>
+                        <th scope="col">Time</th>
+                        <th
+                          scope="col"
+                          title="Last five solves ending at this solve"
+                        >
+                          AO5
+                        </th>
+                        <th
+                          scope="col"
+                          title="Last twelve solves ending at this solve"
+                        >
+                          AO12
+                        </th>
+                        <th scope="col">
                           <span className="sr-only">Delete</span>
                         </th>
                       </tr>
                     </thead>
                     <tbody>
-                      {history
-                        .slice()
-                        .reverse()
-                        .map((time, row) => {
-                          const index = history.length - 1 - row;
+                      {statistics.newestFirst.map(
+                        ({ attempt, time, ao5, ao12 }, row) => {
+                          const index = attempt - 1;
                           return (
                             <tr
                               key={index}
                               className={row === 0 ? "latest-solve" : ""}
                             >
                               <td>{index + 1}</td>
-                              <td className={time === best ? "best-solve" : ""}>
+                              <td
+                                className={
+                                  Number.isFinite(time) && time === best
+                                    ? "best-solve"
+                                    : ""
+                                }
+                              >
                                 {formatTime(time)}
+                              </td>
+                              <td
+                                className={
+                                  ao5 === null
+                                    ? "incomplete-average"
+                                    : "ao5-cell"
+                                }
+                              >
+                                {formatTime(ao5)}
+                              </td>
+                              <td
+                                className={
+                                  ao12 === null
+                                    ? "incomplete-average"
+                                    : "ao12-cell"
+                                }
+                              >
+                                {formatTime(ao12)}
                               </td>
                               <td>
                                 <button
@@ -822,13 +856,20 @@ const App: React.FC = () => {
                               </td>
                             </tr>
                           );
-                        })}
+                        },
+                      )}
                     </tbody>
                   </table>
                 </div>
               )}
               <div className="history-footer">
-                Saved on this device <span className="shared-dot" />
+                <p>Rolling averages end at each solve.</p>
+                <div className="history-meta">
+                  <span>Total {formatTime(statistics.totalTime)}</span>
+                  <span>
+                    Saved on this device <span className="shared-dot" />
+                  </span>
+                </div>
               </div>
             </section>
             <section
@@ -862,7 +903,7 @@ const App: React.FC = () => {
               ) : (
                 <LineChart
                   h={230}
-                  data={data}
+                  data={statistics.chartData}
                   dataKey="attempt"
                   series={[
                     { name: "time", color: "#b1f54b" },
@@ -876,8 +917,12 @@ const App: React.FC = () => {
                   curveType="linear"
                   yAxisProps={{
                     domain: [
-                      Math.max(0, Math.floor(Math.min(...history) - 0.25)),
-                      Math.ceil(Math.max(...history) + 0.25),
+                      best !== null && Number.isFinite(best)
+                        ? Math.max(0, Math.floor(best - 0.25))
+                        : 0,
+                      statistics.maxFinite !== null
+                        ? Math.ceil(statistics.maxFinite + 0.25)
+                        : 1,
                     ],
                   }}
                 />
