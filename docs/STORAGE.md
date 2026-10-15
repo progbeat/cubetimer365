@@ -20,6 +20,16 @@ A saved `imported` or `ignored` decision survives reload and the UTC day change.
 Normal saves, deletion and resets write only the namespaced key. They never write
 or delete generic `history` / `today`, or call `localStorage.clear()`.
 
+All owned-key writes acquire an exclusive IndexedDB `readwrite` transaction in
+`cubetimer365:storage-locks:v1`, store `writes`. That store contains only a constant
+mutex marker, not a second copy of the solve history. The snapshot comparison and
+localStorage write both run inside the transaction's request callback, so other
+tabs using this protocol cannot interleave those operations. Each tab also queues
+its own saves and skips superseded snapshots. The footer shows **Saving…** until
+the transaction finishes; closing the tab before that confirmation can lose a
+pending change. If IndexedDB or localStorage is unavailable, persistence stops
+with a warning and never falls back to an unlocked write.
+
 ## Legacy ambiguity and import
 
 The previous CubeTimer version used generic `history` and `today` keys. Those
@@ -59,16 +69,19 @@ scripts on the same origin. No other app or repository was modified for this fix
 
 Unknown or malformed data at the owned key is not overwritten. An initial read
 failure keeps writes blocked for this mount even if storage later recovers; reload
-or reconcile after preserving in-memory results. Unreadable storage and failed
-writes also leave previous serialized data intact. The timer continues
+or reconcile after preserving in-memory results. Unreadable storage and rejected
+localStorage writes leave previous serialized data intact. The timer continues
 in memory and displays a storage warning; those new in-memory results will not
 survive reload until persistence is repaired. Export/recover the old raw record
 before deliberately replacing it; the app does not silently reset corrupt data.
 
 Tests cover explicit import/refusal, repeat loads, deletion after import, the UTC
 boundary, invalid dates/data, pre-existing owned results, failed writes, and other
-app keys. Native Chromium checks assert that the original shared values and Lights
-Out key remain unchanged during each migration path.
+app keys. Native Chromium checks deliberately hold a transaction open while two
+tabs enqueue conflicting solve/import writes, exercise both commit orders, and
+verify that only the first snapshot can commit. A losing solve stays visible in
+memory with a warning. The original shared values and Lights Out key remain
+unchanged during each migration path.
 
 Inspected import previews: [desktop](images/storage-import-desktop.png) and
 [phone](images/storage-import-phone.png); the 320 px view was also checked.

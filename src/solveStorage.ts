@@ -64,27 +64,90 @@ export function loadDailyHistory(date: string): {
     return { record: empty, blocked: true, raw: null };
   }
 }
-export function saveDailyHistory(
+let lockDatabase: Promise<IDBDatabase> | null = null;
+export const SOLVE_LOCK_DATABASE = "cubetimer365:storage-locks:v1";
+function openLockDatabase() {
+  if (!lockDatabase) {
+    const pending = new Promise<IDBDatabase>((resolve, reject) => {
+      const request = indexedDB.open(SOLVE_LOCK_DATABASE, 1);
+      let failed = false;
+      request.onupgradeneeded = () =>
+        request.result.createObjectStore("writes");
+      request.onerror = () => {
+        failed = true;
+        reject(request.error);
+      };
+      request.onblocked = () => {
+        failed = true;
+        reject(new Error("Storage lock is blocked"));
+      };
+      request.onsuccess = () => {
+        const db = request.result;
+        if (failed) {
+          db.close();
+          return;
+        }
+        db.onversionchange = () => {
+          db.close();
+          lockDatabase = null;
+        };
+        resolve(db);
+      };
+    });
+    lockDatabase = pending;
+    void pending.catch(() => {
+      if (lockDatabase === pending) {
+        lockDatabase = null;
+      }
+    });
+  }
+  return lockDatabase;
+}
+async function withStorageLock(commit: () => boolean): Promise<boolean> {
+  const db = await openLockDatabase();
+  return new Promise<boolean>((resolve) => {
+    // Overlapping readwrite transactions for this store are serialized across tabs.
+    const transaction = db.transaction("writes", "readwrite");
+    let saved = false;
+    const request = transaction.objectStore("writes").put(0, "daily-history");
+    request.onsuccess = () => {
+      saved = commit();
+    };
+    transaction.oncomplete = () => resolve(saved);
+    transaction.onabort = () => resolve(false);
+  });
+}
+export async function saveDailyHistory(
   record: DailyHistory,
   expectedRaw: string | null,
-): boolean {
+  canCommit: () => boolean = () => true,
+): Promise<boolean> {
   try {
-    if (!validRecord(record)) {
-      return false;
-    }
-    // Unknown/corrupt owned data remains intact for recovery instead of being replaced.
-    const raw = localStorage.getItem(SOLVE_STORAGE_KEY);
-    if (raw !== expectedRaw) {
-      return false;
-    }
-    if (raw !== null) {
-      const current: unknown = JSON.parse(raw);
-      if (!validRecord(current) || current.date > record.date) {
+    return await withStorageLock(() => {
+      try {
+        if (!canCommit()) {
+          return false;
+        }
+        if (!validRecord(record)) {
+          return false;
+        }
+        // Unknown/corrupt owned data remains intact for recovery instead of being replaced.
+        const raw = localStorage.getItem(SOLVE_STORAGE_KEY);
+        if (raw !== expectedRaw) {
+          return false;
+        }
+        if (raw !== null) {
+          const current: unknown = JSON.parse(raw);
+          if (!validRecord(current) || current.date > record.date) {
+            return false;
+          }
+        }
+        localStorage.setItem(SOLVE_STORAGE_KEY, JSON.stringify(record));
+        return true;
+      } catch {
         return false;
       }
-    }
-    localStorage.setItem(SOLVE_STORAGE_KEY, JSON.stringify(record));
-    return true;
+    });
   } catch {
     return false;
   }

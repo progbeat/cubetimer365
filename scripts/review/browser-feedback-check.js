@@ -1,3 +1,4 @@
+import { waitForStorage } from "./browser-storage-helpers.js";
 export default async (page) => {
   // Fixtures must never run on the hosted preview or a user's browser storage.
   const origin = new URL(page.url());
@@ -10,15 +11,18 @@ export default async (page) => {
     checks.push(label);
   };
   const state = () => page.locator(".timer-status").textContent();
-  const history = () =>
-    page.evaluate(
+  const history = async () => {
+    await waitForStorage(page);
+    return page.evaluate(
       () =>
         JSON.parse(
           localStorage.getItem("cubetimer365:daily-history:v1") || "null",
         )?.history || [],
     );
+  };
   const reset = async () => {
     await page.goto(root);
+    await waitForStorage(page);
     await page.evaluate(() => {
       localStorage.setItem(
         "cubetimer365:daily-history:v1",
@@ -30,6 +34,7 @@ export default async (page) => {
         }),
       );
     });
+    await waitForStorage(page);
     await page.reload();
     await page.evaluate(() => document.fonts.ready);
     await page.waitForTimeout(150);

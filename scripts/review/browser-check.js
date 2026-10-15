@@ -1,17 +1,21 @@
+import { waitForStorage } from "./browser-storage-helpers.js";
 export default async (page) => {
   const checks = [];
   const assert = (pass, name) => {
     if (!pass) throw new Error(name);
     checks.push(name);
   };
-  const history = () =>
-    page.evaluate(
+  const history = async () => {
+    await waitForStorage(page);
+    return page.evaluate(
       () =>
         JSON.parse(
           localStorage.getItem("cubetimer365:daily-history:v1") || "null",
         )?.history || [],
     );
+  };
   const state = () => page.locator(".timer-status").textContent();
+  await waitForStorage(page);
   await page.evaluate(() => {
     localStorage.setItem(
       "cubetimer365:daily-history:v1",
@@ -23,6 +27,7 @@ export default async (page) => {
       }),
     );
   });
+  await waitForStorage(page);
   await page.reload();
   await page.setViewportSize({ width: 1440, height: 1120 });
   await page.waitForTimeout(150);
@@ -57,11 +62,13 @@ export default async (page) => {
     (await history()).length === 2 && !(await state()).includes("Solving"),
     "Repeated keyboard lifecycle and key repeat safe",
   );
+  await waitForStorage(page);
   await page.reload();
   assert((await history()).length === 2, "History survives reload");
   await page
     .getByRole("button", { name: "Delete solve 1", exact: true })
     .click();
+  await waitForStorage(page);
   await page.reload();
   assert((await history()).length === 1, "Deletion survives reload");
   const deleteControl = page.getByRole("button", {
@@ -162,6 +169,7 @@ export default async (page) => {
   await cdp.detach();
   await page.setViewportSize({ width: 1440, height: 1120 });
   await page.waitForTimeout(150);
+  await waitForStorage(page);
   await page.reload();
   await page.keyboard.down("Space");
   await page.waitForTimeout(80);

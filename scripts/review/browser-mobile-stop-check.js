@@ -1,3 +1,4 @@
+import { waitForStorage } from "./browser-storage-helpers.js";
 export default async (page) => {
   const root = `${new URL(page.url()).origin}/cubetimer365/`;
   const checks = [];
@@ -5,17 +6,20 @@ export default async (page) => {
     if (!condition) throw new Error(message);
     checks.push(message);
   };
-  const history = () =>
-    page.evaluate(
+  const history = async () => {
+    await waitForStorage(page);
+    return page.evaluate(
       () =>
         JSON.parse(
           localStorage.getItem("cubetimer365:daily-history:v1") || "null",
         )?.history || [],
     );
+  };
   const solving = async () =>
     (await page.locator(".timer-status").textContent()).includes("Solving");
   const reset = async () => {
     await page.goto(root);
+    await waitForStorage(page);
     await page.evaluate(() => {
       localStorage.setItem(
         "cubetimer365:daily-history:v1",
@@ -27,6 +31,7 @@ export default async (page) => {
         }),
       );
     });
+    await waitForStorage(page);
     await page.reload();
     await page.locator(".timer-surface").waitFor();
   };

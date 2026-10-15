@@ -1,3 +1,4 @@
+import { waitForStorage } from "./browser-storage-helpers.js";
 export default async (page) => {
   const origin = new URL(page.url());
   if (!["127.0.0.1", "localhost"].includes(origin.hostname))
@@ -11,6 +12,7 @@ export default async (page) => {
   const times = Array.from({ length: 13 }, (_, i) => (i + 1) * 10);
   const load = async (history) => {
     await page.goto(root);
+    await waitForStorage(page);
     await page.evaluate((history) => {
       localStorage.setItem(
         "cubetimer365:daily-history:v1",

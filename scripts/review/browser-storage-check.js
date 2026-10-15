@@ -13,6 +13,11 @@ export default async (page) => {
       (key) => JSON.parse(localStorage.getItem(key) || "null"),
       key,
     );
+  const settled = async (tab = page) => {
+    await tab
+      .getByText("Saving…", { exact: true })
+      .waitFor({ state: "hidden" });
+  };
   const original = () =>
     page.evaluate(() => ({
       history: localStorage.getItem("history"),
@@ -27,6 +32,8 @@ export default async (page) => {
     owned = null,
   } = {}) => {
     await page.goto(root);
+    await page.locator(".history-panel").waitFor();
+    await settled();
     await page.evaluate(
       ({ key, history, stale, owned }) => {
         const date = new Date();
@@ -56,6 +63,7 @@ export default async (page) => {
     const snapshot = await original();
     await page.reload();
     await page.locator(".history-panel").waitFor();
+    await settled();
     return snapshot;
   };
   let snapshot = await seed();
@@ -88,6 +96,7 @@ export default async (page) => {
   await page
     .getByRole("button", { name: "Delete solve 1", exact: true })
     .click();
+  await settled();
   await page.reload();
   await page.locator(".history-panel").waitFor();
   assert(
@@ -98,6 +107,7 @@ export default async (page) => {
   snapshot = await seed();
   await review().click();
   await page.getByRole("button", { name: "Keep separate" }).click();
+  await settled();
   await page.reload();
   await page.locator(".history-panel").waitFor();
   assert(
@@ -218,6 +228,7 @@ export default async (page) => {
     await page
       .getByRole("button", { name: "Import into CubeTimer365" })
       .click();
+    await settled();
     const newer = await page.evaluate((key) => localStorage.getItem(key), key);
     await tab.getByRole("button", { name: "Keep separate" }).click();
     await tab.getByText("2 solves", { exact: true }).waitFor();
@@ -227,6 +238,116 @@ export default async (page) => {
     );
   } finally {
     await tab.close();
+  }
+  // Keep a real readwrite transaction active until BOTH tabs have queued writes.
+  for (const first of ["solve", "import"]) {
+    snapshot = await seed();
+    tab = await otherTab(true);
+    try {
+      await tab
+        .getByRole("button", { name: "Review previous browser results" })
+        .click();
+      const before = await page.evaluate(
+        (key) => localStorage.getItem(key),
+        key,
+      );
+      await page.evaluate(async () => {
+        const db = await new Promise((resolve, reject) => {
+          const request = indexedDB.open("cubetimer365:storage-locks:v1", 1);
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error);
+        });
+        const gate = db.transaction("writes", "readwrite");
+        let released = false;
+        window.releaseStorageGate = () => {
+          released = true;
+        };
+        const keepAlive = () => {
+          const request = gate.objectStore("writes").get("daily-history");
+          request.onsuccess = () => {
+            if (!released) keepAlive();
+          };
+        };
+        gate.oncomplete = () => db.close();
+        keepAlive();
+      });
+      for (const writer of [page, tab]) {
+        await writer.evaluate(() => {
+          window.queuedStorageWrites = 0;
+          const transaction = IDBDatabase.prototype.transaction;
+          IDBDatabase.prototype.transaction = function (...args) {
+            const result = transaction.apply(this, args);
+            if (
+              this.name === "cubetimer365:storage-locks:v1" &&
+              args[1] === "readwrite"
+            )
+              window.queuedStorageWrites += 1;
+            return result;
+          };
+        });
+      }
+      const solve = async () => {
+        await page.bringToFront();
+        await page.keyboard.down("Space");
+        await page.waitForTimeout(330);
+        await page.keyboard.up("Space");
+        await page.waitForTimeout(250);
+        await page.keyboard.press("Space");
+        await page.waitForFunction(() => window.queuedStorageWrites > 0);
+      };
+      const importResults = async () => {
+        await tab
+          .getByRole("button", { name: "Import into CubeTimer365" })
+          .click();
+        await tab.waitForFunction(() => window.queuedStorageWrites > 0);
+      };
+      if (first === "solve") {
+        await solve();
+        await importResults();
+      } else {
+        await importResults();
+        await solve();
+      }
+      assert(
+        (await page.evaluate((key) => localStorage.getItem(key), key)) ===
+          before &&
+          (await page.getByText("Saving…", { exact: true }).isVisible()) &&
+          (await tab.getByText("Saving…", { exact: true }).isVisible()),
+        `${first} first: both real tabs wait for the shared transaction before committing`,
+      );
+      await page.evaluate(() => window.releaseStorageGate());
+      await settled();
+      await settled(tab);
+      const persisted = await read();
+      if (first === "solve") {
+        await tab.getByText("1 solve", { exact: true }).waitFor();
+        assert(
+          persisted.history.length === 1 && persisted.history[0] < 5,
+          "Overlapping import cannot replace the solve transaction that committed first",
+        );
+      } else {
+        assert(
+          JSON.stringify(persisted.history) === "[12.34,23.45]" &&
+            persisted.legacyMigration === "imported",
+          "Overlapping solve cannot replace the import transaction that committed first",
+        );
+        await page
+          .getByRole("alert")
+          .filter({ hasText: "Browser storage" })
+          .waitFor();
+        assert(
+          await page.getByText("1 solve", { exact: true }).isVisible(),
+          "The losing solve remains visible in its original tab with a persistence warning",
+        );
+      }
+      assert(
+        JSON.stringify(await original()) === JSON.stringify(snapshot),
+        `${first} first: deliberately overlapping writers preserve all original shared data`,
+      );
+    } finally {
+      await page.evaluate(() => window.releaseStorageGate?.());
+      await tab.close();
+    }
   }
   await seed();
   tab = await otherTab(false);
