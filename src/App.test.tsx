@@ -124,6 +124,44 @@ afterEach(() => {
 });
 
 describe("preserved scramble and daily data", () => {
+  it.each(["holding", "ready", "running"] as const)(
+    "does not offer legacy actions while the timer is %s",
+    async (phase) => {
+      localStorage.removeItem(SOLVE_STORAGE_KEY);
+      localStorage.setItem("history", "[12]");
+      localStorage.setItem("today", new Date().toISOString().slice(0, 10));
+      render(<App />);
+      await flushStorage();
+      expect(
+        screen.getByRole("button", { name: "Review previous browser results" }),
+      ).toBeInTheDocument();
+      fireEvent.keyDown(window, { code: "Space" });
+      if (phase !== "holding") {
+        advance(310);
+      }
+      if (phase === "running") {
+        fireEvent.keyUp(window, { code: "Space" });
+      }
+      expect(
+        screen.queryByRole("button", {
+          name: "Review previous browser results",
+        }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Import into CubeTimer365" }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Keep separate" }),
+      ).not.toBeInTheDocument();
+      fireEvent.keyDown(window, { code: "Escape" });
+      fireEvent.keyUp(window, { code: "Space" });
+      expect(
+        screen.getByRole("button", { name: "Review previous browser results" }),
+      ).toBeInTheDocument();
+      expect(saved()).toEqual([]);
+      expect(localStorage.getItem("history")).toBe("[12]");
+    },
+  );
   it.each(["rollover", "solve", "deletion"] as const)(
     "reconciles a stale %s after a peer's new-day solve without losing user edits",
     async (edit) => {

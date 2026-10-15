@@ -128,6 +128,34 @@ export default async (page) => {
     (await read()).history.length === 0 && (await review().count()) === 1,
     "Shared history is offered for review, never silently adopted",
   );
+  await page.keyboard.down("Space");
+  await review().waitFor({ state: "hidden" });
+  assert(
+    (await review().count()) === 0,
+    "Legacy review is unavailable while arming a desktop solve",
+  );
+  await page.getByText("Ready · release to start", { exact: true }).waitFor();
+  assert(
+    (await review().count()) === 0,
+    "Legacy review stays unavailable while ready to start",
+  );
+  await page.keyboard.up("Space");
+  await page.getByText("Solving", { exact: true }).waitFor();
+  assert(
+    (await review().count()) === 0 &&
+      (await page
+        .getByRole("button", { name: "Import into CubeTimer365" })
+        .count()) === 0 &&
+      (await page.getByRole("button", { name: "Keep separate" }).count()) === 0,
+    "A running first solve never offers migration actions that would be rejected",
+  );
+  await page.keyboard.press("Escape");
+  await review().waitFor();
+  assert(
+    (await read()).history.length === 0 &&
+      JSON.stringify(await original()) === JSON.stringify(snapshot),
+    "Cancelling restores the idle review control without saving or changing shared results",
+  );
   await review().click();
   await page
     .getByRole("dialog", { name: "Import previous results?" })

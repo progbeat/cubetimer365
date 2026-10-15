@@ -128,3 +128,8 @@ commits first. An explicit solve or current-day deletion still differs from the
 acknowledged baseline and remains protected as a local edit. Regressions cover
 all three cases and delay a real database open while the peer saves the first
 new-day solve, then verify that the reset-only tab can keep saving.
+
+Legacy review is offered only while the timer is idle and persistence is healthy.
+Holding, ready and running phases hide the control, so desktop users cannot open
+an import action that the active solve would reject. Cancelling the attempt
+restores the idle control without importing or changing the original results.

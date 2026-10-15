@@ -1018,7 +1018,8 @@ const App: React.FC = () => {
                   {history.length} {history.length === 1 ? "solve" : "solves"}
                 </span>
               </div>
-              {!storageFailed &&
+              {phase === "idle" &&
+                !storageFailed &&
                 legacyCandidate &&
                 legacyCandidate.date === todayString &&
                 daily.legacyMigration === "unresolved" &&
