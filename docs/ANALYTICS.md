@@ -70,8 +70,11 @@ solve history, individual times, scrambles or cube-choice analytics events.
 
 ## Existing device data
 
-`history`, `today`, cube selection and unrelated preferences retain their existing
-semantics. The loader does not read, write or clear localStorage. The obsolete
+The project-scoped `cubetimer365:daily-history:v1` record, legacy `history` / `today`
+values, cube selection and unrelated preferences retain their existing semantics.
+[Solve storage](STORAGE.md) defines the app's separate import and persistence
+behavior. The analytics loader does not read, write or clear localStorage. The
+obsolete
 `cubetimer365:analytics-consent` value is left untouched; it is a former GA4 choice,
 not a grant for another provider or a new Cloudflare control.
 

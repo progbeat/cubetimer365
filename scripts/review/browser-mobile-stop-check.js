@@ -1,3 +1,4 @@
+import { waitForStorage } from "./browser-storage-helpers.js";
 export default async (page) => {
   const root = `${new URL(page.url()).origin}/cubetimer365/`;
   const checks = [];
@@ -5,16 +6,32 @@ export default async (page) => {
     if (!condition) throw new Error(message);
     checks.push(message);
   };
-  const history = () =>
-    page.evaluate(() => JSON.parse(localStorage.getItem("history") || "[]"));
+  const history = async () => {
+    await waitForStorage(page);
+    return page.evaluate(
+      () =>
+        JSON.parse(
+          localStorage.getItem("cubetimer365:daily-history:v1") || "null",
+        )?.history || [],
+    );
+  };
   const solving = async () =>
     (await page.locator(".timer-status").textContent()).includes("Solving");
   const reset = async () => {
     await page.goto(root);
+    await waitForStorage(page);
     await page.evaluate(() => {
-      localStorage.setItem("today", new Date().toISOString().split("T")[0]);
-      localStorage.setItem("history", "[12]");
+      localStorage.setItem(
+        "cubetimer365:daily-history:v1",
+        JSON.stringify({
+          version: 1,
+          date: new Date().toISOString().split("T")[0],
+          history: JSON.parse("[12]"),
+          legacyMigration: "ignored",
+        }),
+      );
     });
+    await waitForStorage(page);
     await page.reload();
     await page.locator(".timer-surface").waitFor();
   };
@@ -97,7 +114,11 @@ export default async (page) => {
         await contact("touchStart", [stoppingPoint]);
         await page.waitForFunction(
           () =>
-            JSON.parse(localStorage.getItem("history") || "[]").length === 2,
+            (
+              JSON.parse(
+                localStorage.getItem("cubetimer365:daily-history:v1") || "null",
+              )?.history || []
+            ).length === 2,
         );
         if (name === "timer") {
           assert(
@@ -164,7 +185,12 @@ export default async (page) => {
       await start();
       await contact("touchStart", [await point(".cube-style-trigger")]);
       await page.waitForFunction(
-        () => JSON.parse(localStorage.getItem("history") || "[]").length === 2,
+        () =>
+          (
+            JSON.parse(
+              localStorage.getItem("cubetimer365:daily-history:v1") || "null",
+            )?.history || []
+          ).length === 2,
       );
       assert(
         (await scrollBlockers()) > 0,

@@ -42,3 +42,4 @@ privacy or consent panel is shown.
 [Development and checks](docs/DEVELOPMENT.md) · [License](LICENSE)
 
 [Rolling averages and daily bests](docs/STATISTICS.md).
+[Project-scoped storage and safe legacy import](docs/STORAGE.md).

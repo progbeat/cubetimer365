@@ -90,6 +90,15 @@ describe("Cloudflare visit analytics", () => {
   it("expires only legacy app analytics cookies while preserving history and preferences", async () => {
     localStorage.setItem("history", "[12.34]");
     localStorage.setItem("today", "2026-10-15");
+    localStorage.setItem(
+      "cubetimer365:daily-history:v1",
+      JSON.stringify({
+        version: 1,
+        date: "2026-10-15",
+        history: [12.34],
+        legacyMigration: "ignored",
+      }),
+    );
     localStorage.setItem("cube-style", "neon");
     localStorage.setItem("cubetimer365:analytics-consent", "denied");
     const saved = { ...localStorage };

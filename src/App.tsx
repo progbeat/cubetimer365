@@ -17,14 +17,25 @@ import ScrambleText from "./ScrambleText";
 import { generateScramble } from "./scramble";
 import { startAnalytics } from "./analytics";
 import { calculateSolveStatistics, formatTime } from "./solveStatistics";
+import LegacyHistoryImport from "./LegacyHistoryImport";
+import {
+  SOLVE_STORAGE_KEY,
+  loadDailyHistory,
+  saveDailyHistory,
+  readLegacyHistory,
+  type DailyHistory,
+} from "./solveStorage";
 
 const theme = createTheme({
   fontFamily:
     'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
 });
 const ScrambleCube = React.memo(CubeNet);
-const HISTORY_KEY = "history";
-const HISTORY_DATE_KEY = "today";
+const sameDailyHistory = (left: DailyHistory, right: DailyHistory) =>
+  left.date === right.date &&
+  left.legacyMigration === right.legacyMigration &&
+  left.history.length === right.history.length &&
+  left.history.every((time, index) => time === right.history[index]);
 const isControl = (target: EventTarget | null) =>
   target instanceof HTMLElement &&
   Boolean(
@@ -116,15 +127,220 @@ const App: React.FC = () => {
     (today.getMonth() + 1) * 100 +
     today.getDate();
   const scramble = React.useMemo(() => generateScramble(seed), [seed]);
-  const [history, setHistory] = useState<number[]>(() => {
-    // Retain the existing storage keys and daily history behavior.
-    if (localStorage.getItem(HISTORY_DATE_KEY) !== todayString) {
-      localStorage.removeItem(HISTORY_KEY);
-      localStorage.setItem(HISTORY_DATE_KEY, todayString);
+  const [initialStorage] = useState(() => loadDailyHistory(todayString));
+  const [daily, setDaily] = useState(initialStorage.record);
+  const [storageFailed, setStorageFailed] = useState(initialStorage.blocked);
+  const [saving, setSaving] = useState(false);
+  const [syncVersion, setSyncVersion] = useState(0);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+  const utcDay = useRef(todayString);
+  utcDay.current = todayString;
+  const dailyRef = useRef(daily);
+  dailyRef.current = daily;
+  const expectedRaw = useRef(initialStorage.raw);
+  const persistedRecord = useRef(initialStorage.record);
+  const writesBlocked = useRef(initialStorage.blocked);
+  const writeQueue = useRef(Promise.resolve());
+  const writeInFlight = useRef(false);
+  const externalUpdatePending = useRef(false);
+  const pendingWrites = useRef(0);
+  const migrationBusy = useRef(false);
+  const blockStorage = React.useCallback(() => {
+    writesBlocked.current = true;
+    if (mounted.current) {
+      setStorageFailed(true);
     }
-    return JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]") as number[];
-  });
-  const historyDate = useRef(todayString);
+  }, []);
+  const enqueueWrite = React.useCallback(
+    (write: () => Promise<void>) => {
+      pendingWrites.current += 1;
+      setSaving(true);
+      const queued = writeQueue.current
+        .then(async () => {
+          writeInFlight.current = true;
+          try {
+            await write();
+          } finally {
+            writeInFlight.current = false;
+          }
+        })
+        .catch(blockStorage)
+        .finally(() => {
+          pendingWrites.current -= 1;
+          if (mounted.current) {
+            setSaving(pendingWrites.current > 0);
+            if (externalUpdatePending.current) {
+              setSyncVersion((version) => version + 1);
+            }
+          }
+        });
+      writeQueue.current = queued;
+      return queued;
+    },
+    [blockStorage],
+  );
+  const reconcileExternal = React.useCallback(() => {
+    if (writesBlocked.current) {
+      return false;
+    }
+    const now = new Date();
+    const date = now.toISOString().slice(0, 10);
+    if (date !== utcDay.current) {
+      utcDay.current = date;
+      setToday(now);
+    }
+    const latest = loadDailyHistory(date);
+    if (latest.blocked) {
+      blockStorage();
+      return false;
+    }
+    if (latest.raw === expectedRaw.current) {
+      return false;
+    }
+    const local = dailyRef.current;
+    const baseline = persistedRecord.current;
+    const resetOnly =
+      local.date > baseline.date &&
+      sameDailyHistory(local, {
+        ...baseline,
+        date: local.date,
+        history: [],
+      });
+    // Advancing an untouched daily record is automatic; solves/deletions remain edits.
+    if (
+      !sameDailyHistory(local, baseline) &&
+      !resetOnly &&
+      !sameDailyHistory(local, latest.record)
+    ) {
+      blockStorage();
+      return false;
+    }
+    expectedRaw.current = latest.raw;
+    persistedRecord.current = latest.record;
+    dailyRef.current = latest.record;
+    setDaily(latest.record);
+    return true;
+  }, [blockStorage]);
+  useEffect(() => {
+    const sync = (event: StorageEvent) => {
+      if (event.key === SOLVE_STORAGE_KEY || event.key === null) {
+        externalUpdatePending.current = true;
+        if (!writeInFlight.current) {
+          setSyncVersion((version) => version + 1);
+        }
+      }
+    };
+    window.addEventListener("storage", sync);
+    return () => window.removeEventListener("storage", sync);
+  }, []);
+  useEffect(() => {
+    // Process acknowledgement state updates before deciding whether a local edit conflicts.
+    if (externalUpdatePending.current && !writeInFlight.current) {
+      externalUpdatePending.current = false;
+      reconcileExternal();
+    }
+  }, [syncVersion, daily, reconcileExternal]);
+  const [legacyCandidate] = useState(() =>
+    !initialStorage.blocked &&
+    initialStorage.record.legacyMigration === "unresolved"
+      ? readLegacyHistory(todayString)
+      : null,
+  );
+  const history = daily.date === todayString ? daily.history : [];
+  const storagePending =
+    saving ||
+    daily.date !== todayString ||
+    JSON.stringify(daily) !== expectedRaw.current;
+  const setHistory = React.useCallback(
+    (next: React.SetStateAction<number[]>) => {
+      const now = new Date();
+      const date = now.toISOString().slice(0, 10);
+      if (date !== utcDay.current) {
+        utcDay.current = date;
+        setToday(now);
+      }
+      setDaily((current) => {
+        const previous = current.date === date ? current.history : [];
+        return {
+          ...current,
+          date,
+          history: typeof next === "function" ? next(previous) : next,
+        };
+      });
+    },
+    [],
+  );
+  const commitLegacy = (choice: "imported" | "ignored") => {
+    const now = new Date();
+    const date = now.toISOString().slice(0, 10);
+    if (date !== utcDay.current) {
+      utcDay.current = date;
+      setToday(now);
+    }
+    if (
+      !legacyCandidate ||
+      migrationBusy.current ||
+      phaseRef.current !== "idle" ||
+      writesBlocked.current ||
+      dailyRef.current.history.length > 0 ||
+      legacyCandidate.date !== date
+    ) {
+      return;
+    }
+    migrationBusy.current = true;
+    void enqueueWrite(async () => {
+      const current = dailyRef.current;
+      const canCommit = () =>
+        mounted.current &&
+        !writesBlocked.current &&
+        dailyRef.current === current &&
+        current.history.length === 0 &&
+        current.legacyMigration === "unresolved" &&
+        phaseRef.current === "idle" &&
+        date === new Date().toISOString().slice(0, 10);
+      if (!canCommit()) {
+        return;
+      }
+      const next = {
+        ...current,
+        date,
+        history: choice === "imported" ? legacyCandidate.history.slice() : [],
+        legacyMigration: choice,
+      };
+      const snapshot = expectedRaw.current;
+      const saved = await saveDailyHistory(next, snapshot, canCommit);
+      if (saved) {
+        // A storage notification may already have adopted a later transaction.
+        if (mounted.current && expectedRaw.current === snapshot) {
+          expectedRaw.current = JSON.stringify(next);
+          persistedRecord.current = next;
+          // A rollover may have updated state while this acknowledgement waited.
+          setDaily((latest) =>
+            latest === current
+              ? next
+              : {
+                  ...latest,
+                  legacyMigration: choice,
+                },
+          );
+        }
+      } else if (
+        expectedRaw.current === snapshot &&
+        canCommit() &&
+        !reconcileExternal()
+      ) {
+        blockStorage();
+      }
+    }).finally(() => {
+      migrationBusy.current = false;
+    });
+  };
   useEffect(() => {
     let boundaryTimeout: number;
     const refreshDate = () => {
@@ -162,11 +378,11 @@ const App: React.FC = () => {
     };
   }, []);
   useEffect(() => {
-    if (historyDate.current !== todayString) {
-      historyDate.current = todayString;
-      localStorage.setItem(HISTORY_DATE_KEY, todayString);
-      setHistory([]);
-    }
+    setDaily((current) =>
+      current.date === todayString
+        ? current
+        : { ...current, date: todayString, history: [] },
+    );
   }, [todayString]);
   const [phase, setPhase] = useState<"idle" | "holding" | "ready" | "running">(
     "idle",
@@ -234,8 +450,38 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
-  }, [history]);
+    if (daily.date !== todayString || writesBlocked.current) {
+      return;
+    }
+    const encoded = JSON.stringify(daily);
+    if (encoded === expectedRaw.current) {
+      return;
+    }
+    void enqueueWrite(async () => {
+      const canCommit = () =>
+        mounted.current &&
+        !writesBlocked.current &&
+        JSON.stringify(dailyRef.current) === encoded &&
+        daily.date === new Date().toISOString().slice(0, 10);
+      if (!canCommit() || encoded === expectedRaw.current) {
+        return;
+      }
+      const snapshot = expectedRaw.current;
+      const saved = await saveDailyHistory(daily, snapshot, canCommit);
+      if (saved) {
+        if (expectedRaw.current === snapshot) {
+          expectedRaw.current = encoded;
+          persistedRecord.current = daily;
+        }
+      } else if (
+        expectedRaw.current === snapshot &&
+        canCommit() &&
+        !reconcileExternal()
+      ) {
+        blockStorage();
+      }
+    });
+  }, [daily, todayString, blockStorage, enqueueWrite, reconcileExternal]);
   useEffect(() => {
     if (phase !== "running") {
       return undefined;
@@ -250,6 +496,7 @@ const App: React.FC = () => {
   const beginHold = (stillHeld: () => boolean) => {
     if (
       phaseRef.current !== "idle" ||
+      migrationBusy.current ||
       performance.now() - lastStopAt.current < 200
     ) {
       return;
@@ -774,6 +1021,24 @@ const App: React.FC = () => {
                   {history.length} {history.length === 1 ? "solve" : "solves"}
                 </span>
               </div>
+              {phase === "idle" &&
+                !storageFailed &&
+                legacyCandidate &&
+                legacyCandidate.date === todayString &&
+                daily.legacyMigration === "unresolved" &&
+                history.length === 0 && (
+                  <LegacyHistoryImport
+                    candidate={legacyCandidate}
+                    onImport={() => commitLegacy("imported")}
+                    onIgnore={() => commitLegacy("ignored")}
+                  />
+                )}
+              {storageFailed && (
+                <p className="storage-notice" role="alert">
+                  Browser storage could not be saved. New results remain in this
+                  tab; existing stored data was left intact.
+                </p>
+              )}
               {history.length === 0 ? (
                 <div className="empty-history">
                   <IconList size={28} stroke={1.2} />
@@ -869,7 +1134,12 @@ const App: React.FC = () => {
                 <div className="history-meta">
                   <span>Total {formatTime(statistics.totalTime)}</span>
                   <span>
-                    Saved on this device <span className="shared-dot" />
+                    {storageFailed
+                      ? "Only in this tab"
+                      : storagePending
+                        ? "Saving…"
+                        : "Saved on this device"}{" "}
+                    <span className="shared-dot" />
                   </span>
                 </div>
               </div>

@@ -31,6 +31,15 @@ export default async (page, options = {}) => {
     const signal = params.get("fixture-signal");
     localStorage.setItem("today", new Date().toISOString().split("T")[0]);
     localStorage.setItem("history", "[12.34,23.45]");
+    localStorage.setItem(
+      "cubetimer365:daily-history:v1",
+      JSON.stringify({
+        version: 1,
+        date: new Date().toISOString().split("T")[0],
+        history: [12.34, 23.45],
+        legacyMigration: "ignored",
+      }),
+    );
     localStorage.setItem("unrelated-preference", "keep");
     if (choice === "granted" || choice === "denied")
       localStorage.setItem("cubetimer365:analytics-consent", choice);
@@ -89,6 +98,9 @@ export default async (page, options = {}) => {
       const state = await page.evaluate(() => ({
         cookies: document.cookie,
         history: localStorage.getItem("history"),
+        owned: JSON.parse(
+          localStorage.getItem("cubetimer365:daily-history:v1"),
+        ),
         preference: localStorage.getItem("unrelated-preference"),
         legacy: localStorage.getItem("cubetimer365:analytics-consent"),
         gtag: typeof window.gtag,
@@ -101,6 +113,8 @@ export default async (page, options = {}) => {
       );
       assert(
         state.history === "[12.34,23.45]" &&
+          JSON.stringify(state.owned?.history) === "[12.34,23.45]" &&
+          state.owned?.legacyMigration === "ignored" &&
           state.preference === "keep" &&
           state.legacy === choice,
         `${choice}: daily solves and existing preferences are preserved`,

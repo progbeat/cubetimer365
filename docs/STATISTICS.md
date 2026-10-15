@@ -3,9 +3,10 @@
 ## Scope and order
 
 The results table and best-results panel use the current `history` array, in its
-original recording order. This is the existing daily scope: `today` and `history`
-retain the UTC history boundary, while the daily scramble seed retains local-date
-behavior. Statistics introduce no new session, scramble grouping or storage keys.
+original recording order. The project-scoped daily storage record retains the UTC
+history boundary, while the daily scramble seed retains local-date behavior.
+[Storage rules](STORAGE.md) describe key ownership and reviewed legacy import.
+Statistics introduce no new session or scramble grouping.
 
 The table displays newest solves first. Each row's AO5/AO12 belongs to the window
 ending at that solve in recording order, including that solve and the preceding

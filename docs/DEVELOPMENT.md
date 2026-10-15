@@ -70,7 +70,9 @@ define chronological windows, trimming, deletion, display precision and the nume
 history boundary. Browser checks exercise the table and summary at 320/390 px and
 desktop widths, along with the existing timer, materials and analytics suites.
 
-Solve history uses the existing numeric `history` and `today` localStorage keys.
+Solve history uses `cubetimer365:daily-history:v1`, a project-scoped record with
+numeric times, a UTC date and the import decision. [Storage rules](STORAGE.md)
+explain the reviewed legacy import and preservation of generic shared keys.
 The date/history boundary retains the original UTC behavior; the daily scramble
 seed uses the local date.
 
