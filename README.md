@@ -17,7 +17,8 @@ the same starting position, then try a new scramble the next day.
 ## Controls
 
 Hold **Space** until **Ready**, then release to start. Press Space again to stop.
-On a touchscreen, hold, release and tap the large timer area instead.
+On a touchscreen, hold and release the large timer area to start. While solving,
+tap anywhere on the page to stop and save.
 
 Release early to cancel the hold. **Escape** cancels the current attempt.
 

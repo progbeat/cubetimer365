@@ -29,9 +29,10 @@ const pointerEvent = (
   options: Record<string, unknown> = {},
   target: HTMLElement = surface(),
 ) => {
-  const event = new Event(type, { bubbles: true });
+  const event = new Event(type, { bubbles: true, cancelable: true });
   Object.assign(event, {
     pointerId: 1,
+    pointerType: "touch",
     isPrimary: true,
     button: 0,
     clientX: 100,
@@ -39,6 +40,7 @@ const pointerEvent = (
     ...options,
   });
   fireEvent(target, event);
+  return event;
 };
 const advance = (ms: number) =>
   act(() => {
@@ -127,7 +129,7 @@ describe("preserved scramble and daily data", () => {
 it("distinguishes saving with Space from cancelling with Escape in the timer instructions", () => {
   render(<App />);
   expect(surface()).toHaveAccessibleName(
-    /Press Space or touch to stop and save\. Escape cancels the attempt\./,
+    /Press Space to stop and save, or tap anywhere on a touchscreen\. Escape cancels the attempt\./,
   );
   touchStart();
   advance(250);
@@ -465,6 +467,7 @@ describe("large touch surface lifecycle", () => {
     pointerEvent("pointerdown");
     expect(saved()[0]).toBeCloseTo(0.85);
     pointerEvent("pointerup");
+    fireEvent.touchEnd(surface(), { touches: [] });
     advance(500);
     expect(saved()).toHaveLength(1);
     expect(screen.queryByText("Solving")).not.toBeInTheDocument();
@@ -472,6 +475,7 @@ describe("large touch surface lifecycle", () => {
     advance(400);
     pointerEvent("pointerdown");
     pointerEvent("pointerup");
+    fireEvent.touchEnd(surface(), { touches: [] });
     expect(saved()).toHaveLength(2);
   });
   it.each(["pointercancel", "lostpointercapture", "blur", "resize"])(
@@ -491,7 +495,7 @@ describe("large touch surface lifecycle", () => {
       expect(screen.queryByText("Solving")).not.toBeInTheDocument();
     },
   );
-  it("cancels drags and leaving the target; ignores second fingers", () => {
+  it("cancels drags and leaving the target; ignores second fingers while arming", () => {
     render(<App />);
     pointerEvent("pointerdown");
     pointerEvent("pointermove", { clientY: 125 });
@@ -512,7 +516,8 @@ describe("large touch surface lifecycle", () => {
     advance(700);
     pointerEvent("pointerdown", { pointerId: 2, isPrimary: false });
     pointerEvent("pointerup", { pointerId: 2, isPrimary: false });
-    expect(saved()).toEqual([]);
+    expect(saved()[0]).toBeCloseTo(0.7);
+    expect(screen.queryByText("Solving")).not.toBeInTheDocument();
     pointerEvent("pointerdown");
     pointerEvent("pointerup");
     expect(saved()).toHaveLength(1);
@@ -544,5 +549,192 @@ describe("large touch surface lifecycle", () => {
       configurable: true,
       value: false,
     });
+  });
+});
+
+describe("page-wide touchscreen stop", () => {
+  it.each([
+    ["blur", "cube"],
+    ["blur", "delete"],
+    ["blur", "link"],
+    ["resize", "cube"],
+    ["resize", "delete"],
+    ["resize", "link"],
+  ])("keeps delayed clicks consumed after %s over %s", (interruption, area) => {
+    localStorage.setItem("history", "[12]");
+    render(<App />);
+    touchStart();
+    advance(40);
+    const picker = screen.getByRole("button", { name: "Choose cube finish" });
+    const target =
+      area === "cube"
+        ? picker
+        : area === "delete"
+          ? screen.getByRole("button", { name: "Delete solve 1" })
+          : screen.getByRole("link", { name: "CubeTimer365 timer" });
+    const activated = vi.fn((event: Event) => event.preventDefault());
+    target.addEventListener("click", activated);
+    pointerEvent("pointerdown", {}, target);
+    fireEvent(window, new Event(interruption));
+    pointerEvent("pointerup", {}, target);
+    fireEvent(target, new TouchEvent("touchend", { bubbles: true }));
+    advance(350);
+    fireEvent.click(target, { detail: 1 });
+    fireEvent.click(target, { detail: 1 });
+    expect(activated).not.toHaveBeenCalled();
+    expect(saved()).toEqual([12, 0.04]);
+    expect(screen.queryByText("Solving")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Flat · Round" }),
+    ).not.toBeInTheDocument();
+    target.removeEventListener("click", activated);
+    pointerEvent("pointerdown", {}, picker);
+    pointerEvent("pointerup", {}, picker);
+    fireEvent.click(picker, { detail: 1 });
+    expect(
+      screen.getByRole("button", { name: "Flat · Round" }),
+    ).toBeInTheDocument();
+  });
+
+  it.each(["background", "scramble", "cube", "delete", "link"])(
+    "stops over %s and consumes the complete touch and compatibility clicks",
+    (area) => {
+      localStorage.setItem("history", "[12]");
+      render(<App />);
+      touchStart();
+      fireEvent.click(surface(), { detail: 1 });
+      expect(screen.getByText("Solving")).toBeInTheDocument();
+      expect(saved()).toEqual([12]);
+      const target =
+        area === "background"
+          ? document.body
+          : area === "scramble"
+            ? document.querySelector<HTMLElement>(".scramble-content")!
+            : area === "cube"
+              ? screen.getByRole("button", { name: "Choose cube finish" })
+              : area === "delete"
+                ? screen.getByRole("button", { name: "Delete solve 1" })
+                : screen.getByRole("link", { name: "CubeTimer365 timer" });
+      const activated = vi.fn();
+      target.addEventListener("click", activated);
+      advance(750);
+      expect(pointerEvent("pointerdown", {}, target).defaultPrevented).toBe(
+        true,
+      );
+      const touch = (type: string) => {
+        const event = new TouchEvent(type, { bubbles: true, cancelable: true });
+        fireEvent(target, event);
+        expect(event.defaultPrevented).toBe(true);
+      };
+      touch("touchstart");
+      expect(saved()).toEqual([12, 0.75]);
+      advance(350);
+      expect(pointerEvent("pointerup", {}, target).defaultPrevented).toBe(true);
+      touch("touchend");
+      fireEvent.click(target, { detail: 1 });
+      fireEvent.click(target, { detail: 1 });
+      expect(activated).not.toHaveBeenCalled();
+      expect(saved()).toEqual([12, 0.75]);
+      expect(screen.queryByText("Solving")).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Flat · Round" }),
+      ).not.toBeInTheDocument();
+      // The next physical gesture can use controls normally.
+      const remove = screen.getByRole("button", { name: "Delete solve 1" });
+      pointerEvent("pointerdown", {}, remove);
+      pointerEvent("pointerup", {}, remove);
+      fireEvent.click(remove, { detail: 1 });
+      expect(saved()).toEqual([0.75]);
+      target.removeEventListener("click", activated);
+    },
+  );
+
+  it.each(["keyboard", "touch"])(
+    "stops on a non-primary contact after %s start with another finger held",
+    (input) => {
+      localStorage.setItem("history", "[12]");
+      render(<App />);
+      if (input === "keyboard") {
+        pointerEvent("pointerdown", {}, document.body);
+        fireEvent.keyDown(window, { code: "Space" });
+        advance(310);
+        fireEvent.keyUp(window, { code: "Space" });
+      } else {
+        pointerEvent("pointerdown");
+        advance(310);
+        pointerEvent(
+          "pointerdown",
+          { pointerId: 2, isPrimary: false },
+          document.body,
+        );
+        pointerEvent("pointerup");
+      }
+      expect(screen.getByText("Solving")).toBeInTheDocument();
+      expect(saved()).toEqual([12]);
+      advance(40);
+      const picker = screen.getByRole("button", { name: "Choose cube finish" });
+      const contact = { pointerId: 3, isPrimary: false };
+      expect(
+        pointerEvent("pointerdown", contact, picker).defaultPrevented,
+      ).toBe(true);
+      expect(saved()).toEqual([12, 0.04]);
+      advance(350);
+      pointerEvent("pointerup", contact, picker);
+      const heldId = input === "keyboard" ? 1 : 2;
+      fireEvent.touchEnd(picker, { touches: [{ identifier: heldId }] });
+      const laterContact = { pointerId: 4, isPrimary: false };
+      expect(
+        pointerEvent("pointerdown", laterContact, picker).defaultPrevented,
+      ).toBe(true);
+      pointerEvent("pointerup", laterContact, picker);
+      fireEvent.touchEnd(picker, { touches: [{ identifier: heldId }] });
+      pointerEvent("pointerup", { pointerId: heldId }, document.body);
+      fireEvent.touchEnd(document.body, { touches: [] });
+      fireEvent.click(picker, { detail: 1 });
+      fireEvent.click(picker, { detail: 1 });
+      expect(saved()).toEqual([12, 0.04]);
+      expect(screen.queryByText("Solving")).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Flat · Round" }),
+      ).not.toBeInTheDocument();
+      pointerEvent("pointerdown", {}, picker);
+      pointerEvent("pointerup", {}, picker);
+      fireEvent.click(picker, { detail: 1 });
+      expect(
+        screen.getByRole("button", { name: "Flat · Round" }),
+      ).toBeInTheDocument();
+    },
+  );
+
+  it("saves the next distinct tap even within the keyboard start debounce", () => {
+    render(<App />);
+    touchStart();
+    advance(40);
+    pointerEvent("pointerdown", {}, document.body);
+    pointerEvent("pointerup", {}, document.body);
+    expect(saved()[0]).toBeCloseTo(0.04);
+    expect(screen.queryByText("Solving")).not.toBeInTheDocument();
+  });
+
+  it("keeps desktop clicks and Escape behavior while a solve runs", () => {
+    render(<App />);
+    touchStart();
+    advance(750);
+    const picker = screen.getByRole("button", { name: "Choose cube finish" });
+    expect(
+      pointerEvent("pointerdown", { pointerType: "mouse" }, picker)
+        .defaultPrevented,
+    ).toBe(false);
+    pointerEvent("pointerup", { pointerType: "mouse" }, picker);
+    fireEvent.click(picker, { detail: 1 });
+    expect(
+      screen.getByRole("button", { name: "Flat · Round" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Solving")).toBeInTheDocument();
+    fireEvent.keyDown(window, { code: "Escape" });
+    expect(screen.getByText("Solving")).toBeInTheDocument();
+    fireEvent.keyDown(window, { code: "Escape" });
+    expect(screen.queryByText("Solving")).not.toBeInTheDocument();
+    expect(saved()).toEqual([]);
   });
 });

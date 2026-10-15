@@ -29,6 +29,7 @@ try {
     "browser-feedback-check",
     "browser-date-check",
     "browser-analytics-check",
+    "browser-mobile-stop-check",
     "browser-material-check",
   ]) {
     const scales = name === "browser-material-check" ? [1, 2, 3] : [1];
