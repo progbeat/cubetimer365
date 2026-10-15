@@ -6,8 +6,8 @@ GA4 loading, configuration, manual page-view events and consent controls have
 been removed. The production token is intentionally empty. This version sends
 no visit analytics until a legitimate Cloudflare site token is verified and
 configured. An empty, invalid or missing token means no beacon request. Local
-Vite development also leaves analytics off. The privacy notice states the actual
-build configuration; loading failures or blockers can still prevent collection.
+Vite development also leaves analytics off. Loading failures or blockers can
+still prevent collection after activation.
 
 On 2026-10-15 the live page and bundle contained GA4, with no Cloudflare beacon.
 Neither the repository nor the public root-domain page provided a verified site
@@ -82,17 +82,19 @@ clear other applications' cookies. Browser cookie restrictions may prevent
 cleanup; they must not break the timer. Previously collected Google data and the
 GA4 property are not deleted by removing the tag.
 
-The old Allow / No thanks controls are gone. A compact Privacy & analytics link
-still explains local storage, the current enabled/off state, Cloudflare's data flow and
-privacy signals. No new analytics identifier or consent preference is stored.
+The GA4 consent controls and standalone Privacy Notice UI are omitted from this
+candidate. This is a product decision pending the actual configured data flow,
+not a claim that a privacy notice or consent is universally unnecessary. Keep the
+token empty until the owner verifies the property and applicable requirements.
+No new analytics identifier or consent preference is stored.
 
 ## Verification
 
 `yarn test` checks the disabled/invalid/development cases, DNT/GPC, singleton
-loading, legacy-cookie cleanup, unrelated state preservation and the notice.
+loading, legacy-cookie cleanup, unrelated state preservation and initialization.
 `yarn browser-check` exercises the shipped build with Google and Cloudflare
 requests intercepted before collection. It covers former granted/denied choices,
-no Google queue/requests, cookie cleanup, local data, notice state and signals.
+no Google queue/requests, cookie cleanup, local data, omitted privacy/consent UI and signals.
 
 `yarn browser-analytics-fixture` builds a separate ignored output with an explicitly
 synthetic test token, serves it only on localhost, and repeats the browser cases
@@ -111,9 +113,6 @@ probe observed one script, no Google requests or new cookies, unchanged local
 solve data, and query parameters omitted from the captured payload. It verifies
 that SDK snapshot, not future vendor updates or real property ingestion.
 
-Inspected unconfigured-build notices: [desktop](images/cloudflare-privacy-desktop.png)
-and [phone](images/cloudflare-privacy-phone.png). The 320 px view was also checked.
-
 Sources checked 2026-10-15:
 
 - [Cloudflare setup](https://developers.cloudflare.com/web-analytics/get-started/)
@@ -121,10 +120,3 @@ Sources checked 2026-10-15:
 - [Data origin and collection](https://developers.cloudflare.com/web-analytics/data-metrics/data-origin-and-collection/)
 - [SPA behavior](https://developers.cloudflare.com/web-analytics/get-started/web-analytics-spa/)
 - [Beacon configuration and FAQ](https://developers.cloudflare.com/web-analytics/faq/)
-
-The short visitor notice uses ordinary local-data, analytics and privacy-choice
-sections. Its structure was checked against the [GOV.UK privacy notice](https://www.gov.uk/help/privacy-notice)
-and [Plausible's data policy](https://plausible.io/data-policy); provider-specific
-statements are based on Cloudflare's guidance and this app's actual behavior, not
-on another service's legal basis, retention, hosting or consent claims. Migration
-history and setup instructions belong here and in the PR, not in the visitor notice.

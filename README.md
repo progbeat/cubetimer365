@@ -35,8 +35,8 @@ them.
 
 Cloudflare Web Analytics replaces Google Analytics without analytics cookies.
 The public site token is not configured yet, so visit analytics is currently off
-in this build. **Privacy & analytics** explains local data and the configured
-analytics behavior. [Activation and data flow](docs/ANALYTICS.md).
+in this build. [Activation and data flow](docs/ANALYTICS.md) are documented for
+the site maintainer. No standalone privacy or consent panel is shown.
 
 [Development and checks](docs/DEVELOPMENT.md) · [License](LICENSE)
 

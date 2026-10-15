@@ -60,24 +60,22 @@ export default async (page, options = {}) => {
         (await scripts()) === (configured ? 1 : 0),
         `${choice}: correct beacon count for this build`,
       );
-      await page.getByRole("button", { name: "Privacy & analytics" }).click();
-      await page.getByRole("dialog", { name: "Privacy notice" }).waitFor();
       assert(
         (await page
           .getByRole("button", { name: "Allow analytics" })
           .count()) === 0 &&
-          (await page.getByRole("button", { name: "No thanks" }).count()) === 0,
-        `${choice}: no obsolete GA consent controls`,
+          (await page.getByRole("button", { name: "No thanks" }).count()) ===
+            0 &&
+          (await page
+            .getByRole("button", { name: "Privacy & analytics" })
+            .count()) === 0 &&
+          (await page
+            .getByRole("dialog", { name: "Privacy notice" })
+            .count()) === 0,
+        `${choice}: no standalone privacy notice or consent controls`,
       );
-      await page
-        .getByText(
-          configured
-            ? "Visit analytics is enabled through Cloudflare."
-            : "Visit analytics is off.",
-          { exact: true },
-        )
-        .waitFor();
-      await page.keyboard.press("Escape");
+      await page.getByRole("button", { name: "Choose cube finish" }).click();
+      await page.getByRole("button", { name: "Neon · Round" }).click();
       await page.evaluate(() => {
         location.hash = "stats";
         window.dispatchEvent(new Event("popstate"));
@@ -86,7 +84,7 @@ export default async (page, options = {}) => {
       assert(
         (await scripts()) === (configured ? 1 : 0) &&
           beaconRequests - before === (configured ? 1 : 0),
-        `${choice}: navigation and privacy UI never duplicate the beacon`,
+        `${choice}: navigation and cube choices never duplicate the beacon`,
       );
       const state = await page.evaluate(() => ({
         cookies: document.cookie,

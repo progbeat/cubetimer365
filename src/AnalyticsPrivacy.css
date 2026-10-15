@@ -1,6 +1,0 @@
-.analytics-privacy { max-width: 1480px; margin: 0 auto; padding: 20px 28px 24px; color: #b1bec7; font-size: 12px; }
-.privacy-link { border: 0; padding: 6px 0; background: transparent; color: inherit; font: inherit; text-decoration: underline; cursor: pointer; }
-.analytics-privacy-modal a { color: var(--lime); text-decoration: underline; }
-@media (width <= 760px) {
-  .analytics-privacy { padding: 16px 12px 90px; }
-}
