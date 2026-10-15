@@ -19,6 +19,7 @@ import AnalyticsPrivacy from "./AnalyticsPrivacy";
 import { calculateSolveStatistics, formatTime } from "./solveStatistics";
 import LegacyHistoryImport from "./LegacyHistoryImport";
 import {
+  SOLVE_STORAGE_KEY,
   loadDailyHistory,
   saveDailyHistory,
   readLegacyHistory,
@@ -120,6 +121,47 @@ const App: React.FC = () => {
   const [initialStorage] = useState(() => loadDailyHistory(todayString));
   const [daily, setDaily] = useState(initialStorage.record);
   const [storageFailed, setStorageFailed] = useState(initialStorage.blocked);
+  const utcDay = useRef(todayString);
+  utcDay.current = todayString;
+  const dailyRef = useRef(daily);
+  dailyRef.current = daily;
+  const expectedRaw = useRef(initialStorage.raw);
+  const writesBlocked = useRef(initialStorage.blocked);
+  const blockStorage = React.useCallback(() => {
+    writesBlocked.current = true;
+    setStorageFailed(true);
+  }, []);
+  const reconcileExternal = React.useCallback(() => {
+    if (writesBlocked.current) {
+      return false;
+    }
+    const latest = loadDailyHistory(utcDay.current);
+    if (latest.blocked) {
+      blockStorage();
+      return false;
+    }
+    if (latest.raw === expectedRaw.current) {
+      return false;
+    }
+    // Never discard a local edit that has not reached storage.
+    if (JSON.stringify(dailyRef.current) !== expectedRaw.current) {
+      blockStorage();
+      return false;
+    }
+    expectedRaw.current = latest.raw;
+    dailyRef.current = latest.record;
+    setDaily(latest.record);
+    return true;
+  }, [blockStorage]);
+  useEffect(() => {
+    const sync = (event: StorageEvent) => {
+      if (event.key === SOLVE_STORAGE_KEY || event.key === null) {
+        reconcileExternal();
+      }
+    };
+    window.addEventListener("storage", sync);
+    return () => window.removeEventListener("storage", sync);
+  }, [reconcileExternal]);
   const [legacyCandidate] = useState(() =>
     !initialStorage.blocked &&
     initialStorage.record.legacyMigration === "unresolved"
@@ -130,16 +172,39 @@ const App: React.FC = () => {
   const setHistory = React.useCallback(
     (next: React.SetStateAction<number[]>) => {
       setDaily((current) => {
-        const previous = current.date === todayString ? current.history : [];
+        const date = utcDay.current;
+        const previous = current.date === date ? current.history : [];
         return {
           ...current,
-          date: todayString,
+          date,
           history: typeof next === "function" ? next(previous) : next,
         };
       });
     },
-    [todayString],
+    [],
   );
+  const commitLegacy = (choice: "imported" | "ignored") => {
+    if (
+      !legacyCandidate ||
+      writesBlocked.current ||
+      dailyRef.current.history.length > 0 ||
+      legacyCandidate.date !== utcDay.current
+    ) {
+      return;
+    }
+    const next = {
+      ...dailyRef.current,
+      date: utcDay.current,
+      history: choice === "imported" ? legacyCandidate.history.slice() : [],
+      legacyMigration: choice,
+    };
+    if (saveDailyHistory(next, expectedRaw.current)) {
+      expectedRaw.current = JSON.stringify(next);
+      setDaily(next);
+    } else if (!reconcileExternal()) {
+      blockStorage();
+    }
+  };
   const historyDate = useRef(todayString);
   useEffect(() => {
     let boundaryTimeout: number;
@@ -249,10 +314,20 @@ const App: React.FC = () => {
   };
 
   useEffect(() => {
-    if (daily.date === todayString) {
-      setStorageFailed(!saveDailyHistory(daily));
+    if (daily.date !== todayString || writesBlocked.current) {
+      return;
     }
-  }, [daily, todayString]);
+    const encoded = JSON.stringify(daily);
+    if (encoded === expectedRaw.current) {
+      return;
+    }
+    if (saveDailyHistory(daily, expectedRaw.current)) {
+      expectedRaw.current = encoded;
+      setStorageFailed(false);
+    } else {
+      blockStorage();
+    }
+  }, [daily, todayString, blockStorage]);
   useEffect(() => {
     if (phase !== "running") {
       return undefined;
@@ -797,23 +872,8 @@ const App: React.FC = () => {
                 history.length === 0 && (
                   <LegacyHistoryImport
                     candidate={legacyCandidate}
-                    onImport={() =>
-                      setDaily((current) =>
-                        current.history.length > 0
-                          ? current
-                          : {
-                              ...current,
-                              history: legacyCandidate.history.slice(),
-                              legacyMigration: "imported",
-                            },
-                      )
-                    }
-                    onIgnore={() =>
-                      setDaily((current) => ({
-                        ...current,
-                        legacyMigration: "ignored",
-                      }))
-                    }
+                    onImport={() => commitLegacy("imported")}
+                    onIgnore={() => commitLegacy("ignored")}
                   />
                 )}
               {storageFailed && (

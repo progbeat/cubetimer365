@@ -57,8 +57,10 @@ scripts on the same origin. No other app or repository was modified for this fix
 
 ## Storage failure and recovery
 
-Unknown or malformed data at the owned key is not overwritten. Unreadable storage
-and failed writes also leave previous serialized data intact. The timer continues
+Unknown or malformed data at the owned key is not overwritten. An initial read
+failure keeps writes blocked for this mount even if storage later recovers; reload
+or reconcile after preserving in-memory results. Unreadable storage and failed
+writes also leave previous serialized data intact. The timer continues
 in memory and displays a storage warning; those new in-memory results will not
 survive reload until persistence is repaired. Export/recover the old raw record
 before deliberately replacing it; the app does not silently reset corrupt data.
@@ -70,3 +72,10 @@ Out key remain unchanged during each migration path.
 
 Inspected import previews: [desktop](images/storage-import-desktop.png) and
 [phone](images/storage-import-phone.png); the 320 px view was also checked.
+
+Storage notifications synchronize fresh persisted results and migration decisions
+across tabs. Every write compares the current serialized record with the snapshot
+last read by this tab. A stale import/refusal re-reads and adopts the newer record
+rather than overwriting it. A stale normal save or a concurrent update while local
+edits are still pending blocks persistence and preserves the local results in
+memory with a warning; it does not silently merge or discard them.

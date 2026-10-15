@@ -184,6 +184,58 @@ it("requires a reviewed choice to import ambiguous shared history and never repe
   expect(localStorage.getItem("history")).toBe("[12.34,23.45]");
   expect(localStorage.getItem("lights-out.reaction-lab.v2")).toBe("keep");
 });
+it("saves keyboard and page-touch stops under the new UTC day after midnight", () => {
+  vi.setSystemTime(new Date("2026-10-12T23:59:59.900Z"));
+  seedDate("2026-10-12");
+  seedHistory("[12]");
+  render(<App />);
+  advance(150);
+  expect(stored()?.date).toBe("2026-10-13");
+  expect(saved()).toEqual([]);
+  fireEvent.keyDown(window, { code: "Space" });
+  advance(310);
+  fireEvent.keyUp(window, { code: "Space" });
+  advance(500);
+  fireEvent.keyDown(window, { code: "Space" });
+  fireEvent.keyUp(window, { code: "Space" });
+  expect(saved()).toEqual([0.5]);
+  advance(210);
+  touchStart();
+  advance(400);
+  pointerEvent("pointerdown", {}, document.body);
+  pointerEvent("pointerup", {}, document.body);
+  fireEvent.touchEnd(document.body, { touches: [] });
+  expect(saved()).toEqual([0.5, 0.4]);
+  expect(stored()?.date).toBe("2026-10-13");
+  expect(screen.getByText("2 solves")).toBeInTheDocument();
+});
+it("keeps writes blocked for this mount after an initial read failure even if storage recovers", () => {
+  seedHistory("[12.34,23.45]");
+  const original = localStorage.getItem(SOLVE_STORAGE_KEY);
+  const get = Storage.prototype.getItem;
+  let fail = true;
+  vi.spyOn(Storage.prototype, "getItem").mockImplementation(function (
+    this: Storage,
+    key,
+  ) {
+    if (key === SOLVE_STORAGE_KEY && fail) {
+      fail = false;
+      throw new Error("temporary read failure");
+    }
+    return get.call(this, key);
+  });
+  render(<App />);
+  touchStart();
+  advance(500);
+  pointerEvent("pointerdown", {}, document.body);
+  pointerEvent("pointerup", {}, document.body);
+  fireEvent.touchEnd(document.body, { touches: [] });
+  expect(screen.getByText("1 solve")).toBeInTheDocument();
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "New results remain in this tab",
+  );
+  expect(localStorage.getItem(SOLVE_STORAGE_KEY)).toBe(original);
+});
 it("remembers keeping shared data separate without dropping the original", () => {
   localStorage.removeItem(SOLVE_STORAGE_KEY);
   localStorage.setItem("history", "[99]");

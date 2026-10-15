@@ -35,6 +35,7 @@ const validRecord = (value: unknown): value is DailyHistory => {
 export function loadDailyHistory(date: string): {
   record: DailyHistory;
   blocked: boolean;
+  raw: string | null;
 } {
   const empty: DailyHistory = {
     version: 1,
@@ -45,27 +46,34 @@ export function loadDailyHistory(date: string): {
   try {
     const raw = localStorage.getItem(SOLVE_STORAGE_KEY);
     if (raw === null) {
-      return { record: empty, blocked: false };
+      return { record: empty, blocked: false, raw };
     }
     const record: unknown = JSON.parse(raw);
     if (!validRecord(record)) {
-      return { record: empty, blocked: true };
+      return { record: empty, blocked: true, raw };
     }
     return {
       record: record.date === date ? record : { ...record, date, history: [] },
       blocked: false,
+      raw,
     };
   } catch {
-    return { record: empty, blocked: true };
+    return { record: empty, blocked: true, raw: null };
   }
 }
-export function saveDailyHistory(record: DailyHistory): boolean {
+export function saveDailyHistory(
+  record: DailyHistory,
+  expectedRaw: string | null,
+): boolean {
   try {
     if (!validRecord(record)) {
       return false;
     }
     // Unknown/corrupt owned data remains intact for recovery instead of being replaced.
     const raw = localStorage.getItem(SOLVE_STORAGE_KEY);
+    if (raw !== expectedRaw) {
+      return false;
+    }
     if (raw !== null && !validRecord(JSON.parse(raw))) {
       return false;
     }

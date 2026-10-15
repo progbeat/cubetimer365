@@ -159,5 +159,91 @@ export default async (page) => {
     JSON.stringify(await original()) === JSON.stringify(snapshot),
     "Recovery mode leaves other applications' keys alone",
   );
+  // Simulate a tab that missed storage notifications while its import modal was open.
+  const otherTab = async (blockEvents) => {
+    const tab = await page.context().newPage();
+    if (blockEvents)
+      await tab.addInitScript((key) => {
+        window.addEventListener(
+          "storage",
+          (event) => {
+            if (event.key === key) event.stopImmediatePropagation();
+          },
+          true,
+        );
+      }, key);
+    await tab.goto(root);
+    await tab
+      .getByRole("button", { name: "Review previous browser results" })
+      .waitFor();
+    return tab;
+  };
+  snapshot = await seed();
+  let tab = await otherTab(true);
+  try {
+    await tab
+      .getByRole("button", { name: "Review previous browser results" })
+      .click();
+    await page.bringToFront();
+    await page.keyboard.down("Space");
+    await page.waitForTimeout(330);
+    await page.keyboard.up("Space");
+    await page.waitForTimeout(250);
+    await page.keyboard.press("Space");
+    await page.waitForFunction(
+      (key) => JSON.parse(localStorage.getItem(key)).history.length === 1,
+      key,
+    );
+    const newer = await page.evaluate((key) => localStorage.getItem(key), key);
+    await tab.getByRole("button", { name: "Import into CubeTimer365" }).click();
+    await tab.getByText("1 solve", { exact: true }).waitFor();
+    assert(
+      (await page.evaluate((key) => localStorage.getItem(key), key)) === newer,
+      "A stale import cannot overwrite a solve saved by another tab",
+    );
+    assert(
+      JSON.stringify(await original()) === JSON.stringify(snapshot),
+      "Rejecting a stale import preserves the original shared keys",
+    );
+  } finally {
+    await tab.close();
+  }
+  await seed();
+  tab = await otherTab(true);
+  try {
+    await tab
+      .getByRole("button", { name: "Review previous browser results" })
+      .click();
+    await review().click();
+    await page
+      .getByRole("button", { name: "Import into CubeTimer365" })
+      .click();
+    const newer = await page.evaluate((key) => localStorage.getItem(key), key);
+    await tab.getByRole("button", { name: "Keep separate" }).click();
+    await tab.getByText("2 solves", { exact: true }).waitFor();
+    assert(
+      (await page.evaluate((key) => localStorage.getItem(key), key)) === newer,
+      "A stale refusal cannot replace a completed import decision",
+    );
+  } finally {
+    await tab.close();
+  }
+  await seed();
+  tab = await otherTab(false);
+  try {
+    await review().click();
+    await page
+      .getByRole("button", { name: "Import into CubeTimer365" })
+      .click();
+    await tab.getByText("2 solves", { exact: true }).waitFor();
+    assert(
+      (await tab
+        .getByRole("button", { name: "Review previous browser results" })
+        .count()) === 0,
+      "Storage notifications synchronize completed migration into another tab",
+    );
+  } finally {
+    await tab.close();
+  }
   return { passed: checks.length, checks };
 };
