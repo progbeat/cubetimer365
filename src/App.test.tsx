@@ -124,6 +124,91 @@ afterEach(() => {
 });
 
 describe("preserved scramble and daily data", () => {
+  it.each(["rollover", "solve", "deletion"] as const)(
+    "reconciles a stale %s after a peer's new-day solve without losing user edits",
+    async (edit) => {
+      vi.setSystemTime(
+        new Date(
+          edit === "deletion" ? "2026-10-13T00:00:01Z" : "2026-10-12T23:59:50Z",
+        ),
+      );
+      seedDate(edit === "deletion" ? "2026-10-13" : "2026-10-12");
+      seedHistory("[12]");
+      render(<App />);
+      await flushStorage();
+      const save = solveStorage.saveDailyHistory;
+      let attempt: (() => Promise<void>) | undefined;
+      vi.spyOn(solveStorage, "saveDailyHistory").mockImplementationOnce(
+        (...args) =>
+          new Promise<boolean>((resolve) => {
+            attempt = async () => {
+              resolve(await save(...args));
+            };
+          }),
+      );
+      if (edit === "rollover") {
+        advance(10_100);
+      } else if (edit === "deletion") {
+        fireEvent.click(screen.getByRole("button", { name: "Delete solve 1" }));
+      } else {
+        vi.setSystemTime(new Date("2026-10-13T00:00:01Z"));
+        touchStart();
+        advance(500);
+        pointerEvent("pointerdown");
+        pointerEvent("pointerup");
+        fireEvent.touchEnd(document.body, { touches: [] });
+      }
+      for (let turn = 0; !attempt && turn < 200; turn += 1) {
+        await act(async () => {
+          await nextTask();
+        });
+      }
+      expect(attempt).toBeTypeOf("function");
+      const newer = JSON.stringify({
+        ...stored(),
+        date: "2026-10-13",
+        history: edit === "deletion" ? [12, 0.75] : [0.75],
+      });
+      localStorage.setItem(SOLVE_STORAGE_KEY, newer);
+      fireEvent(
+        window,
+        new StorageEvent("storage", {
+          key: SOLVE_STORAGE_KEY,
+          newValue: newer,
+        }),
+      );
+      await act(async () => {
+        await attempt?.();
+      });
+      await flushStorage();
+      expect(localStorage.getItem(SOLVE_STORAGE_KEY)).toBe(newer);
+      if (edit === "rollover") {
+        expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+        expect(
+          screen.getByRole("cell", { name: "00:00.75" }),
+        ).toBeInTheDocument();
+        touchStart();
+        advance(500);
+        pointerEvent("pointerdown");
+        pointerEvent("pointerup");
+        fireEvent.touchEnd(document.body, { touches: [] });
+        await flushStorage();
+        expect(saved()).toEqual([0.75, 0.5]);
+        expect(screen.getByText("Saved on this device")).toBeInTheDocument();
+      } else {
+        expect(screen.getByRole("alert")).toHaveTextContent(
+          "New results remain in this tab",
+        );
+        if (edit === "solve") {
+          expect(
+            screen.getByRole("cell", { name: "00:00.50" }),
+          ).toBeInTheDocument();
+        } else {
+          expect(screen.getByText("No solves yet.")).toBeInTheDocument();
+        }
+      }
+    },
+  );
   it.each([false, true])(
     "defers incoming changes until save acknowledgement; additional local edit: %s",
     async (dirty) => {

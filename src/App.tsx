@@ -23,6 +23,7 @@ import {
   loadDailyHistory,
   saveDailyHistory,
   readLegacyHistory,
+  type DailyHistory,
 } from "./solveStorage";
 
 const theme = createTheme({
@@ -30,6 +31,11 @@ const theme = createTheme({
     'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
 });
 const ScrambleCube = React.memo(CubeNet);
+const sameDailyHistory = (left: DailyHistory, right: DailyHistory) =>
+  left.date === right.date &&
+  left.legacyMigration === right.legacyMigration &&
+  left.history.length === right.history.length &&
+  left.history.every((time, index) => time === right.history[index]);
 const isControl = (target: EventTarget | null) =>
   target instanceof HTMLElement &&
   Boolean(
@@ -135,7 +141,7 @@ const App: React.FC = () => {
   const dailyRef = useRef(daily);
   dailyRef.current = daily;
   const expectedRaw = useRef(initialStorage.raw);
-  const persistedState = useRef(JSON.stringify(initialStorage.record));
+  const persistedRecord = useRef(initialStorage.record);
   const writesBlocked = useRef(initialStorage.blocked);
   const writeQueue = useRef(Promise.resolve());
   const writeInFlight = useRef(false);
@@ -195,20 +201,25 @@ const App: React.FC = () => {
       return false;
     }
     const local = dailyRef.current;
-    const matchesLocal =
-      latest.record.date === local.date &&
-      latest.record.legacyMigration === local.legacyMigration &&
-      latest.record.history.length === local.history.length &&
-      latest.record.history.every(
-        (time, index) => time === local.history[index],
-      );
-    // Identical resets/edits are already saved; preserve only conflicting local edits.
-    if (JSON.stringify(local) !== persistedState.current && !matchesLocal) {
+    const baseline = persistedRecord.current;
+    const resetOnly =
+      local.date > baseline.date &&
+      sameDailyHistory(local, {
+        ...baseline,
+        date: local.date,
+        history: [],
+      });
+    // Advancing an untouched daily record is automatic; solves/deletions remain edits.
+    if (
+      !sameDailyHistory(local, baseline) &&
+      !resetOnly &&
+      !sameDailyHistory(local, latest.record)
+    ) {
       blockStorage();
       return false;
     }
     expectedRaw.current = latest.raw;
-    persistedState.current = JSON.stringify(latest.record);
+    persistedRecord.current = latest.record;
     dailyRef.current = latest.record;
     setDaily(latest.record);
     return true;
@@ -305,7 +316,7 @@ const App: React.FC = () => {
         // A storage notification may already have adopted a later transaction.
         if (mounted.current && expectedRaw.current === snapshot) {
           expectedRaw.current = JSON.stringify(next);
-          persistedState.current = expectedRaw.current;
+          persistedRecord.current = next;
           // A rollover may have updated state while this acknowledgement waited.
           setDaily((latest) =>
             latest === current
@@ -457,7 +468,7 @@ const App: React.FC = () => {
       if (saved) {
         if (expectedRaw.current === snapshot) {
           expectedRaw.current = encoded;
-          persistedState.current = encoded;
+          persistedRecord.current = daily;
         }
       } else if (
         expectedRaw.current === snapshot &&

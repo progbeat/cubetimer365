@@ -666,5 +666,83 @@ export default async (page) => {
     await page.evaluate(() => window.releaseStorageAcknowledgement?.());
     await tab.close();
   }
+  await page.clock.setFixedTime("2026-10-12T23:59:50Z");
+  snapshot = await seed({ owned: [12] });
+  tab = await page.context().newPage();
+  try {
+    await tab.goto(root);
+    await tab.getByText("1 solve", { exact: true }).waitFor();
+    // Delay this tab before it acquires a transaction; the peer must commit first.
+    await page.evaluate(() => {
+      const success = Object.getOwnPropertyDescriptor(
+        IDBRequest.prototype,
+        "onsuccess",
+      );
+      Object.defineProperty(IDBRequest.prototype, "onsuccess", {
+        configurable: true,
+        get: success.get,
+        set(callback) {
+          success.set.call(this, function (event) {
+            if (
+              this instanceof IDBOpenDBRequest &&
+              this.result.name === "cubetimer365:storage-locks:v1" &&
+              !window.releaseStorageOpen
+            ) {
+              window.releaseStorageOpen = () => callback.call(this, event);
+            } else callback.call(this, event);
+          });
+        },
+      });
+    });
+    await page.clock.setFixedTime("2026-10-13T00:00:01Z");
+    await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+    await page.waitForFunction(
+      () => typeof window.releaseStorageOpen === "function",
+    );
+    await tab.evaluate(() => window.dispatchEvent(new Event("focus")));
+    await tab.getByText("Saved on this device", { exact: true }).waitFor();
+    await tab.bringToFront();
+    await tab.keyboard.down("Space");
+    await tab.waitForTimeout(330);
+    await tab.keyboard.up("Space");
+    await tab.waitForTimeout(250);
+    await tab.keyboard.press("Space");
+    await tab.getByText("Saved on this device", { exact: true }).waitFor();
+    assert(
+      (await read()).history.length === 1 &&
+        (await page.getByText("No solves yet.", { exact: true }).isVisible()) &&
+        (await page.getByText("Saving…", { exact: true }).isVisible()),
+      "A local automatic reset runs before the peer's first new-day solve commits",
+    );
+    await page.evaluate(() => window.releaseStorageOpen());
+    await page.getByText("1 solve", { exact: true }).waitFor();
+    await page.getByText("Saved on this device", { exact: true }).waitFor();
+    assert(
+      (await page
+        .getByRole("alert")
+        .filter({ hasText: "Browser storage" })
+        .count()) === 0,
+      "A stale automatic reset adopts the peer's nonempty day without a false user-edit conflict",
+    );
+    await page.bringToFront();
+    await page.keyboard.down("Space");
+    await page.waitForTimeout(330);
+    await page.keyboard.up("Space");
+    await page.waitForTimeout(250);
+    await page.keyboard.press("Space");
+    await page.getByText("Saved on this device", { exact: true }).waitFor();
+    await tab.getByText("2 solves", { exact: true }).waitFor();
+    assert(
+      (await read()).history.length === 2,
+      "The reset-only tab continues saving solves after adopting its peer's first result",
+    );
+    assert(
+      JSON.stringify(await original()) === JSON.stringify(snapshot),
+      "Reset-versus-first-solve reconciliation preserves all original shared keys",
+    );
+  } finally {
+    await page.evaluate(() => window.releaseStorageOpen?.());
+    await tab.close();
+  }
   return { passed: checks.length, checks };
 };

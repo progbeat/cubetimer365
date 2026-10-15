@@ -120,3 +120,11 @@ subsequent save without a false conflict; a different local edit still waiting
 for persistence remains protected in memory. Unit tests cover both paths, and a
 native two-tab test withholds a successful save acknowledgement until the peer
 has saved and delivered its newer record, then verifies later saves still work.
+
+The last acknowledged record also defines an untouched forward-day reset: the
+date advances, history becomes empty, and the migration decision stays the same.
+That derived reset may adopt a peer's nonempty current-day record when the peer
+commits first. An explicit solve or current-day deletion still differs from the
+acknowledged baseline and remains protected as a local edit. Regressions cover
+all three cases and delay a real database open while the peer saves the first
+new-day solve, then verify that the reset-only tab can keep saving.
