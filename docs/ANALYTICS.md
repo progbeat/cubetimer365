@@ -96,7 +96,10 @@ no Google queue/requests, cookie cleanup, local data, notice state and signals.
 
 `yarn browser-analytics-fixture` builds a separate ignored output with an explicitly
 synthetic test token, serves it only on localhost, and repeats the browser cases
-with the beacon configured. Vendor responses are stubbed; the fixture sends no
+with the beacon configured, through the same runner used by `yarn browser-check`.
+The runner derives its expected configuration from Vite production env inputs
+(including process overrides), so activation does not leave disabled-build
+assertions enabled. Rebuild after changing those inputs. Vendor responses are stubbed; the fixture sends no
 metrics to a real property. CI runs both builds. These tests verify integration
 behavior; they do not prove the externally hosted SDK's full behavior, dashboard
 settings or real production delivery. Production activation needs step 6 above.

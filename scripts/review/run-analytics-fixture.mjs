@@ -1,8 +1,7 @@
 import { spawn } from "node:child_process";
 import { setTimeout } from "node:timers/promises";
 import { fileURLToPath } from "node:url";
-import { chromium } from "playwright";
-import runChecks from "./browser-analytics-check.js";
+import { runBrowserChecks } from "./run-browser-checks.mjs";
 
 const vite = fileURLToPath(
   new URL("../../node_modules/vite/bin/vite.js", import.meta.url),
@@ -43,7 +42,7 @@ preview.on("error", () => {
 preview.on("exit", () => {
   previewFailed = true;
 });
-let browser;
+const previousToken = process.env.VITE_CLOUDFLARE_WEB_ANALYTICS_TOKEN;
 try {
   const root = "http://127.0.0.1:4174/cubetimer365/";
   let ready = false;
@@ -58,12 +57,13 @@ try {
     await setTimeout(200);
   }
   if (!ready) throw new Error("Fixture preview did not become ready");
-  browser = await chromium.launch();
-  const page = await browser.newPage();
-  // runChecks installs all vendor stubs before its first navigation.
-  const result = await runChecks(page, { root, configured: true });
-  console.log(`Configured Cloudflare fixture: ${result.passed} checks passed`);
+  // Exercise the normal runner's production-config discovery and option passing.
+  process.env.VITE_CLOUDFLARE_WEB_ANALYTICS_TOKEN =
+    "0123456789abcdef0123456789abcdef";
+  await runBrowserChecks({ root, suites: ["browser-analytics-check"] });
 } finally {
-  await browser?.close();
+  if (previousToken === undefined)
+    delete process.env.VITE_CLOUDFLARE_WEB_ANALYTICS_TOKEN;
+  else process.env.VITE_CLOUDFLARE_WEB_ANALYTICS_TOKEN = previousToken;
   preview.kill("SIGTERM");
 }
