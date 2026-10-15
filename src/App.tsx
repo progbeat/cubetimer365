@@ -15,7 +15,7 @@ import {
 import CubeNet, { CubeStyle } from "./CubeNet";
 import ScrambleText from "./ScrambleText";
 import { generateScramble } from "./scramble";
-import AnalyticsPrivacy from "./AnalyticsPrivacy";
+import { startAnalytics } from "./analytics";
 import { calculateSolveStatistics, formatTime } from "./solveStatistics";
 import LegacyHistoryImport from "./LegacyHistoryImport";
 import {
@@ -84,6 +84,9 @@ function CubeStyleReview({
 }
 
 const App: React.FC = () => {
+  useEffect(() => {
+    startAnalytics();
+  }, []);
   const [cubeStyle, setCubeStyle] = useState<CubeStyle>(() => {
     const requested = new URLSearchParams(window.location.search).get("cube");
     return requested === "flat" || requested === "neon" ? requested : "cyber";
@@ -1217,7 +1220,6 @@ const App: React.FC = () => {
           </nav>
         </div>
       )}
-      <AnalyticsPrivacy />
     </MantineProvider>
   );
 };

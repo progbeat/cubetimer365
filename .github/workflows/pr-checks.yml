@@ -32,3 +32,5 @@ jobs:
           preview_pid=$!
           trap 'kill "$preview_pid" 2>/dev/null || true' EXIT
           yarn browser-check
+      - name: Configured Cloudflare beacon browser checks
+        run: yarn browser-analytics-fixture

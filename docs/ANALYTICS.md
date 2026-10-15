@@ -1,75 +1,129 @@
-# Optional visit analytics
+# Cloudflare Web Analytics migration
 
-GA4 is optional and loads only after an explicit choice. The app offers equal
-Allow analytics and No thanks buttons in an inline panel, plus a permanent
-Privacy & analytics control on every screen. There is no blocking modal on
-arrival. The audience is a public, English-language timer with no existing
-consent mechanism or regional targeting, so the same opt-in behavior applies to
-all visitors. This avoids assuming where a visitor lives or that cookie-free
-requests are exempt from consent.
+## Status and activation
 
-Before consent, after refusal, and with Do Not Track or Global Privacy Control,
-the app does not load the Google tag or send cookieless analytics pings. A local
-preference key (`cubetimer365:analytics-consent`) remembers the choice. Withdrawal
-disables delivery before reload and removes only `ct365_ga*` cookies at this
-app's path. The existing solve storage keys and timer interactions are unchanged.
-Before saving denial, the app removes the previous grant. It reloads only after
-confirming the saved denial. If storage fails, analytics stays disabled in the
-current page and Privacy asks the visitor to allow storage and retry before
-reloading. A failed grant write also leaves analytics off.
+GA4 loading, configuration, manual page-view events and consent controls have
+been removed. `.env.production` now contains the public Web Analytics site token
+`0fbe5c9c32da4ea887621042d35546b1`, supplied by the owner after verifying the
+`progbeat.dev` property on 2026-10-15. The owner confirmed manual JS snippet
+installation with automatic injection disabled; DNS-only GitHub Pages hosting
+is unchanged. The token is a public site identifier, not an API credential.
 
-After consent, GA4 receives page views and its standard session/engagement data.
-Application code emits only `page_view`: one initial view and one per distinct
-timer/stats/history anchor, or the fixed cube finishes screen. Initial tag views
-are disabled with `send_page_view: false`; repeat initialization and duplicate
-navigation events are deduplicated. Arbitrary query/hash values, external
-referrers and document titles are not used. No history, times, scramble text,
-field contents, User-ID, user properties or custom interaction events are sent.
-Google still receives the network IP and basic device/browser metadata; the
-privacy text discloses this. App-scoped cookies expire after 30 days without a
-rolling extension. Advertising consent is always denied, Signals and advertising
-personalization are disabled in code, and the tag request omits the HTTP referrer.
+Production builds use the existing guarded loader within the `/cubetimer365/`
+app. An empty, invalid or missing token means no beacon request. Local Vite
+development also leaves analytics off. DNT/GPC, loading failures or blockers can
+prevent collection. This configuration update does not merge or deploy the PR,
+change Cloudflare or DNS settings, or confirm real production collection.
 
-## Activation
+For future configuration changes and publication:
 
-1. Use the existing `CubeTimer365` property (558919856) and its
-   `CubeTimer365 web` stream (16129242856) for
-   `https://progbeat.dev/cubetimer365/`. The measurement ID is `G-41X5F91WCZ`.
-   Check for existing resources before creating replacements. These resources
-   were created after the owner's approval of Google's displayed terms.
-2. Optional account data sharing, Google Signals, user-provided data collection
-   and granular location/device data collection are off. Ads personalization is
-   disallowed in all 307 regions. User and event data retention are two months,
-   with reset-on-new-activity off. Keep these settings; do not link advertising
-   products or create API credentials. Retention controls do not expire standard
-   aggregated reports.
-3. **Keep Enhanced measurement off for the stream.** This disables automatic
-   history, form, search, outbound click, download, scroll and video events.
-   Standard initial page views are independently disabled in code using
-   `send_page_view: false`. Both are needed to keep manual views unique and avoid
-   collecting interaction text/URLs.
-4. The public stream ID is checked into `.env.production` as
-   `VITE_GA4_MEASUREMENT_ID`, so the existing Pages build needs no secret or
-   repository variable. Local development and unit tests do not load that
-   production file. Override the ID through the environment or
-   `.env.production.local` for builds (`.env.local` for development)
-   when using a different property. An empty/invalid ID disables the tag and
-   initial consent panel. The Privacy control remains available and states
-   that analytics is not configured.
-5. Review this PR and obtain the required merge/deployment approval. Only a push
-   to `master` triggers the existing production Pages workflow.
-6. Visit production in a fresh browser, confirm there are no analytics requests
-   or cookies before consent, then allow analytics. Confirm one initial
-   `page_view` in GA4 Realtime and one for each distinct section visited. Inspect
-   parameters for sanitized locations and no private values. Refuse/revoke and
-   confirm requests stop. Do not call this complete until real events arrive.
+1. Open Cloudflare **Web Analytics**, select the existing site for hostname
+   `progbeat.dev` (or add that hostname if needed), and open **Manage site**.
+   The hostname is `progbeat.dev`, not the `/cubetimer365/` path. A site may include
+   other pages on the same hostname; filter the dashboard by this app's path.
+2. Confirm manual JS snippet installation. Use one installation mechanism:
+   this app's loader, not an additional snippet or proxy auto-injection. Do not
+   add an automatic embed alongside this loader; it would also bypass the app's
+   privacy-signal check. Changing dashboard settings remains an owner action.
+3. Copy the public `token` value from that site's `data-cf-beacon` snippet. This is
+   a public site identifier, **not** a Cloudflare API token or account credential.
+   Verify the property/hostname before using it. Token syntax alone is not proof
+   of ownership or a working property.
+4. Keep `VITE_CLOUDFLARE_WEB_ANALYTICS_TOKEN` in `.env.production` set to the
+   verified value and rebuild after any change. The current GitHub Pages workflow
+   builds this file; it does not implicitly pick up a GitHub repository variable.
+   No workflow, permission or release-pipeline changes are needed for this
+   configuration.
+5. Before deployment, assess the applicable privacy/consent requirements for the
+   intended audience and collection. Cookie-free operation by itself is not a
+   blanket consent exemption. This PR does not make a jurisdiction-specific legal
+   conclusion. Keep the token empty if the intended policy is not settled.
+6. After an authorized deployment, verify one beacon script, successful RUM
+   POSTs, no Google requests, and the matching Cloudflare dashboard property.
+   Visiting with DNT or GPC must not load the beacon. Collection is not verified
+   merely by a green test suite or the presence of a token.
 
-For a temporary local validation build, copy `.env.example` to `.env.production.local`, set
-the real ID and `VITE_GA4_DEBUG=true`, then build and preview. This flags test views
-for GA4 DebugView. Remove the debug flag after checking. Do not use query strings
-to activate debug mode. No Measurement Protocol secret or permanent access grant
-is needed. Unit tests use a fixture ID and never contact Google.
+## Browser data flow
 
-Sources: [Google's consent mode guide](https://developers.google.com/tag-platform/security/concepts/consent-mode),
-[manual page views](https://developers.google.com/analytics/devguides/collection/ga4/views),
-and [tag configuration](https://developers.google.com/analytics/devguides/collection/ga4/reference/config).
+A production build with a valid token and no Do Not Track / Global Privacy Control
+signal appends one module script from
+`https://static.cloudflareinsights.com/beacon.min.js`. The official beacon manages
+page and performance measurements; this app adds no custom events or manual
+page-view calls. Repeated React effects, remounts and an existing Cloudflare embed
+are guarded against a second script. Owner configuration must also avoid edge
+injection that happens independently of this code.
+
+The manually installed beacon reports to
+`https://cloudflareinsights.com/cdn-cgi/rum`. It measures page/referrer information,
+loading performance and Core Web Vitals. Network requests necessarily reach
+Cloudflare with the visitor's IP address and browser/network metadata.
+Cloudflare states that Web Analytics uses no cookies, localStorage identifiers
+or visitor fingerprinting. Its documentation says query strings are not logged.
+Do not put personal data in URL paths or assume that cookie-free means no network
+data is processed.
+
+Cloudflare handles supported SPA navigation automatically. The app's anchor
+sections are not manually converted into separate page-view events. Counts and
+navigation details can differ from the former GA4 timer/stats/history events;
+this migration does not promise identical dashboards. The application sends no
+solve history, individual times, scrambles or cube-choice analytics events.
+
+## Existing device data
+
+The project-scoped `cubetimer365:daily-history:v1` record, legacy `history` / `today`
+values, cube selection and unrelated preferences retain their existing semantics.
+[Solve storage](STORAGE.md) defines the app's separate import and persistence
+behavior. The analytics loader does not read, write or clear localStorage. The
+obsolete
+`cubetimer365:analytics-consent` value is left untouched; it is a former GA4 choice,
+not a grant for another provider or a new Cloudflare control.
+
+On startup, the app expires only accessible legacy cookies named `ct365_ga` or
+starting with `ct365_ga_`, at this app's `/cubetimer365/` path, in both the host-only
+and current-host domain forms used by the former GA4 configuration. It does not
+clear other applications' cookies. Browser cookie restrictions may prevent
+cleanup; they must not break the timer. Previously collected Google data and the
+GA4 property are not deleted by removing the tag.
+
+The GA4 consent controls and standalone Privacy Notice UI are omitted from this
+candidate. This is a product decision, not a claim that a privacy notice or
+consent is universally unnecessary. The owner must assess applicable requirements
+before publication. No new analytics identifier or consent preference is stored.
+
+## Verification
+
+`yarn test` checks the disabled/invalid/development cases, DNT/GPC, singleton
+loading, legacy-cookie cleanup, unrelated state preservation and initialization.
+`yarn browser-check` exercises the shipped build with Google and Cloudflare
+requests intercepted before collection. It covers former granted/denied choices,
+no Google queue/requests, cookie cleanup, local data, omitted privacy/consent UI and signals.
+
+`yarn browser-analytics-fixture` builds a separate ignored output with an explicitly
+synthetic test token, serves it only on localhost, and repeats the browser cases
+with the beacon configured, including every separate timezone browser context,
+through the same runner used by `yarn browser-check`.
+The runner derives its expected configuration from Vite production env inputs
+(including process overrides), so activation does not leave disabled-build
+assertions enabled. Rebuild after changing those inputs. Vendor responses are stubbed; the fixture sends no
+metrics to a real property. CI runs both builds. These tests verify integration
+behavior; they do not prove the externally hosted SDK's full behavior, dashboard
+settings or real production delivery. Production activation needs step 6 above.
+
+The configured production build was exercised in local Chromium on 2026-10-15
+using a downloaded public beacon snapshot, with its script response fulfilled
+locally and every RUM POST intercepted. The probe observed one module script,
+the verified public token in the payload, no Google requests or new cookies,
+unchanged local solve data, and query parameters omitted from reports. The SDK
+emitted an initial navigation report and routing/performance reports during
+interactions. DNT and GPC each prevented script loading and RUM requests.
+Desktop, 390 px and 320 px views were inspected without privacy/consent UI.
+No real metrics were delivered. This verifies that SDK snapshot, not future
+vendor updates or real property ingestion.
+
+Sources checked 2026-10-15:
+
+- [Cloudflare setup](https://developers.cloudflare.com/web-analytics/get-started/)
+- [Privacy-first analytics](https://www.cloudflare.com/web-analytics/)
+- [Data origin and collection](https://developers.cloudflare.com/web-analytics/data-metrics/data-origin-and-collection/)
+- [SPA behavior](https://developers.cloudflare.com/web-analytics/get-started/web-analytics-spa/)
+- [Beacon configuration and FAQ](https://developers.cloudflare.com/web-analytics/faq/)
