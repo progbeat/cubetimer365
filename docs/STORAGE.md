@@ -104,3 +104,11 @@ restoring yesterday's date or imported history after a rollover. A stale failed
 write also leaves persistence enabled when a storage notification has already
 adopted a newer snapshot. Regressions control both notification/completion order
 and acknowledgement delivery across UTC midnight.
+
+Identical records, including two tabs' empty daily resets, synchronize as an
+already-saved state instead of disabling persistence. Different pending local
+edits still stay in memory with a warning. When persistence fails, the legacy
+review control and any open import dialog are removed; unavailable actions are
+not left enabled. The mutex marker may abort after a localStorage write has
+completed. That localStorage write is not rolled back, so its acknowledgement
+reports success; an abort before the write still reports failure.

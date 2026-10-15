@@ -114,7 +114,8 @@ async function withStorageLock(commit: () => boolean): Promise<boolean> {
       saved = commit();
     };
     transaction.oncomplete = () => resolve(saved);
-    transaction.onabort = () => resolve(false);
+    // The marker can roll back; a completed localStorage write cannot.
+    transaction.onabort = () => resolve(saved);
   });
 }
 export async function saveDailyHistory(

@@ -18,6 +18,41 @@ export default async (page) => {
       .getByText("Saving…", { exact: true })
       .waitFor({ state: "hidden" });
   };
+  const holdWrites = () =>
+    page.evaluate(async () => {
+      const db = await new Promise((resolve, reject) => {
+        const request = indexedDB.open("cubetimer365:storage-locks:v1", 1);
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+      const gate = db.transaction("writes", "readwrite");
+      let released = false;
+      window.releaseStorageGate = () => {
+        released = true;
+      };
+      const keepAlive = () => {
+        const request = gate.objectStore("writes").get("daily-history");
+        request.onsuccess = () => {
+          if (!released) keepAlive();
+        };
+      };
+      gate.oncomplete = () => db.close();
+      keepAlive();
+    });
+  const observeWrites = (tab) =>
+    tab.evaluate(() => {
+      window.queuedStorageWrites = 0;
+      const transaction = IDBDatabase.prototype.transaction;
+      IDBDatabase.prototype.transaction = function (...args) {
+        const result = transaction.apply(this, args);
+        if (
+          this.name === "cubetimer365:storage-locks:v1" &&
+          args[1] === "readwrite"
+        )
+          window.queuedStorageWrites += 1;
+        return result;
+      };
+    });
   const original = () =>
     page.evaluate(() => ({
       history: localStorage.getItem("history"),
@@ -251,40 +286,9 @@ export default async (page) => {
         (key) => localStorage.getItem(key),
         key,
       );
-      await page.evaluate(async () => {
-        const db = await new Promise((resolve, reject) => {
-          const request = indexedDB.open("cubetimer365:storage-locks:v1", 1);
-          request.onsuccess = () => resolve(request.result);
-          request.onerror = () => reject(request.error);
-        });
-        const gate = db.transaction("writes", "readwrite");
-        let released = false;
-        window.releaseStorageGate = () => {
-          released = true;
-        };
-        const keepAlive = () => {
-          const request = gate.objectStore("writes").get("daily-history");
-          request.onsuccess = () => {
-            if (!released) keepAlive();
-          };
-        };
-        gate.oncomplete = () => db.close();
-        keepAlive();
-      });
+      await holdWrites();
       for (const writer of [page, tab]) {
-        await writer.evaluate(() => {
-          window.queuedStorageWrites = 0;
-          const transaction = IDBDatabase.prototype.transaction;
-          IDBDatabase.prototype.transaction = function (...args) {
-            const result = transaction.apply(this, args);
-            if (
-              this.name === "cubetimer365:storage-locks:v1" &&
-              args[1] === "readwrite"
-            )
-              window.queuedStorageWrites += 1;
-            return result;
-          };
-        });
+        await observeWrites(writer);
       }
       const solve = async () => {
         await page.bringToFront();
@@ -499,5 +503,104 @@ export default async (page) => {
       `${choice}: the migration decision survives reload without altering shared originals`,
     );
   }
+  // Both tabs reset while the mutex is held; identical pending records must synchronize.
+  await page.clock.setFixedTime("2026-10-12T23:59:50Z");
+  snapshot = await seed({ owned: [12] });
+  tab = await page.context().newPage();
+  try {
+    await tab.goto(root);
+    await tab.getByText("1 solve", { exact: true }).waitFor();
+    const before = await page.evaluate((key) => localStorage.getItem(key), key);
+    await holdWrites();
+    await observeWrites(page);
+    await observeWrites(tab);
+    await page.clock.setFixedTime("2026-10-13T00:00:01Z");
+    for (const writer of [page, tab]) {
+      await writer.evaluate(() => window.dispatchEvent(new Event("focus")));
+      await writer.waitForFunction(() => window.queuedStorageWrites > 0);
+    }
+    assert(
+      (await page.evaluate((key) => localStorage.getItem(key), key)) === before,
+      "Both tabs queue their midnight resets before either can write",
+    );
+    await page.evaluate(() => window.releaseStorageGate());
+    for (const writer of [page, tab])
+      await writer.getByText("Saved on this device", { exact: true }).waitFor();
+    assert(
+      (await read()).date === "2026-10-13" &&
+        (await read()).history.length === 0 &&
+        (await page
+          .getByRole("alert")
+          .filter({ hasText: "Browser storage" })
+          .count()) === 0 &&
+        (await tab
+          .getByRole("alert")
+          .filter({ hasText: "Browser storage" })
+          .count()) === 0,
+      "Identical simultaneous resets synchronize without disabling persistence",
+    );
+    for (const [index, writer] of [page, tab].entries()) {
+      await writer.bringToFront();
+      await writer.keyboard.down("Space");
+      await writer.waitForTimeout(330);
+      await writer.keyboard.up("Space");
+      await writer.waitForTimeout(250);
+      await writer.keyboard.press("Space");
+      await writer.getByText("Saved on this device", { exact: true }).waitFor();
+      const count = index + 1;
+      await (writer === page ? tab : page)
+        .getByText(`${count} ${count === 1 ? "solve" : "solves"}`, {
+          exact: true,
+        })
+        .waitFor();
+      assert(
+        (await read()).history.length === count,
+        `Rollover writer ${count} still persists subsequent solves and synchronizes its peer`,
+      );
+    }
+    assert(
+      JSON.stringify(await original()) === JSON.stringify(snapshot),
+      "Simultaneous midnight resets and later solves preserve shared originals",
+    );
+  } finally {
+    await page.evaluate(() => window.releaseStorageGate?.());
+    await tab.close();
+  }
+  await seed({ owned: [12] });
+  await page.evaluate((key) => {
+    const transaction = IDBDatabase.prototype.transaction;
+    let active;
+    IDBDatabase.prototype.transaction = function (...args) {
+      const result = transaction.apply(this, args);
+      if (this.name === "cubetimer365:storage-locks:v1") active = result;
+      return result;
+    };
+    const setItem = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (name, value) {
+      setItem.call(this, name, value);
+      if (name === key && active) {
+        active.abort();
+        active = null;
+      }
+    };
+  }, key);
+  await page
+    .getByRole("button", { name: "Delete solve 1", exact: true })
+    .click();
+  await page.getByText("Saved on this device", { exact: true }).waitFor();
+  assert(
+    (await read()).history.length === 0 &&
+      (await page
+        .getByRole("alert")
+        .filter({ hasText: "Browser storage" })
+        .count()) === 0,
+    "A real transaction abort after localStorage deletion acknowledges the completed write",
+  );
+  await page.reload();
+  await page.locator(".history-panel").waitFor();
+  assert(
+    (await read()).history.length === 0,
+    "The deletion confirmed before a mutex-marker abort survives reload",
+  );
   return { passed: checks.length, checks };
 };

@@ -19,6 +19,39 @@ const save = (value: DailyHistory) =>
 beforeEach(() => localStorage.clear());
 afterEach(() => vi.restoreAllMocks());
 describe("project-scoped daily solve storage", () => {
+  it.each(["before", "after"])(
+    "reports the actual localStorage outcome when the lock aborts %s writing",
+    async (when) => {
+      await save(record());
+      const snapshot = localStorage.getItem(SOLVE_STORAGE_KEY);
+      const transaction = IDBDatabase.prototype.transaction;
+      let active: IDBTransaction;
+      vi.spyOn(IDBDatabase.prototype, "transaction").mockImplementation(
+        function (this: IDBDatabase, ...args) {
+          active = transaction.apply(this, args);
+          if (when === "before") {
+            active.abort();
+          }
+          return active;
+        },
+      );
+      const setItem = Storage.prototype.setItem;
+      vi.spyOn(Storage.prototype, "setItem").mockImplementation(function (
+        this: Storage,
+        key,
+        value,
+      ) {
+        setItem.call(this, key, value);
+        if (key === SOLVE_STORAGE_KEY && when === "after") {
+          active.abort();
+        }
+      });
+      expect(await save(record([99]))).toBe(when === "after");
+      expect(localStorage.getItem(SOLVE_STORAGE_KEY)).toBe(
+        when === "after" ? JSON.stringify(record([99])) : snapshot,
+      );
+    },
+  );
   it("serializes overlapping snapshot checks and writes under one shared transaction", async () => {
     const initial = record([]);
     await saveDailyHistory(initial, null);

@@ -181,8 +181,16 @@ const App: React.FC = () => {
     if (latest.raw === expectedRaw.current) {
       return false;
     }
-    // Never discard a local edit that has not reached storage.
-    if (JSON.stringify(dailyRef.current) !== persistedState.current) {
+    const local = dailyRef.current;
+    const matchesLocal =
+      latest.record.date === local.date &&
+      latest.record.legacyMigration === local.legacyMigration &&
+      latest.record.history.length === local.history.length &&
+      latest.record.history.every(
+        (time, index) => time === local.history[index],
+      );
+    // Identical resets/edits are already saved; preserve only conflicting local edits.
+    if (JSON.stringify(local) !== persistedState.current && !matchesLocal) {
       blockStorage();
       return false;
     }
@@ -976,7 +984,8 @@ const App: React.FC = () => {
                   {history.length} {history.length === 1 ? "solve" : "solves"}
                 </span>
               </div>
-              {legacyCandidate &&
+              {!storageFailed &&
+                legacyCandidate &&
                 legacyCandidate.date === todayString &&
                 daily.legacyMigration === "unresolved" &&
                 history.length === 0 && (

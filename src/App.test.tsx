@@ -56,7 +56,7 @@ const flushStorage = async () => {
     await act(async () => {
       await nextTask();
     });
-    if (turn >= 5 && !screen.queryByText("Saving…")) {
+    if (turn >= 5 && screen.queryAllByText("Saving…").length === 0) {
       return;
     }
   }
@@ -124,6 +124,75 @@ afterEach(() => {
 });
 
 describe("preserved scramble and daily data", () => {
+  it("adopts identical simultaneous day resets and still saves subsequent solves", async () => {
+    vi.setSystemTime(new Date("2026-10-12T23:59:59.900Z"));
+    seedDate("2026-10-12");
+    seedHistory("[12]");
+    const first = render(<App />);
+    render(<App />);
+    await flushStorage();
+    const save = solveStorage.saveDailyHistory;
+    let notified = false;
+    vi.spyOn(solveStorage, "saveDailyHistory").mockImplementation(
+      async (...args) => {
+        const result = await save(...args);
+        if (result && args[0].date === "2026-10-13" && !notified) {
+          notified = true;
+          act(() => {
+            fireEvent(
+              window,
+              new StorageEvent("storage", {
+                key: SOLVE_STORAGE_KEY,
+                newValue: localStorage.getItem(SOLVE_STORAGE_KEY),
+              }),
+            );
+          });
+        }
+        return result;
+      },
+    );
+    advance(200);
+    await flushStorage();
+    expect(notified).toBe(true);
+    expect(screen.queryAllByRole("alert")).toHaveLength(0);
+    expect(screen.getAllByText("Saved on this device")).toHaveLength(2);
+    first.unmount();
+    touchStart();
+    advance(500);
+    pointerEvent("pointerdown");
+    pointerEvent("pointerup");
+    await flushStorage();
+    expect(stored()?.date).toBe("2026-10-13");
+    expect(saved()).toEqual([0.5]);
+  });
+  it("removes open migration actions when the initial save fails", async () => {
+    localStorage.removeItem(SOLVE_STORAGE_KEY);
+    localStorage.setItem("history", "[12]");
+    localStorage.setItem("today", new Date().toISOString().slice(0, 10));
+    vi.spyOn(solveStorage, "saveDailyHistory").mockResolvedValue(false);
+    render(<App />);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Review previous browser results" }),
+    );
+    advance(250);
+    expect(
+      screen.getByRole("button", { name: "Import into CubeTimer365" }),
+    ).toBeInTheDocument();
+    await flushStorage();
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Browser storage could not be saved",
+    );
+    expect(
+      screen.queryByRole("button", { name: "Review previous browser results" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Import into CubeTimer365" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Keep separate" }),
+    ).not.toBeInTheDocument();
+    expect(localStorage.getItem("history")).toBe("[12]");
+  });
   it.each(["imported", "ignored"] as const)(
     "keeps the new UTC day when a %s acknowledgement arrives after rollover",
     async (choice) => {
