@@ -245,5 +245,55 @@ export default async (page) => {
   } finally {
     await tab.close();
   }
+  // A separate tab's wall clock advances while its scheduled refresh stays paused.
+  await page.evaluate(
+    (key) =>
+      localStorage.setItem(
+        key,
+        JSON.stringify({
+          version: 1,
+          date: "2026-10-12",
+          history: [12],
+          legacyMigration: "ignored",
+        }),
+      ),
+    key,
+  );
+  const delayed = await page.context().newPage();
+  try {
+    await delayed.clock.install({ time: "2026-10-12T23:59:00Z" });
+    await delayed.goto(root);
+    await delayed.getByText("1 solve", { exact: true }).waitFor();
+    await delayed.clock.pauseAt("2026-10-12T23:59:10Z");
+    await delayed.clock.setSystemTime("2026-10-13T00:00:01Z");
+    const newer = JSON.stringify({
+      version: 1,
+      date: "2026-10-13",
+      history: [0.5],
+      legacyMigration: "ignored",
+    });
+    await page.evaluate(({ key, newer }) => localStorage.setItem(key, newer), {
+      key,
+      newer,
+    });
+    await delayed
+      .getByRole("cell", { name: "00:00.50", exact: true })
+      .waitFor();
+    assert(
+      (await page.evaluate((key) => localStorage.getItem(key), key)) === newer,
+      "A delayed background tab adopts new-day solves without relabeling or clearing them",
+    );
+    await delayed.clock.runFor(60_000);
+    assert(
+      (await page.evaluate((key) => localStorage.getItem(key), key)) ===
+        newer &&
+        (await delayed
+          .getByRole("cell", { name: "00:00.50", exact: true })
+          .isVisible()),
+      "The later midnight refresh preserves already-adopted current-day results",
+    );
+  } finally {
+    await delayed.close();
+  }
   return { passed: checks.length, checks };
 };

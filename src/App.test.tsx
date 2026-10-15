@@ -209,6 +209,32 @@ it("saves keyboard and page-touch stops under the new UTC day after midnight", (
   expect(stored()?.date).toBe("2026-10-13");
   expect(screen.getByText("2 solves")).toBeInTheDocument();
 });
+it("preserves another tab's new-day results before this tab's delayed midnight refresh", () => {
+  vi.setSystemTime(new Date("2026-10-12T23:59:59.900Z"));
+  seedDate("2026-10-12");
+  seedHistory("[12]");
+  render(<App />);
+  // Jump wall-clock time without firing the already scheduled date timeout.
+  vi.setSystemTime(new Date("2026-10-13T00:00:00.100Z"));
+  const newer = JSON.stringify({
+    version: 1,
+    date: "2026-10-13",
+    history: [0.5],
+    legacyMigration: "ignored",
+  });
+  localStorage.setItem(SOLVE_STORAGE_KEY, newer);
+  fireEvent(
+    window,
+    new StorageEvent("storage", { key: SOLVE_STORAGE_KEY, newValue: newer }),
+  );
+  expect(screen.getByText("1 solve")).toBeInTheDocument();
+  expect(saved()).toEqual([0.5]);
+  expect(localStorage.getItem(SOLVE_STORAGE_KEY)).toBe(newer);
+  advance(1000);
+  expect(saved()).toEqual([0.5]);
+  expect(stored()?.date).toBe("2026-10-13");
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+});
 it("keeps writes blocked for this mount after an initial read failure even if storage recovers", () => {
   seedHistory("[12.34,23.45]");
   const original = localStorage.getItem(SOLVE_STORAGE_KEY);

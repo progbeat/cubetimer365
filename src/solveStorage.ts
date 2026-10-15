@@ -52,6 +52,9 @@ export function loadDailyHistory(date: string): {
     if (!validRecord(record)) {
       return { record: empty, blocked: true, raw };
     }
+    if (record.date > date) {
+      return { record: empty, blocked: true, raw };
+    }
     return {
       record: record.date === date ? record : { ...record, date, history: [] },
       blocked: false,
@@ -74,8 +77,11 @@ export function saveDailyHistory(
     if (raw !== expectedRaw) {
       return false;
     }
-    if (raw !== null && !validRecord(JSON.parse(raw))) {
-      return false;
+    if (raw !== null) {
+      const current: unknown = JSON.parse(raw);
+      if (!validRecord(current) || current.date > record.date) {
+        return false;
+      }
     }
     localStorage.setItem(SOLVE_STORAGE_KEY, JSON.stringify(record));
     return true;

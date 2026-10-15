@@ -79,3 +79,8 @@ last read by this tab. A stale import/refusal re-reads and adopts the newer reco
 rather than overwriting it. A stale normal save or a concurrent update while local
 edits are still pending blocks persistence and preserves the local results in
 memory with a warning; it does not silently merge or discard them.
+
+Reconciliation and saving use the actual current UTC date rather than a cached
+render date. A delayed midnight refresh preserves a record already adopted for
+the current day. Loading or writing with an older date never relabels or replaces
+a persisted newer-day record; unexpected future data is retained for recovery.

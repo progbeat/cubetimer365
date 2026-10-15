@@ -18,6 +18,14 @@ const save = (value: DailyHistory) =>
 beforeEach(() => localStorage.clear());
 afterEach(() => vi.restoreAllMocks());
 describe("project-scoped daily solve storage", () => {
+  it("never relabels or overwrites a newer-day record using an older date", () => {
+    const newer = { ...record([0.5]), date: "2026-10-16" };
+    expect(saveDailyHistory(newer, null)).toBe(true);
+    const raw = localStorage.getItem(SOLVE_STORAGE_KEY);
+    expect(loadDailyHistory(date).blocked).toBe(true);
+    expect(saveDailyHistory(record([]), raw)).toBe(false);
+    expect(localStorage.getItem(SOLVE_STORAGE_KEY)).toBe(raw);
+  });
   it("rejects stale history and migration decisions against the persisted snapshot", () => {
     const initial = { ...record([]), legacyMigration: "unresolved" as const };
     expect(saveDailyHistory(initial, null)).toBe(true);

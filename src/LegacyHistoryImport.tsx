@@ -17,7 +17,7 @@ export default function LegacyHistoryImport({
     <div className="legacy-import">
       <button
         type="button"
-        className="privacy-link"
+        className="legacy-import-trigger"
         onClick={() => setOpened(true)}
       >
         Review previous browser results

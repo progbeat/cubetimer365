@@ -135,7 +135,13 @@ const App: React.FC = () => {
     if (writesBlocked.current) {
       return false;
     }
-    const latest = loadDailyHistory(utcDay.current);
+    const now = new Date();
+    const date = now.toISOString().slice(0, 10);
+    if (date !== utcDay.current) {
+      utcDay.current = date;
+      setToday(now);
+    }
+    const latest = loadDailyHistory(date);
     if (latest.blocked) {
       blockStorage();
       return false;
@@ -171,8 +177,13 @@ const App: React.FC = () => {
   const history = daily.date === todayString ? daily.history : [];
   const setHistory = React.useCallback(
     (next: React.SetStateAction<number[]>) => {
+      const now = new Date();
+      const date = now.toISOString().slice(0, 10);
+      if (date !== utcDay.current) {
+        utcDay.current = date;
+        setToday(now);
+      }
       setDaily((current) => {
-        const date = utcDay.current;
         const previous = current.date === date ? current.history : [];
         return {
           ...current,
@@ -184,17 +195,23 @@ const App: React.FC = () => {
     [],
   );
   const commitLegacy = (choice: "imported" | "ignored") => {
+    const now = new Date();
+    const date = now.toISOString().slice(0, 10);
+    if (date !== utcDay.current) {
+      utcDay.current = date;
+      setToday(now);
+    }
     if (
       !legacyCandidate ||
       writesBlocked.current ||
       dailyRef.current.history.length > 0 ||
-      legacyCandidate.date !== utcDay.current
+      legacyCandidate.date !== date
     ) {
       return;
     }
     const next = {
       ...dailyRef.current,
-      date: utcDay.current,
+      date,
       history: choice === "imported" ? legacyCandidate.history.slice() : [],
       legacyMigration: choice,
     };
@@ -205,7 +222,6 @@ const App: React.FC = () => {
       blockStorage();
     }
   };
-  const historyDate = useRef(todayString);
   useEffect(() => {
     let boundaryTimeout: number;
     const refreshDate = () => {
@@ -243,11 +259,12 @@ const App: React.FC = () => {
     };
   }, []);
   useEffect(() => {
-    if (historyDate.current !== todayString) {
-      historyDate.current = todayString;
-      setHistory([]);
-    }
-  }, [todayString, setHistory]);
+    setDaily((current) =>
+      current.date === todayString
+        ? current
+        : { ...current, date: todayString, history: [] },
+    );
+  }, [todayString]);
   const [phase, setPhase] = useState<"idle" | "holding" | "ready" | "running">(
     "idle",
   );
