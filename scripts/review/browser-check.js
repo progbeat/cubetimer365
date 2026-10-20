@@ -47,7 +47,7 @@ export default async (page) => {
     "Space opens About without starting a solve or changing history",
   );
   await page
-    .getByRole("button", { name: "Back to timer", exact: true })
+    .getByRole("button", { name: "Close About", exact: true })
     .click();
   await aboutPanel.waitFor({ state: "hidden" });
   await page.waitForFunction(() =>
@@ -56,7 +56,7 @@ export default async (page) => {
   assert(
     !(await aboutPanel.isVisible()) &&
       (await about.getAttribute("aria-expanded")) === "false",
-    "Back to timer closes About and returns keyboard focus",
+    "The close button closes About and returns keyboard focus",
   );
   await about.click();
   await aboutPanel.waitFor();

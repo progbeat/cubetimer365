@@ -770,9 +770,7 @@ it("keeps About keyboard input out of the timer and returns focus when closed", 
   await flushStorage();
   expect(screen.queryByText("Solving")).not.toBeInTheDocument();
   expect(saved()).toEqual([12, 15]);
-  fireEvent.click(
-    within(dialog).getByRole("button", { name: "Back to timer" }),
-  );
+  fireEvent.click(within(dialog).getByRole("button", { name: "Close About" }));
   advance(200);
   await flushStorage();
   expect(surface()).toHaveFocus();

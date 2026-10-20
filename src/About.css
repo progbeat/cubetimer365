@@ -1,26 +1,17 @@
 .about-modal-content { background: #171d21; border: 1px solid #35414b; color: var(--text); }
-.about-modal-header { padding: 22px 24px 10px; background: #171d21; }
-.about-modal-title { font-size: 21px; font-weight: 650; line-height: 1.35; letter-spacing: -0.4px; }
-.about-modal-close { width: 34px; height: 34px; color: var(--muted); border-radius: 6px; }
+.about-modal-header { padding: 22px 24px 12px; background: #171d21; }
+.about-modal-title { font-size: 18px; font-weight: 600; line-height: 1.4; letter-spacing: -0.2px; }
+.about-modal-close { width: 34px; height: 34px; color: #b4c0c8; border-radius: 6px; }
 .about-modal-close:hover { background: #273138; color: var(--text); }
-.about-modal-body { padding: 8px 24px 24px; }
-.about-intro { margin: 0 0 16px; font-size: 15px; line-height: 1.7; color: #e3e9ed; }
-.about-detail { margin: 0; font-size: 14px; line-height: 1.65; color: #b4c0c8; }
-.about-device { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--border); }
-.about-device h3 { margin: 0 0 6px; font-size: 13px; line-height: 1.5; font-weight: 650; color: #d6dfe5; }
-.about-device p { margin: 0; font-size: 13px; line-height: 1.65; color: var(--muted); }
-.about-project { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px 18px; margin-top: 20px; font-size: 12px; line-height: 1.6; color: var(--muted); }
-.about-links { display: flex; gap: 16px; }
-.about-project a { color: #c3d4df; text-decoration: underline; text-decoration-color: #54656f; text-underline-offset: 3px; }
-.about-project a:hover { color: var(--lime); text-decoration-color: var(--lime); }
-.about-return { display: block; min-height: 44px; margin: 24px 0 0 auto; padding: 10px 18px; border: 1px solid var(--lime); border-radius: 6px; background: var(--lime); color: #18220d; font: inherit; font-size: 13px; line-height: 1.5; font-weight: 650; cursor: pointer; }
-.about-return:hover { background: #c5ff70; border-color: #c5ff70; }
+.about-modal-body { padding: 6px 24px 24px; }
+.about-modal-body p { margin: 0; color: #cbd5dc; font-size: 14px; line-height: 1.7; }
+.about-modal-body p + p { margin-top: 16px; }
+.about-links { display: flex; gap: 18px; margin-top: 22px; font-size: 12px; line-height: 1.5; }
+.about-links a { color: #aabcc8; text-decoration: underline; text-decoration-color: #54656f; text-underline-offset: 3px; }
+.about-links a:hover { color: var(--lime); text-decoration-color: var(--lime); }
 @media (width <= 480px) {
-  .about-modal-header { padding: 18px 18px 8px; }
-  .about-modal-title { font-size: 19px; }
-  .about-modal-body { padding: 8px 18px 18px; }
-  .about-intro { font-size: 14px; line-height: 1.65; }
-  .about-detail { font-size: 13px; }
-  .about-device { margin-top: 18px; padding-top: 16px; }
-  .about-return { width: 100%; margin-top: 20px; }
+  .about-modal-header { padding: 18px 18px 10px; }
+  .about-modal-body { padding: 6px 18px 20px; }
+  .about-modal-body p { line-height: 1.65; }
+  .about-links { margin-top: 20px; }
 }
