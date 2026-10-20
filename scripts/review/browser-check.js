@@ -30,6 +30,28 @@ export default async (page) => {
   await waitForStorage(page);
   await page.reload();
   await page.setViewportSize({ width: 1440, height: 1120 });
+  const about = page.getByRole("button", { name: "About", exact: true });
+  const aboutPanel = page.getByRole("region", { name: "About CubeTimer365" });
+  assert(
+    (await about.getAttribute("aria-expanded")) === "false" &&
+      !(await aboutPanel.isVisible()),
+    "About starts collapsed beside the timer",
+  );
+  await about.focus();
+  await page.keyboard.press("Space");
+  assert(
+    (await aboutPanel.isVisible()) &&
+      !(await state()).includes("Solving") &&
+      (await history()).length === 0,
+    "Space opens About without starting a solve or changing history",
+  );
+  await page.keyboard.press("Space");
+  assert(
+    !(await aboutPanel.isVisible()) &&
+      (await about.getAttribute("aria-expanded")) === "false",
+    "Space closes About and updates the disclosure state",
+  );
+  await page.locator(".timer-surface").focus();
   await page.waitForTimeout(150);
   await page.keyboard.down("Space");
   assert(

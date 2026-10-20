@@ -28,7 +28,7 @@ Release early to cancel the hold. **Escape** cancels the current attempt.
 - Today's solve history, with rolling AO5/AO12 at each solve and individual deletion.
 - A separate panel for today's best single, best AO5 and best AO12; total solving time stays in the table footer.
 - A chart of solve times and averages.
-- Three cube finishes; click or tap the cube to choose one.
+- Three cube finishes; click or tap the cube to choose one. Your choice is saved on this device.
 
 Solves are saved in this browser on this device. Clearing browser data removes
 them.

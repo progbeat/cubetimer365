@@ -62,6 +62,13 @@ Neon color/glow samples, all 45 sticker paths across the three finishes, the
 at DPR 1, 2 and 3, verifying bitmap dimensions, approved pixel samples and the
 DPR 2 cap while keeping the interference spacing in screen pixels.
 
+The selected finish is stored separately at `cubetimer365:cube-style:v1` and read
+by the initial React state, so a saved choice is used on the first render. An
+explicit valid `?cube=` URL takes priority without rewriting the preference.
+Missing/invalid values or blocked reads fall back to Cyber; blocked writes leave
+the choice usable in memory. The picker writes only that namespaced preference.
+Browser checks cover reloads, new tabs, first-render labels and storage failures.
+
 ## Daily data
 
 The results table shows rolling AO5/AO12 at each solve, while the separate summary

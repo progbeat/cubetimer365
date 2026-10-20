@@ -7,6 +7,7 @@ import { LineChart } from "@mantine/charts";
 import { createTheme, MantineProvider, Popover } from "@mantine/core";
 import {
   IconChartLine,
+  IconChevronDown,
   IconCube,
   IconList,
   IconStopwatch,
@@ -18,6 +19,7 @@ import { generateScramble } from "./scramble";
 import { startAnalytics } from "./analytics";
 import { calculateSolveStatistics, formatTime } from "./solveStatistics";
 import LegacyHistoryImport from "./LegacyHistoryImport";
+import { loadCubeStyle, rememberCubeStyle } from "./cubeStylePreference";
 import {
   SOLVE_STORAGE_KEY,
   loadDailyHistory,
@@ -87,10 +89,10 @@ const App: React.FC = () => {
   useEffect(() => {
     startAnalytics();
   }, []);
-  const [cubeStyle, setCubeStyle] = useState<CubeStyle>(() => {
-    const requested = new URLSearchParams(window.location.search).get("cube");
-    return requested === "flat" || requested === "neon" ? requested : "cyber";
-  });
+  const [aboutOpen, setAboutOpen] = useState(false);
+  const [cubeStyle, setCubeStyle] = useState<CubeStyle>(() =>
+    loadCubeStyle(window.location.search),
+  );
   const [finishOpen, setFinishOpen] = useState(false);
   const finishOpenRef = useRef(finishOpen);
   finishOpenRef.current = finishOpen;
@@ -833,7 +835,16 @@ const App: React.FC = () => {
                 CubeTimer<span className="lime">365</span>
               </span>
             </a>
-            <span className="header-caption">One day. One scramble.</span>
+            <button
+              type="button"
+              className="about-trigger"
+              aria-expanded={aboutOpen}
+              aria-controls="about-cubetimer"
+              onClick={() => setAboutOpen((open) => !open)}
+            >
+              About
+              <IconChevronDown size={13} stroke={1.8} aria-hidden="true" />
+            </button>
             <time dateTime={localDateString}>
               {today.toLocaleDateString("en-GB", {
                 day: "2-digit",
@@ -842,6 +853,24 @@ const App: React.FC = () => {
               })}
             </time>
           </header>
+          <section
+            className="panel about-panel"
+            id="about-cubetimer"
+            aria-labelledby="about-title"
+            hidden={!aboutOpen}
+          >
+            <h2 className="eyebrow" id="about-title">
+              About CubeTimer365
+            </h2>
+            <p>
+              Practise one daily scramble with a cube preview. Time solves with
+              Space or touch, then review today’s history, rolling AO5/AO12 and
+              best results.
+            </p>
+            <p className="about-local">
+              Your solves are saved in this browser on this device.
+            </p>
+          </section>
           <main className="practice-grid">
             <section
               ref={scramblePanel}
@@ -899,6 +928,7 @@ const App: React.FC = () => {
                           data-autofocus={cubeStyle === style || undefined}
                           onClick={() => {
                             setCubeStyle(style);
+                            rememberCubeStyle(style);
                             setFinishOpen(false);
                           }}
                         >

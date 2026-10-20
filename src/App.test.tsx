@@ -12,6 +12,7 @@ import App from "./App";
 import { generateScramble } from "./scramble";
 import { SOLVE_STORAGE_KEY, type DailyHistory } from "./solveStorage";
 import * as solveStorage from "./solveStorage";
+import { CUBE_STYLE_KEY } from "./cubeStylePreference";
 
 vi.mock("@mantine/charts", () => ({
   LineChart: ({
@@ -755,6 +756,44 @@ it("distinguishes saving with Space from cancelling with Escape in the timer ins
   await flushStorage();
   expect(saved()[0]).toBeCloseTo(0.25);
 });
+it("restores a saved finish on the initial render without a Cyber fallback", async () => {
+  localStorage.setItem(CUBE_STYLE_KEY, "neon");
+  const { container } = render(<App />);
+  expect(
+    screen.getByRole("img", {
+      name: "Daily scramble cube, rounded neon finish",
+    }),
+  ).toBeInTheDocument();
+  expect(container.querySelector("[data-screen-interference]")).toBeNull();
+  await flushStorage();
+  expect(container.querySelector("[data-screen-interference]")).toBeNull();
+});
+it("keeps the chosen finish in memory if its storage write is blocked", async () => {
+  seedHistory("[12,15]");
+  const originalSet = Storage.prototype.setItem;
+  vi.spyOn(Storage.prototype, "setItem").mockImplementation(function (
+    this: Storage,
+    key: string,
+    value: string,
+  ) {
+    if (key === CUBE_STYLE_KEY) {
+      throw new Error("blocked preference");
+    }
+    originalSet.call(this, key, value);
+  });
+  render(<App />);
+  await flushStorage();
+  fireEvent.click(screen.getByRole("button", { name: "Choose cube finish" }));
+  fireEvent.click(screen.getByRole("button", { name: "Neon · Round" }));
+  await flushStorage();
+  expect(
+    screen.getByRole("img", {
+      name: "Daily scramble cube, rounded neon finish",
+    }),
+  ).toBeInTheDocument();
+  expect(saved()).toEqual([12, 15]);
+  expect(localStorage.getItem(CUBE_STYLE_KEY)).toBeNull();
+});
 it("defaults to screen-space Cyber without a query and switches finishes without altering history", async () => {
   seedHistory("[12,15]");
   const { container } = render(<App />);
@@ -783,6 +822,7 @@ it("defaults to screen-space Cyber without a query and switches finishes without
   ).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Flat · Round" }));
   await flushStorage();
+  expect(localStorage.getItem(CUBE_STYLE_KEY)).toBe("flat");
   expect(container.querySelector("[data-screen-interference]")).toBeNull();
 
   expect(
@@ -793,6 +833,7 @@ it("defaults to screen-space Cyber without a query and switches finishes without
   fireEvent.click(picker);
   fireEvent.click(screen.getByRole("button", { name: "Neon · Round" }));
   await flushStorage();
+  expect(localStorage.getItem(CUBE_STYLE_KEY)).toBe("neon");
   expect(container.querySelector("[data-screen-interference]")).toBeNull();
   fireEvent.keyDown(picker, { code: "Space" });
   advance(310);
