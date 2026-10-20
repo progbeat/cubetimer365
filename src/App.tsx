@@ -7,7 +7,6 @@ import { LineChart } from "@mantine/charts";
 import { createTheme, MantineProvider, Popover } from "@mantine/core";
 import {
   IconChartLine,
-  IconInfoCircle,
   IconCube,
   IconList,
   IconStopwatch,
@@ -851,25 +850,33 @@ const App: React.FC = () => {
                 CubeTimer<span className="lime">365</span>
               </span>
             </a>
-            <button
-              type="button"
-              className="about-trigger"
-              aria-expanded={aboutOpen}
-              aria-controls="about-cubetimer"
-              aria-haspopup="dialog"
-              disabled={phase !== "idle"}
-              onClick={() => setAboutOpen(true)}
-            >
-              About
-              <IconInfoCircle size={15} stroke={1.7} aria-hidden="true" />
-            </button>
-            <time dateTime={localDateString}>
-              {today.toLocaleDateString("en-GB", {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-              })}
-            </time>
+            <div className="header-tools">
+              <time
+                dateTime={localDateString}
+                aria-label={today.toLocaleDateString("en-GB", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })}
+              >
+                {today.toLocaleDateString("en-GB", {
+                  day: "2-digit",
+                  month: "short",
+                })}
+                <span className="header-year"> {today.getFullYear()}</span>
+              </time>
+              <button
+                type="button"
+                className="about-trigger"
+                aria-expanded={aboutOpen}
+                aria-controls="about-cubetimer"
+                aria-haspopup="dialog"
+                disabled={phase !== "idle"}
+                onClick={() => setAboutOpen(true)}
+              >
+                About
+              </button>
+            </div>
           </header>
           <About opened={aboutOpen} onClose={closeAbout} />
           <main className="practice-grid">
