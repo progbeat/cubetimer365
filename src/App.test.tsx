@@ -756,6 +756,39 @@ it("distinguishes saving with Space from cancelling with Escape in the timer ins
   await flushStorage();
   expect(saved()[0]).toBeCloseTo(0.25);
 });
+it("keeps About keyboard input out of the timer and returns focus when closed", async () => {
+  seedHistory("[12,15]");
+  render(<App />);
+  await flushStorage();
+  fireEvent.click(screen.getByRole("button", { name: "About" }));
+  advance(200);
+  await flushStorage();
+  const dialog = screen.getByRole("dialog", { name: "About CubeTimer365" });
+  fireEvent.keyDown(window, { code: "Space" });
+  advance(350);
+  fireEvent.keyUp(window, { code: "Space" });
+  await flushStorage();
+  expect(screen.queryByText("Solving")).not.toBeInTheDocument();
+  expect(saved()).toEqual([12, 15]);
+  fireEvent.click(
+    within(dialog).getByRole("button", { name: "Back to timer" }),
+  );
+  advance(200);
+  await flushStorage();
+  expect(surface()).toHaveFocus();
+});
+it("keeps About unavailable during an active solve", async () => {
+  render(<App />);
+  touchStart();
+  const about = screen.getByRole("button", { name: "About" });
+  expect(about).toBeDisabled();
+  fireEvent.click(about);
+  expect(
+    screen.queryByRole("dialog", { name: "About CubeTimer365" }),
+  ).not.toBeInTheDocument();
+  expect(screen.getByText("Solving")).toBeInTheDocument();
+  await flushStorage();
+});
 it("restores a saved finish on the initial render without a Cyber fallback", async () => {
   localStorage.setItem(CUBE_STYLE_KEY, "neon");
   const { container } = render(<App />);

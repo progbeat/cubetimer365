@@ -7,7 +7,7 @@ import { LineChart } from "@mantine/charts";
 import { createTheme, MantineProvider, Popover } from "@mantine/core";
 import {
   IconChartLine,
-  IconChevronDown,
+  IconInfoCircle,
   IconCube,
   IconList,
   IconStopwatch,
@@ -20,6 +20,7 @@ import { startAnalytics } from "./analytics";
 import { calculateSolveStatistics, formatTime } from "./solveStatistics";
 import LegacyHistoryImport from "./LegacyHistoryImport";
 import { loadCubeStyle, rememberCubeStyle } from "./cubeStylePreference";
+import About from "./About";
 import {
   SOLVE_STORAGE_KEY,
   loadDailyHistory,
@@ -90,6 +91,8 @@ const App: React.FC = () => {
     startAnalytics();
   }, []);
   const [aboutOpen, setAboutOpen] = useState(false);
+  const aboutOpenRef = useRef(aboutOpen);
+  aboutOpenRef.current = aboutOpen;
   const [cubeStyle, setCubeStyle] = useState<CubeStyle>(() =>
     loadCubeStyle(window.location.search),
   );
@@ -97,6 +100,13 @@ const App: React.FC = () => {
   const finishOpenRef = useRef(finishOpen);
   finishOpenRef.current = finishOpen;
   const timerSurface = useRef<HTMLDivElement>(null);
+  const closeAbout = () => {
+    setAboutOpen(false);
+    window.setTimeout(
+      () => timerSurface.current?.focus({ preventScroll: true }),
+      0,
+    );
+  };
   const finishWasOpen = useRef(false);
   useEffect(() => {
     const closed = finishWasOpen.current && !finishOpen;
@@ -513,6 +523,9 @@ const App: React.FC = () => {
     }, 300);
   };
   const handleKeyDown = (event: KeyboardEvent) => {
+    if (aboutOpenRef.current) {
+      return;
+    }
     if (event.code === "Escape" && finishOpenRef.current) {
       event.preventDefault();
       setFinishOpen(false);
@@ -571,6 +584,9 @@ const App: React.FC = () => {
     beginHold(() => keyboardHeld.current === event.code);
   };
   const handleKeyUp = (event: KeyboardEvent) => {
+    if (aboutOpenRef.current) {
+      return;
+    }
     if (isControl(event.target)) {
       if (event.code === keyboardHeld.current) {
         keyboardHeld.current = null;
@@ -840,10 +856,12 @@ const App: React.FC = () => {
               className="about-trigger"
               aria-expanded={aboutOpen}
               aria-controls="about-cubetimer"
-              onClick={() => setAboutOpen((open) => !open)}
+              aria-haspopup="dialog"
+              disabled={phase !== "idle"}
+              onClick={() => setAboutOpen(true)}
             >
               About
-              <IconChevronDown size={13} stroke={1.8} aria-hidden="true" />
+              <IconInfoCircle size={15} stroke={1.7} aria-hidden="true" />
             </button>
             <time dateTime={localDateString}>
               {today.toLocaleDateString("en-GB", {
@@ -853,24 +871,7 @@ const App: React.FC = () => {
               })}
             </time>
           </header>
-          <section
-            className="panel about-panel"
-            id="about-cubetimer"
-            aria-labelledby="about-title"
-            hidden={!aboutOpen}
-          >
-            <h2 className="eyebrow" id="about-title">
-              About CubeTimer365
-            </h2>
-            <p>
-              Practise one daily scramble with a cube preview. Time solves with
-              Space or touch, then review today’s history, rolling AO5/AO12 and
-              best results.
-            </p>
-            <p className="about-local">
-              Your solves are saved in this browser on this device.
-            </p>
-          </section>
+          <About opened={aboutOpen} onClose={closeAbout} />
           <main className="practice-grid">
             <section
               ref={scramblePanel}
