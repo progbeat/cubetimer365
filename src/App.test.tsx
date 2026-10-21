@@ -13,6 +13,7 @@ import { generateScramble } from "./scramble";
 import { SOLVE_STORAGE_KEY, type DailyHistory } from "./solveStorage";
 import * as solveStorage from "./solveStorage";
 import { CUBE_STYLE_KEY } from "./cubeStylePreference";
+import { cubeFaceColors } from "./cubeGeometry";
 
 vi.mock("@mantine/charts", () => ({
   LineChart: ({
@@ -531,11 +532,21 @@ describe("preserved scramble and daily data", () => {
     seedHistory("[12]");
     const { container } = render(<App />);
     const moves = () => container.querySelector(".scramble-moves")?.textContent;
+    const logoColors = () =>
+      Array.from(container.querySelectorAll("[data-logo-sticker]"), (cell) =>
+        cell.getAttribute("data-logo-color"),
+      );
     await flushStorage();
     expect(moves()).toBe(generateScramble(20261012));
+    expect(logoColors()).toEqual(
+      cubeFaceColors(generateScramble(20261012), "B").flat(),
+    );
     advance(24 * 60 * 60 * 1000);
     await flushStorage();
     expect(moves()).toBe(generateScramble(20261013));
+    expect(logoColors()).toEqual(
+      cubeFaceColors(generateScramble(20261013), "B").flat(),
+    );
 
     await flushStorage();
     expect(stored()?.date).toBe("2026-10-13");
@@ -551,6 +562,41 @@ describe("preserved scramble and daily data", () => {
       ).map((value) => value.textContent),
     ).toEqual(["—", "—", "—"]);
   });
+  it.each(["focus", "visibilitychange"])(
+    "refreshes both the logo and scramble on %s after a suspended day",
+    async (event) => {
+      vi.setSystemTime(new Date("2026-10-20T12:00:00Z"));
+      seedDate("2026-10-20");
+      localStorage.setItem(CUBE_STYLE_KEY, "flat");
+      const { container } = render(<App />);
+      await flushStorage();
+      const logo = () => container.querySelector(".daily-logo");
+      expect(logo()).toHaveAttribute(
+        "data-logo-scramble",
+        generateScramble(20261020),
+      );
+      // Change the wall clock without running the scheduled boundary timeout.
+      vi.setSystemTime(new Date("2026-10-21T12:00:00Z"));
+      if (event === "focus") {
+        fireEvent(window, new Event("focus"));
+      } else {
+        vi.spyOn(document, "hidden", "get").mockReturnValue(false);
+        fireEvent(document, new Event("visibilitychange"));
+      }
+      await flushStorage();
+      const expected = generateScramble(20261021);
+      expect(container.querySelector(".scramble-moves")?.textContent).toBe(
+        expected,
+      );
+      expect(logo()).toHaveAttribute("data-logo-scramble", expected);
+      expect(
+        Array.from(container.querySelectorAll("[data-logo-sticker]"), (cell) =>
+          cell.getAttribute("data-logo-color"),
+        ),
+      ).toEqual(cubeFaceColors(expected, "B").flat());
+      expect(localStorage.getItem(CUBE_STYLE_KEY)).toBe("flat");
+    },
+  );
   it("loads existing history, keeps averages and deletion persistent", async () => {
     seedHistory("[10,20,30,40,50]");
     const first = render(<App />);

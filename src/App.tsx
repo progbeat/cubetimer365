@@ -7,7 +7,6 @@ import { LineChart } from "@mantine/charts";
 import { createTheme, MantineProvider, Popover } from "@mantine/core";
 import {
   IconChartLine,
-  IconCube,
   IconList,
   IconStopwatch,
   IconTrash,
@@ -20,6 +19,9 @@ import { calculateSolveStatistics, formatTime } from "./solveStatistics";
 import LegacyHistoryImport from "./LegacyHistoryImport";
 import { loadCubeStyle, rememberCubeStyle } from "./cubeStylePreference";
 import About from "./About";
+import DailyLogo from "./DailyLogo";
+import { createCalendarMark } from "./calendarMark";
+import { useDailyFavicon } from "./useDailyFavicon";
 import {
   SOLVE_STORAGE_KEY,
   loadDailyHistory,
@@ -138,6 +140,11 @@ const App: React.FC = () => {
     (today.getMonth() + 1) * 100 +
     today.getDate();
   const scramble = React.useMemo(() => generateScramble(seed), [seed]);
+  const calendarMark = React.useMemo(
+    () => createCalendarMark(scramble),
+    [scramble],
+  );
+  useDailyFavicon(calendarMark);
   const [initialStorage] = useState(() => loadDailyHistory(todayString));
   const [daily, setDaily] = useState(initialStorage.record);
   const [storageFailed, setStorageFailed] = useState(initialStorage.blocked);
@@ -845,7 +852,7 @@ const App: React.FC = () => {
         <div className="app-layout">
           <header className="app-header">
             <a className="brand" href="#timer" aria-label="CubeTimer365 timer">
-              <IconCube size={26} stroke={1.8} />
+              <DailyLogo mark={calendarMark} />
               <span>
                 CubeTimer<span className="lime">365</span>
               </span>

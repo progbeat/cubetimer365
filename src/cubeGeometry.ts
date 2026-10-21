@@ -1,6 +1,7 @@
 import { project, type Face, type StickerInput } from "./cubeRenderer";
 
 type CubeState = Record<string, string>;
+export type CubeFace = Face | "B";
 
 const adjacentFacesCw: Record<string, string> = {
   U: "FLBR",
@@ -54,29 +55,41 @@ const permuteCube = (
   scramble: string,
   cube: CubeState = generateInitialState(),
 ): CubeState => {
-  scramble.split(" ").forEach((move) => {
-    const cycles = rotationCycles(move[0]);
-    const permutation = modifierPermutations[move.slice(1)];
-    cycles.forEach((cycle) => {
-      const permutatedStickers = permutation.map((i) => cube[cycle[i]]);
-      for (let i = 0; i < 4; i++) {
-        cube[cycle[i]] = permutatedStickers[i];
-      }
+  scramble
+    .split(/\s+/)
+    .filter(Boolean)
+    .forEach((move) => {
+      const cycles = rotationCycles(move[0]);
+      const permutation = modifierPermutations[move.slice(1)];
+      cycles.forEach((cycle) => {
+        const permutatedStickers = permutation.map((i) => cube[cycle[i]]);
+        for (let i = 0; i < 4; i++) {
+          cube[cycle[i]] = permutatedStickers[i];
+        }
+      });
     });
-  });
   return cube;
 };
+
+const faceColors = (cube: CubeState, face: CubeFace): string[][] => {
+  const [a, b, c, d] = adjacentFacesCw[face].split("");
+  return [
+    [cube[face + d + a], cube[face + a], cube[face + a + b]],
+    [cube[face + d], cube[face], cube[face + b]],
+    [cube[face + c + d], cube[face + c], cube[face + b + c]],
+  ];
+};
+
+// Rows are viewed directly at the face, with U above each vertical face.
+// On B, the viewer's left is R and the viewer's right is L (no mirroring).
+export function cubeFaceColors(scramble: string, face: CubeFace): string[][] {
+  return faceColors(permuteCube(scramble), face);
+}
 
 export function cubeStickers(scramble: string): StickerInput[] {
   const cube = permuteCube(scramble);
   return (["L", "F", "R", "U", "D"] as Face[]).flatMap((face) => {
-    const [a, b, c, d] = adjacentFacesCw[face].split("");
-    const colors = [
-      [cube[face + d + a], cube[face + a], cube[face + a + b]],
-      [cube[face + d], cube[face], cube[face + b]],
-      [cube[face + c + d], cube[face + c], cube[face + b + c]],
-    ];
-    return colors.flatMap((row, i) =>
+    return faceColors(cube, face).flatMap((row, i) =>
       row.map((color, j) => ({
         id: `${face}-${i}-${j}`,
         color,

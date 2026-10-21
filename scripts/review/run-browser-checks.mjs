@@ -8,6 +8,7 @@ const defaultSuites = [
   "browser-check",
   "browser-feedback-check",
   "browser-date-check",
+  "browser-logo-check",
   "browser-statistics-check",
   "browser-storage-check",
   "browser-style-preference-check",

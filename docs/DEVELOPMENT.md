@@ -83,6 +83,14 @@ explain the reviewed legacy import and preservation of generic shared keys.
 The date/history boundary retains the original UTC behavior; the daily scramble
 seed uses the local date.
 
+The SVG calendar mark uses `cubeFaceColors(scramble, "B")` from the same cube
+engine as the main projection. Read B directly with U above, R on the viewer's
+left and L on the right; its centre is blue. The logo and main cube receive the
+same memoized daily scramble. The existing local/UTC boundary timeout and
+focus/visibility refresh update both without changing the UTC history rules.
+`browser-logo-check` covers several dates, reload, midnight and suspended-tab
+resumption, including preservation of history and settings.
+
 ## Build and hosting
 
 ```sh
@@ -100,8 +108,8 @@ threshold would not improve loading.
 
 Application code is MIT licensed; see [LICENSE](../LICENSE). Bundled Chakra Petch
 and Roboto fonts include their licenses in `public/fonts/`. The current header
-and favicon use Tabler's IconCube; its MIT license is included in
-`public/licenses/tabler-icons.txt`.
+calendar mark and favicons share the application’s SVG rectangle model. Other
+UI icons use Tabler; its MIT license is included in `public/licenses/tabler-icons.txt`.
 
 ## Dependency review
 
@@ -124,3 +132,20 @@ The production build uses the verified public Cloudflare site token for
 with a synthetic token and tests singleton loading, privacy signals and migration
 from the old GA4 state. Vendor requests are stubbed in both browser suites.
 [Analytics setup](ANALYTICS.md) describes activation and verification limits.
+
+## Dynamic favicon
+
+The header and favicon share `createCalendarMark` geometry and B-face colors.
+`useDailyFavicon` updates one existing SVG icon link with a data URL when the
+shared daily mark changes. It allocates no blob URLs, preserves the PNG/ICO
+fallback links, and restores the original SVG href on unmount. No CSP changes
+are required by this integration.
+
+The checked-in static SVG, PNG and 16/32px ICO are reproducible snapshots for
+seed 20261021, generated with `node scripts/generate-favicons.mjs` (set
+`PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` when using a system Chromium).
+They remain available without JavaScript or dynamic SVG favicon support.
+Browser checks verify SVG decoding, matching matrices, reload, midnight,
+focus/visibility resumption, stable link identity and fallback signatures.
+These checks prove the DOM update and decoding, not immediate tab-strip repaint.
+Browser icon caching and saved home-screen icons may retain a static image.
