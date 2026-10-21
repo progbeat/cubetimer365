@@ -56,7 +56,7 @@ it("shares all sticker colors and geometry with the favicon SVG", () => {
     "image/svg+xml",
   );
   const attributes = (root: ParentNode) =>
-    Array.from(root.querySelectorAll("path, rect"), (node) =>
+    Array.from(root.querySelectorAll("g, path, rect"), (node) =>
       [
         "x",
         "y",
@@ -64,6 +64,7 @@ it("shares all sticker colors and geometry with the favicon SVG", () => {
         "height",
         "rx",
         "fill",
+        "transform",
         "d",
         "stroke",
         "stroke-width",

@@ -1,6 +1,7 @@
 import { memo } from "react";
 import {
   CALENDAR_VIEWBOX,
+  CALENDAR_TRANSFORM,
   calendarOutlineAttributes,
   calendarRectAttributes,
   type CalendarMark,
@@ -16,10 +17,12 @@ const DailyLogo = ({ mark }: { mark: CalendarMark }) => (
     data-logo-face="B"
     data-logo-scramble={mark.scramble}
   >
-    <path {...calendarOutlineAttributes} />
-    {mark.rectangles.map((rect, index) => (
-      <rect key={index} {...calendarRectAttributes(rect)} />
-    ))}
+    <g transform={CALENDAR_TRANSFORM}>
+      <path {...calendarOutlineAttributes} />
+      {mark.rectangles.map((rect, index) => (
+        <rect key={index} {...calendarRectAttributes(rect)} />
+      ))}
+    </g>
   </svg>
 );
 export default memo(DailyLogo);

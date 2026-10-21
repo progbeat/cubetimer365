@@ -2,6 +2,7 @@ import { cubeFaceColors } from "./cubeGeometry";
 import { colorKey, PALETTE } from "./cubeRenderer";
 
 export const CALENDAR_VIEWBOX = "0 0 32 32";
+export const CALENDAR_TRANSFORM = "translate(1.2 0) scale(0.925 1)";
 export const calendarOutlineAttributes = {
   d: "M5 4.8H3.8A2.3 2.3 0 0 0 1.5 7.1V28.2A2.3 2.3 0 0 0 3.8 30.5H28.2A2.3 2.3 0 0 0 30.5 28.2V7.1A2.3 2.3 0 0 0 28.2 4.8H27M10.4 4.8H21.2",
   fill: "none",
@@ -27,12 +28,12 @@ export function createCalendarMark(scramble: string): CalendarMark {
   return {
     scramble,
     rectangles: [
-      ...[6.5, 22.7].map((x) => ({
+      ...[6.55, 22.75].map((x) => ({
         x,
-        y: 1,
-        width: 2.5,
-        height: 6.5,
-        rx: 0.95,
+        y: 2.3,
+        width: 2.4,
+        height: 5,
+        rx: 1.1,
         fill: "#f3f5f6",
       })),
       ...colors.flatMap((row, i) =>
@@ -87,5 +88,5 @@ export function calendarMarkSvg(mark: CalendarMark): string {
   const rectangles = mark.rectangles
     .map((rect) => `<rect ${svgAttributes(calendarRectAttributes(rect))} />`)
     .join("");
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="${CALENDAR_VIEWBOX}" data-logo-scramble="${xml(mark.scramble)}">${outline}${rectangles}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="${CALENDAR_VIEWBOX}" data-logo-scramble="${xml(mark.scramble)}"><g transform="${CALENDAR_TRANSFORM}">${outline}${rectangles}</g></svg>`;
 }

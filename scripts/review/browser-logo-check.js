@@ -155,7 +155,19 @@ export default async (page) => {
         first.colors[4] === "var(--mantine-color-blue-6)",
         `Rear centre stays blue on ${fixture.date}`,
       );
-      assert(first.square, `Complete logo is square on ${fixture.date}`);
+      assert(first.square, `Logo viewport is square on ${fixture.date}`);
+      await tab.evaluate(() => document.fonts.ready);
+      assert(
+        await tab.evaluate(() =>
+          Array.from(document.fonts).some(
+            (face) =>
+              face.family.includes("CubeTimer Wordmark") &&
+              face.weight === "900" &&
+              face.status === "loaded",
+          ),
+        ),
+        `Local wordmark font is loaded on ${fixture.date}`,
+      );
       assert(
         first.flattened,
         `Logo stickers stay flattened on ${fixture.date}`,

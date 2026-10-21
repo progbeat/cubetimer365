@@ -106,6 +106,11 @@ threshold would not improve loading.
 
 ## Assets and license
 
+The wordmark uses a locally hosted Inter Black subset for consistent weight and
+width across platforms. Only the brand uses it; its license is included in
+`public/fonts/Inter-OFL.txt`. The font and license come from
+[Google Fonts](https://github.com/google/fonts/tree/main/ofl/inter).
+
 Application code is MIT licensed; see [LICENSE](../LICENSE). Bundled Chakra Petch
 and Roboto fonts include their licenses in `public/fonts/`. The current header
 calendar mark and favicons share the application’s SVG outline and grid. Other

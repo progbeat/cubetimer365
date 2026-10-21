@@ -6,6 +6,14 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: 'CubeTimer Wordmark';
+  src: url('/fonts/Inter-Wordmark-900.ttf') format('truetype');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   color-scheme: dark;
   --page: #101315;
@@ -27,8 +35,8 @@ button:focus-visible, a:focus-visible, [role='button']:focus-visible { outline: 
 .muted { color: var(--muted); }
 .app-layout { max-width: 1480px; margin: 0 auto; padding: 0 28px; }
 .app-header { display: flex; align-items: center; gap: 16px; height: 80px; }
-.brand { display: flex; gap: 10px; align-items: center; font-size: 24px; font-weight: 750; letter-spacing: -1px; }
-.brand > svg { width: 32px; height: 32px; flex-shrink: 0; }
+.brand { display: flex; gap: 7px; align-items: center; min-height: 44px; font-family: 'CubeTimer Wordmark', sans-serif; font-size: 24px; line-height: 1; font-weight: 900; letter-spacing: -1px; white-space: nowrap; }
+.brand > svg { width: 35px; height: 35px; flex-shrink: 0; transform: translateY(-3px); }
 .brand-year { color: #9fb3c2; }
 .header-tools { display: flex; align-items: center; gap: 20px; margin-left: auto; flex-shrink: 0; }
 .about-trigger { position: relative; display: flex; align-items: center; justify-content: center; min-width: 64px; min-height: 44px; padding: 0 12px; border: 0; border-radius: 4px; background: transparent; color: #d6dfe5; font: inherit; font-size: 13px; line-height: 1; font-weight: 400; cursor: pointer; }
@@ -152,8 +160,8 @@ kbd { border: 1px solid #43505a; border-radius: 4px; padding: 4px 7px; font: inh
   html { scroll-padding-top: 16px; }
   .app-layout { padding: 0 12px 78px; }
   .app-header { height: 68px; gap: 12px; }
-  .brand { font-size: 21px; gap: 9px; }
-  .brand > svg { width: 28px; height: 28px; }
+  .brand { font-size: 21px; gap: 6px; }
+  .brand > svg { width: 31px; height: 31px; transform: translateY(-2px); }
   .header-tools { gap: 10px; }
   .about-trigger { min-width: 60px; padding: 0 10px; }
   .app-header time { font-size: 10px; letter-spacing: 0.6px; }
@@ -199,4 +207,8 @@ body:has(#history:target) .mobile-nav a:first-child, body:has(#stats:target) .mo
 body:has(#history:target) .mobile-nav a[href="#history"], body:has(#stats:target) .mobile-nav a[href="#stats"] { color: var(--lime); }
 
 @media (width <= 380px) { .scramble-moves { font-size: 15px; line-height: 1.35; } }
-@media (width <= 359px) { .history-table td:nth-child(n+2):not(:last-child) { font-size: 12px; } }
+@media (width <= 359px) {
+  .brand { font-size: 20px; }
+  .brand > svg { width: 29px; height: 29px; }
+  .history-table td:nth-child(n+2):not(:last-child) { font-size: 12px; }
+}
