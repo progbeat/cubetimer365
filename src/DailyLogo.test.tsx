@@ -31,21 +31,15 @@ describe.each(fixtures)(
   },
 );
 
-it("keeps the complete mark square including its bindings and flattens the stickers", () => {
+it("keeps a square viewbox, an open calendar outline and flattened stickers", () => {
   const { container } = render(<DailyLogo mark={createCalendarMark("")} />);
-  const rectangles = Array.from(container.querySelectorAll("rect"), (node) => ({
-    x: Number(node.getAttribute("x")),
-    y: Number(node.getAttribute("y")),
-    w: Number(node.getAttribute("width")),
-    h: Number(node.getAttribute("height")),
-  }));
-  const width =
-    Math.max(...rectangles.map((r) => r.x + r.w)) -
-    Math.min(...rectangles.map((r) => r.x));
-  const height =
-    Math.max(...rectangles.map((r) => r.y + r.h)) -
-    Math.min(...rectangles.map((r) => r.y));
-  expect(width).toBeCloseTo(height);
+  expect(container.querySelector("svg")).toHaveAttribute(
+    "viewBox",
+    "0 0 32 32",
+  );
+  expect(container.querySelectorAll("path")).toHaveLength(1);
+  expect(container.querySelector("path")).toHaveAttribute("fill", "none");
+  expect(container.querySelectorAll("rect")).toHaveLength(11);
   for (const cell of container.querySelectorAll("[data-logo-sticker]")) {
     expect(Number(cell.getAttribute("width"))).toBeGreaterThan(
       Number(cell.getAttribute("height")),
@@ -62,7 +56,7 @@ it("shares all sticker colors and geometry with the favicon SVG", () => {
     "image/svg+xml",
   );
   const attributes = (root: ParentNode) =>
-    Array.from(root.querySelectorAll("rect"), (node) =>
+    Array.from(root.querySelectorAll("path, rect"), (node) =>
       [
         "x",
         "y",
@@ -70,6 +64,11 @@ it("shares all sticker colors and geometry with the favicon SVG", () => {
         "height",
         "rx",
         "fill",
+        "d",
+        "stroke",
+        "stroke-width",
+        "stroke-linecap",
+        "stroke-linejoin",
         "data-logo-sticker",
         "data-logo-color",
       ].map((key) => node.getAttribute(key)),

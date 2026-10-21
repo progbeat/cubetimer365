@@ -23,12 +23,12 @@ describe("cube finish preference", () => {
     },
   );
   it.each([null, "", "original", "NEON", "unknown", '{"style":"neon"}'])(
-    "uses Cyber for missing/invalid saved value %s",
+    "uses Neon for missing/invalid saved value %s",
     (value) => {
       if (value !== null) {
         localStorage.setItem(CUBE_STYLE_KEY, value);
       }
-      expect(loadCubeStyle("")).toBe("cyber");
+      expect(loadCubeStyle("")).toBe("neon");
       expect(localStorage.getItem(CUBE_STYLE_KEY)).toBe(value);
     },
   );
@@ -53,11 +53,11 @@ describe("cube finish preference", () => {
     expect(localStorage.getItem("history")).toBe("shared");
     expect(localStorage.getItem("unrelated-preference")).toBe("keep");
   });
-  it("falls back to Cyber when storage cannot be read", () => {
+  it("falls back to Neon when storage cannot be read", () => {
     vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
       throw new Error("blocked read");
     });
-    expect(loadCubeStyle("")).toBe("cyber");
+    expect(loadCubeStyle("")).toBe("neon");
     expect(loadCubeStyle("?cube=flat")).toBe("flat");
   });
   it("does not throw when a preference cannot be saved", () => {

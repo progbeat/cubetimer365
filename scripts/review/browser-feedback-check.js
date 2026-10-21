@@ -234,6 +234,9 @@ export default async (page) => {
     );
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 900 });
+    await page.evaluate(() =>
+      localStorage.setItem("cubetimer365:cube-style:v1", "cyber"),
+    );
     await reset();
     assert(
       (await page.locator(".cube-finish-select").count()) === 0,

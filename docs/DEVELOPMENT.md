@@ -65,7 +65,7 @@ DPR 2 cap while keeping the interference spacing in screen pixels.
 The selected finish is stored separately at `cubetimer365:cube-style:v1` and read
 by the initial React state, so a saved choice is used on the first render. An
 explicit valid `?cube=` URL takes priority without rewriting the preference.
-Missing/invalid values or blocked reads fall back to Cyber; blocked writes leave
+Missing/invalid values or blocked reads fall back to Neon; blocked writes leave
 the choice usable in memory. The picker writes only that namespaced preference.
 Browser checks cover reloads, new tabs, first-render labels and storage failures.
 
@@ -108,7 +108,7 @@ threshold would not improve loading.
 
 Application code is MIT licensed; see [LICENSE](../LICENSE). Bundled Chakra Petch
 and Roboto fonts include their licenses in `public/fonts/`. The current header
-calendar mark and favicons share the application’s SVG rectangle model. Other
+calendar mark and favicons share the application’s SVG outline and grid. Other
 UI icons use Tabler; its MIT license is included in `public/licenses/tabler-icons.txt`.
 
 ## Dependency review

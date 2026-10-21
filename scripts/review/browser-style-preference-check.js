@@ -24,6 +24,20 @@ export default async (page) => {
     await page.getByRole("button", { name: `${name} · Round` }).click();
   };
   await waitForStorage(page);
+  assert(
+    (await finish()).includes("rounded neon"),
+    "Fresh storage starts with Neon",
+  );
+  assert(
+    (await page.evaluate((key) => localStorage.getItem(key), key)) === null,
+    "The default does not create a stored preference",
+  );
+  await page.reload();
+  await waitForStorage(page);
+  assert(
+    (await finish()).includes("rounded neon"),
+    "Reload without a saved choice keeps Neon",
+  );
   await page.evaluate(() => {
     localStorage.setItem(
       "cubetimer365:daily-history:v1",
@@ -120,8 +134,8 @@ export default async (page) => {
     await page.reload();
     await waitForStorage(page);
     assert(
-      (await finish()).includes("rounded cyber"),
-      `${String(value)}: missing or invalid saved data uses Cyber`,
+      (await finish()).includes("rounded neon"),
+      `${String(value)}: missing or invalid saved data uses Neon`,
     );
     assert(
       (await page.evaluate((key) => localStorage.getItem(key), key)) === value,
@@ -139,12 +153,14 @@ export default async (page) => {
     (await page.evaluate((key) => localStorage.getItem(key), key)) === "neon",
     "Opening an explicit URL leaves the stored choice alone",
   );
+  await page.evaluate((key) => localStorage.setItem(key, "cyber"), key);
   await page.goto(`${root}?fixture-style-storage=read`);
   await waitForStorage(page);
   assert(
-    (await finish()).includes("rounded cyber"),
+    (await finish()).includes("rounded neon"),
     "A blocked preference read falls back without breaking the app",
   );
+  await page.evaluate((key) => localStorage.setItem(key, "neon"), key);
   await page.goto(`${root}?fixture-style-storage=write`);
   await waitForStorage(page);
   await choose("Flat");

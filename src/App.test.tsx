@@ -833,18 +833,25 @@ it("keeps About unavailable during an active solve", async () => {
   expect(screen.getByText("Solving")).toBeInTheDocument();
   await flushStorage();
 });
-it("restores a saved finish on the initial render without a Cyber fallback", async () => {
-  localStorage.setItem(CUBE_STYLE_KEY, "neon");
-  const { container } = render(<App />);
-  expect(
-    screen.getByRole("img", {
-      name: "Daily scramble cube, rounded neon finish",
-    }),
-  ).toBeInTheDocument();
-  expect(container.querySelector("[data-screen-interference]")).toBeNull();
-  await flushStorage();
-  expect(container.querySelector("[data-screen-interference]")).toBeNull();
-});
+it.each(["flat", "neon", "cyber"] as const)(
+  "restores saved %s on the initial render instead of the default",
+  async (style) => {
+    localStorage.setItem(CUBE_STYLE_KEY, style);
+    const { container } = render(<App />);
+    expect(
+      screen.getByRole("img", {
+        name: `Daily scramble cube, rounded ${style} finish`,
+      }),
+    ).toBeInTheDocument();
+    expect(
+      container.querySelectorAll("[data-screen-interference]"),
+    ).toHaveLength(style === "cyber" ? 1 : 0);
+    await flushStorage();
+    expect(
+      container.querySelectorAll("[data-screen-interference]"),
+    ).toHaveLength(style === "cyber" ? 1 : 0);
+  },
+);
 it("keeps the chosen finish in memory if its storage write is blocked", async () => {
   seedHistory("[12,15]");
   const originalSet = Storage.prototype.setItem;
@@ -861,22 +868,22 @@ it("keeps the chosen finish in memory if its storage write is blocked", async ()
   render(<App />);
   await flushStorage();
   fireEvent.click(screen.getByRole("button", { name: "Choose cube finish" }));
-  fireEvent.click(screen.getByRole("button", { name: "Neon · Round" }));
+  fireEvent.click(screen.getByRole("button", { name: "Flat · Round" }));
   await flushStorage();
   expect(
     screen.getByRole("img", {
-      name: "Daily scramble cube, rounded neon finish",
+      name: "Daily scramble cube, rounded flat finish",
     }),
   ).toBeInTheDocument();
   expect(saved()).toEqual([12, 15]);
   expect(localStorage.getItem(CUBE_STYLE_KEY)).toBeNull();
 });
-it("defaults to screen-space Cyber without a query and switches finishes without altering history", async () => {
+it("defaults to Neon without a query and switches finishes without altering history", async () => {
   seedHistory("[12,15]");
   const { container } = render(<App />);
   await flushStorage();
   expect(container.querySelectorAll("[data-screen-interference]")).toHaveLength(
-    1,
+    0,
   );
 
   expect(container.querySelectorAll("[data-scanlines]")).toHaveLength(0);
@@ -884,12 +891,12 @@ it("defaults to screen-space Cyber without a query and switches finishes without
   await flushStorage();
   expect(
     screen.getByRole("img", {
-      name: "Daily scramble cube, rounded cyber finish",
+      name: "Daily scramble cube, rounded neon finish",
     }),
   ).toBeInTheDocument();
   fireEvent.click(picker);
   await flushStorage();
-  expect(screen.getByRole("button", { name: "Cyber · Round" })).toHaveAttribute(
+  expect(screen.getByRole("button", { name: "Neon · Round" })).toHaveAttribute(
     "aria-pressed",
     "true",
   );

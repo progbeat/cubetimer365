@@ -854,7 +854,7 @@ const App: React.FC = () => {
             <a className="brand" href="#timer" aria-label="CubeTimer365 timer">
               <DailyLogo mark={calendarMark} />
               <span>
-                CubeTimer<span className="lime">365</span>
+                CubeTimer<span className="brand-year">365</span>
               </span>
             </a>
             <div className="header-tools">
