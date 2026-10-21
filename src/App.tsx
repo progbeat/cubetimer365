@@ -7,7 +7,6 @@ import { LineChart } from "@mantine/charts";
 import { createTheme, MantineProvider, Popover } from "@mantine/core";
 import {
   IconChartLine,
-  IconCube,
   IconList,
   IconStopwatch,
   IconTrash,
@@ -18,6 +17,11 @@ import { generateScramble } from "./scramble";
 import { startAnalytics } from "./analytics";
 import { calculateSolveStatistics, formatTime } from "./solveStatistics";
 import LegacyHistoryImport from "./LegacyHistoryImport";
+import { loadCubeStyle, rememberCubeStyle } from "./cubeStylePreference";
+import About from "./About";
+import DailyLogo from "./DailyLogo";
+import { createCalendarMark } from "./calendarMark";
+import { useDailyFavicon } from "./useDailyFavicon";
 import {
   SOLVE_STORAGE_KEY,
   loadDailyHistory,
@@ -87,14 +91,23 @@ const App: React.FC = () => {
   useEffect(() => {
     startAnalytics();
   }, []);
-  const [cubeStyle, setCubeStyle] = useState<CubeStyle>(() => {
-    const requested = new URLSearchParams(window.location.search).get("cube");
-    return requested === "flat" || requested === "neon" ? requested : "cyber";
-  });
+  const [aboutOpen, setAboutOpen] = useState(false);
+  const aboutOpenRef = useRef(aboutOpen);
+  aboutOpenRef.current = aboutOpen;
+  const [cubeStyle, setCubeStyle] = useState<CubeStyle>(() =>
+    loadCubeStyle(window.location.search),
+  );
   const [finishOpen, setFinishOpen] = useState(false);
   const finishOpenRef = useRef(finishOpen);
   finishOpenRef.current = finishOpen;
   const timerSurface = useRef<HTMLDivElement>(null);
+  const closeAbout = () => {
+    setAboutOpen(false);
+    window.setTimeout(
+      () => timerSurface.current?.focus({ preventScroll: true }),
+      0,
+    );
+  };
   const finishWasOpen = useRef(false);
   useEffect(() => {
     const closed = finishWasOpen.current && !finishOpen;
@@ -127,6 +140,11 @@ const App: React.FC = () => {
     (today.getMonth() + 1) * 100 +
     today.getDate();
   const scramble = React.useMemo(() => generateScramble(seed), [seed]);
+  const calendarMark = React.useMemo(
+    () => createCalendarMark(scramble),
+    [scramble],
+  );
+  useDailyFavicon(calendarMark);
   const [initialStorage] = useState(() => loadDailyHistory(todayString));
   const [daily, setDaily] = useState(initialStorage.record);
   const [storageFailed, setStorageFailed] = useState(initialStorage.blocked);
@@ -511,6 +529,9 @@ const App: React.FC = () => {
     }, 300);
   };
   const handleKeyDown = (event: KeyboardEvent) => {
+    if (aboutOpenRef.current) {
+      return;
+    }
     if (event.code === "Escape" && finishOpenRef.current) {
       event.preventDefault();
       setFinishOpen(false);
@@ -569,6 +590,9 @@ const App: React.FC = () => {
     beginHold(() => keyboardHeld.current === event.code);
   };
   const handleKeyUp = (event: KeyboardEvent) => {
+    if (aboutOpenRef.current) {
+      return;
+    }
     if (isControl(event.target)) {
       if (event.code === keyboardHeld.current) {
         keyboardHeld.current = null;
@@ -828,20 +852,40 @@ const App: React.FC = () => {
         <div className="app-layout">
           <header className="app-header">
             <a className="brand" href="#timer" aria-label="CubeTimer365 timer">
-              <IconCube size={26} stroke={1.8} />
+              <DailyLogo mark={calendarMark} />
               <span>
-                CubeTimer<span className="lime">365</span>
+                CubeTimer<span className="brand-year">365</span>
               </span>
             </a>
-            <span className="header-caption">One day. One scramble.</span>
-            <time dateTime={localDateString}>
-              {today.toLocaleDateString("en-GB", {
-                day: "2-digit",
-                month: "short",
-                year: "numeric",
-              })}
-            </time>
+            <div className="header-tools">
+              <time
+                dateTime={localDateString}
+                aria-label={today.toLocaleDateString("en-GB", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })}
+              >
+                {today.toLocaleDateString("en-GB", {
+                  day: "2-digit",
+                  month: "short",
+                })}
+                <span className="header-year"> {today.getFullYear()}</span>
+              </time>
+              <button
+                type="button"
+                className="about-trigger"
+                aria-expanded={aboutOpen}
+                aria-controls="about-cubetimer"
+                aria-haspopup="dialog"
+                disabled={phase !== "idle"}
+                onClick={() => setAboutOpen(true)}
+              >
+                About
+              </button>
+            </div>
           </header>
+          <About opened={aboutOpen} onClose={closeAbout} />
           <main className="practice-grid">
             <section
               ref={scramblePanel}
@@ -899,6 +943,7 @@ const App: React.FC = () => {
                           data-autofocus={cubeStyle === style || undefined}
                           onClick={() => {
                             setCubeStyle(style);
+                            rememberCubeStyle(style);
                             setFinishOpen(false);
                           }}
                         >
@@ -1167,41 +1212,40 @@ const App: React.FC = () => {
                   </span>
                 </div>
               </div>
-              {history.length === 0 ? (
-                <div className="empty-chart">
-                  <IconChartLine size={32} stroke={1.2} />
-                  <p>No data yet.</p>
-                </div>
-              ) : (
-                <LineChart
-                  h={230}
-                  data={statistics.chartData}
-                  dataKey="attempt"
-                  series={[
-                    { name: "time", color: "#b1f54b" },
-                    { name: "ao5", color: "#62b1ed" },
-                    { name: "ao12", color: "#efaa59" },
-                  ]}
-                  unit="s"
-                  withTooltip={false}
-                  tickLine="none"
-                  gridAxis="xy"
-                  curveType="linear"
-                  yAxisProps={{
-                    domain: [
-                      best !== null && Number.isFinite(best)
-                        ? Math.max(0, Math.floor(best - 0.25))
-                        : 0,
-                      statistics.maxFinite !== null
-                        ? Math.ceil(statistics.maxFinite + 0.25)
-                        : 1,
-                    ],
-                  }}
-                />
-              )}
-              {history.length > 0 && (
-                <p className="chart-caption">Solve number →</p>
-              )}
+              <div className="chart-plot">
+                {history.length === 0 ? (
+                  <div className="empty-chart">
+                    <IconChartLine size={32} stroke={1.2} />
+                    <p>No data yet.</p>
+                  </div>
+                ) : (
+                  <LineChart
+                    h="100%"
+                    data={statistics.chartData}
+                    dataKey="attempt"
+                    series={[
+                      { name: "time", color: "#b1f54b" },
+                      { name: "ao5", color: "#62b1ed" },
+                      { name: "ao12", color: "#efaa59" },
+                    ]}
+                    unit="s"
+                    withTooltip={false}
+                    tickLine="none"
+                    gridAxis="xy"
+                    curveType="linear"
+                    yAxisProps={{
+                      domain: [
+                        best !== null && Number.isFinite(best)
+                          ? Math.max(0, Math.floor(best - 0.25))
+                          : 0,
+                        statistics.maxFinite !== null
+                          ? Math.ceil(statistics.maxFinite + 0.25)
+                          : 1,
+                      ],
+                    }}
+                  />
+                )}
+              </div>
             </section>
           </main>
           <nav className="mobile-nav" aria-label="Session sections">

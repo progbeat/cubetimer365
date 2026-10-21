@@ -30,6 +30,45 @@ export default async (page) => {
   await waitForStorage(page);
   await page.reload();
   await page.setViewportSize({ width: 1440, height: 1120 });
+  const about = page.getByRole("button", { name: "About", exact: true });
+  const aboutPanel = page.getByRole("dialog", { name: "About CubeTimer365" });
+  assert(
+    (await about.getAttribute("aria-expanded")) === "false" &&
+      !(await aboutPanel.isVisible()),
+    "About starts closed beside the timer",
+  );
+  await about.focus();
+  await page.keyboard.press("Space");
+  await aboutPanel.waitFor();
+  assert(
+    (await aboutPanel.isVisible()) &&
+      !(await state()).includes("Solving") &&
+      (await history()).length === 0,
+    "Space opens About without starting a solve or changing history",
+  );
+  await page
+    .getByRole("button", { name: "Close About", exact: true })
+    .click();
+  await aboutPanel.waitFor({ state: "hidden" });
+  await page.waitForFunction(() =>
+    document.activeElement?.matches(".timer-surface"),
+  );
+  assert(
+    !(await aboutPanel.isVisible()) &&
+      (await about.getAttribute("aria-expanded")) === "false",
+    "The close button closes About and returns keyboard focus",
+  );
+  await about.click();
+  await aboutPanel.waitFor();
+  await page.keyboard.press("Escape");
+  await aboutPanel.waitFor({ state: "hidden" });
+  assert(
+    await page.evaluate(() =>
+      document.activeElement?.matches(".timer-surface"),
+    ),
+    "Escape closes About and resumes focus at the timer",
+  );
+  await page.locator(".timer-surface").focus();
   await page.waitForTimeout(150);
   await page.keyboard.down("Space");
   assert(

@@ -1,0 +1,68 @@
+[
+  {
+    "date": "2026-10-20",
+    "seed": 20261020,
+    "scramble": "F2 R L B2 D R2 B' F' D' F R F' D2 R L F2 R2 B L' R'",
+    "back": [
+      [
+        "blue-6",
+        "blue-6",
+        "green-6"
+      ],
+      [
+        "orange-5",
+        "blue-6",
+        "orange-5"
+      ],
+      [
+        "red-6",
+        "blue-6",
+        "blue-6"
+      ]
+    ]
+  },
+  {
+    "date": "2026-10-21",
+    "seed": 20261021,
+    "scramble": "U D B2 U' B2 R U F2 B2 D L2 D' F' U2 F' R U' D2 L2 B'",
+    "back": [
+      [
+        "blue-6",
+        "blue-6",
+        "red-6"
+      ],
+      [
+        "orange-5",
+        "blue-6",
+        "red-6"
+      ],
+      [
+        "orange-5",
+        "gray-2",
+        "blue-6"
+      ]
+    ]
+  },
+  {
+    "date": "2026-10-22",
+    "seed": 20261022,
+    "scramble": "U' L' R' D' R' B2 F2 D' F' D' U B' F' R2 L' F R B L D2",
+    "back": [
+      [
+        "red-6",
+        "gray-2",
+        "blue-6"
+      ],
+      [
+        "yellow-4",
+        "blue-6",
+        "red-6"
+      ],
+      [
+        "gray-2",
+        "red-6",
+        "yellow-4"
+      ]
+    ]
+  }
+]
