@@ -10,6 +10,7 @@ const defaultSuites = [
   "browser-date-check",
   "browser-logo-check",
   "browser-statistics-check",
+  "browser-layout-check",
   "browser-storage-check",
   "browser-style-preference-check",
   "browser-analytics-check",

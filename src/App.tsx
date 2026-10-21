@@ -1212,41 +1212,40 @@ const App: React.FC = () => {
                   </span>
                 </div>
               </div>
-              {history.length === 0 ? (
-                <div className="empty-chart">
-                  <IconChartLine size={32} stroke={1.2} />
-                  <p>No data yet.</p>
-                </div>
-              ) : (
-                <LineChart
-                  h={230}
-                  data={statistics.chartData}
-                  dataKey="attempt"
-                  series={[
-                    { name: "time", color: "#b1f54b" },
-                    { name: "ao5", color: "#62b1ed" },
-                    { name: "ao12", color: "#efaa59" },
-                  ]}
-                  unit="s"
-                  withTooltip={false}
-                  tickLine="none"
-                  gridAxis="xy"
-                  curveType="linear"
-                  yAxisProps={{
-                    domain: [
-                      best !== null && Number.isFinite(best)
-                        ? Math.max(0, Math.floor(best - 0.25))
-                        : 0,
-                      statistics.maxFinite !== null
-                        ? Math.ceil(statistics.maxFinite + 0.25)
-                        : 1,
-                    ],
-                  }}
-                />
-              )}
-              {history.length > 0 && (
-                <p className="chart-caption">Solve number →</p>
-              )}
+              <div className="chart-plot">
+                {history.length === 0 ? (
+                  <div className="empty-chart">
+                    <IconChartLine size={32} stroke={1.2} />
+                    <p>No data yet.</p>
+                  </div>
+                ) : (
+                  <LineChart
+                    h="100%"
+                    data={statistics.chartData}
+                    dataKey="attempt"
+                    series={[
+                      { name: "time", color: "#b1f54b" },
+                      { name: "ao5", color: "#62b1ed" },
+                      { name: "ao12", color: "#efaa59" },
+                    ]}
+                    unit="s"
+                    withTooltip={false}
+                    tickLine="none"
+                    gridAxis="xy"
+                    curveType="linear"
+                    yAxisProps={{
+                      domain: [
+                        best !== null && Number.isFinite(best)
+                          ? Math.max(0, Math.floor(best - 0.25))
+                          : 0,
+                        statistics.maxFinite !== null
+                          ? Math.ceil(statistics.maxFinite + 0.25)
+                          : 1,
+                      ],
+                    }}
+                  />
+                )}
+              </div>
             </section>
           </main>
           <nav className="mobile-nav" aria-label="Session sections">

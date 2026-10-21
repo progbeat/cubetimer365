@@ -77,6 +77,13 @@ define chronological windows, trimming, deletion, display precision and the nume
 history boundary. Browser checks exercise the table and summary at 320/390 px and
 desktop widths, along with the existing timer, materials and analytics suites.
 
+On desktop the chart fills the remaining viewport height, with a 244 px panel
+minimum and a plot of at least 180 px. Below the dashboard's minimum height the
+page scrolls naturally instead of clipping content. Empty and populated charts
+use the same space. Mobile keeps stacked panels and a 230 px plot. Browser checks
+cover the height boundary, bottom inset, centered times and right-aligned indices
+with isolated history fixtures.
+
 Solve history uses `cubetimer365:daily-history:v1`, a project-scoped record with
 numeric times, a UTC date and the import decision. [Storage rules](STORAGE.md)
 explain the reviewed legacy import and preservation of generic shared keys.
