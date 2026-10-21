@@ -11,6 +11,7 @@ const defaultSuites = [
   "browser-logo-check",
   "browser-statistics-check",
   "browser-layout-check",
+  "browser-loading-check",
   "browser-storage-check",
   "browser-style-preference-check",
   "browser-analytics-check",

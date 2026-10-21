@@ -44,6 +44,16 @@ gesture. Native browser checks verify they are absent during idle browsing and
 removed after the last release, touch cancellation or blur. Compatibility clicks
 remain suppressed after those listeners are removed.
 
+## Font loading
+
+The entry HTML preloads the local wordmark, timer and scramble fonts. Their
+`font-display: optional` keeps late or failed fonts from replacing visible text
+mid-page. Normal cold loads use the intended fonts at the first render; constrained
+loads retain a readable system fallback. No application loading gate is added.
+`browser-loading-check` samples the first rendered frames with a cold HTTP cache,
+network throttling, warm navigation and delayed/failed font requests. It checks
+stable text geometry and keyboard use in the fallback state.
+
 ## Cube materials
 
 Flat, Neon and Cyber use the same projected sticker geometry and material
