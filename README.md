@@ -1,5 +1,7 @@
 # CubeTimer365
 
+[![License: MIT](docs/images/license-mit.svg)](LICENSE) [![Live app](https://img.shields.io/badge/Live_app-Open-2f81f7)](https://progbeat.dev/cubetimer365/)
+
 A 3×3 cube timer for exploring one scramble throughout the day. Try different
 openings, revisit awkward steps and compare attempts from the same starting
 position. The next day brings a new scramble to work through.
