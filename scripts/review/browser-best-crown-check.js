@@ -6,174 +6,136 @@ export default async (page) => {
     if (!condition) throw new Error(message);
     passed += 1;
   };
-  const root = page.url();
   await waitForStorage(page);
-  await page.evaluate(() => {
+  await page.evaluate(() =>
     localStorage.setItem(
       "cubetimer365:daily-history:v1",
       JSON.stringify({
         version: 1,
         date: new Date().toISOString().slice(0, 10),
-        history: Array.from({ length: 18 }, (_, i) => 12.34 + (i % 7)),
+        history: [12.34, 15.67],
         legacyMigration: "ignored",
       }),
-    );
-  });
-  await page.goto(root);
+    ),
+  );
+  await page.reload();
   await waitForStorage(page);
   await page.evaluate(() => document.fonts.ready);
   const saved = await page.evaluate(() => JSON.stringify({ ...localStorage }));
   for (const width of [1440, 390, 320]) {
     await page.setViewportSize({ width, height: 900 });
     const crown = page.getByRole("img", { name: "Today's best", exact: true });
+    await crown.evaluate((image) => image.decode());
+    assert(
+      (await crown.getAttribute("title")) === "Today's best",
+      "The icon has the exact native browser title",
+    );
+    assert(
+      (await crown.getAttribute("tabindex")) === null &&
+        (await page.locator(".history-best button").count()) === 0,
+      "The informational image adds no button or tab stop",
+    );
     assert(
       (await page
         .getByRole("rowheader", { name: "Today's best", exact: true })
         .count()) === 1,
-      "The summary row retains its accessible daily-best label",
+      "The summary retains its accessible daily-best name",
     );
-    assert(
-      (await page.locator(".history-best button").count()) === 0,
-      "The crown is informative, not a button",
-    );
-    const shape = await crown.evaluate((el) => {
-      const svg = el.querySelector("svg"),
-        box = svg.getBoundingClientRect();
-      const body = svg.querySelector("path").getBBox();
-      const base = svg.querySelector("line").getBBox();
+    await crown.hover();
+    const result = await crown.evaluate((image) => {
+      const icon = image.getBoundingClientRect(),
+        cell = image.closest("th"),
+        box = cell.getBoundingClientRect();
+      const range = document.createRange();
+      range.selectNodeContents(
+        document.querySelector("thead tr:first-child th"),
+      );
+      const heading = range.getBoundingClientRect();
+      const ancestors = [];
+      for (let el = image.parentElement; el; el = el.parentElement)
+        ancestors.push(el);
+      const sampleTitle = (x, y) =>
+        document
+          .elementFromPoint(x, y)
+          ?.closest("[title]")
+          ?.getAttribute("title") || null;
+      const otherCells = [...image.closest("tr").querySelectorAll("td")];
       return {
-        size: [box.width, box.height],
-        stroke: svg.getAttribute("stroke-width"),
-        fill: svg.getAttribute("fill"),
-        neutral:
-          getComputedStyle(el).color ===
-          getComputedStyle(el.closest("th")).color,
-        column: el.closest("th").getBoundingClientRect().width,
-        baseGap: base.y - (body.y + body.height),
-        horizontalBase:
-          base.height === 0 && base.width > 0 && base.width < body.width,
+        tag: image.tagName,
+        size: [icon.width, icon.height],
+        natural: [image.naturalWidth, image.naturalHeight],
+        column: box.width,
+        centerOffset: Math.abs(
+          (icon.left + icon.right) / 2 - (heading.left + heading.right) / 2,
+        ),
+        confined:
+          icon.left >= box.left &&
+          icon.right <= box.right &&
+          icon.top >= box.top &&
+          icon.bottom <= box.bottom,
+        ancestorTitles: ancestors.some((el) => el.hasAttribute("title")),
+        summaryTitles: image.closest("tr").querySelectorAll("[title]").length,
+        inside: sampleTitle(
+          (icon.left + icon.right) / 2,
+          (icon.top + icon.bottom) / 2,
+        ),
+        outside: [
+          sampleTitle(box.left + 1, (icon.top + icon.bottom) / 2),
+          sampleTitle(box.right - 1, (icon.top + icon.bottom) / 2),
+          ...otherCells.map((el) => {
+            const b = el.getBoundingClientRect();
+            return sampleTitle((b.left + b.right) / 2, (b.top + b.bottom) / 2);
+          }),
+        ],
       };
     });
     assert(
-      shape.size.every((n) => n === 16) &&
-        shape.stroke === "1.5" &&
-        shape.fill === "none",
-      "Outline crown matches the existing 16 px / 1.5 stroke icon system",
+      result.tag === "IMG" &&
+        result.size.every((n) => n === 16) &&
+        result.natural.every((n) => n === 16),
+      "The native-title target is exactly the 16 px icon",
     );
     assert(
-      shape.neutral && shape.column <= 44.5,
-      "Neutral crown fits the compact number column",
+      result.column <= 44.5 && result.confined,
+      "The compact icon remains inside the unchanged number column",
     );
     assert(
-      shape.horizontalBase && shape.baseGap > 1.5 && shape.baseGap <= 4,
-      "The crown has a separate compact horizontal base with a visible gap",
+      result.centerOffset < 1.5,
+      "The icon is centered beneath the number-column heading",
     );
     assert(
-      (await crown.getAttribute("tabindex")) === "0",
-      "Crown tooltip is keyboard reachable",
+      !result.ancestorTitles && result.summaryTitles === 1,
+      "No row, cell, ancestor or other summary value inherits the icon title",
     );
-    await crown.hover();
-    const tooltip = page.getByRole("tooltip");
-    await tooltip.waitFor({ state: "visible" });
-    const unframed = () =>
-      crown.evaluate((el) => {
-        const s = getComputedStyle(el);
-        return (
-          s.outlineStyle === "none" &&
-          s.boxShadow === "none" &&
-          s.borderTopWidth === "0px"
-        );
-      });
-    assert(await unframed(), "Hover tooltip adds no frame around its trigger");
     assert(
-      (await tooltip.textContent()).trim() === "Today's best",
-      "Hover shows the exact requested tooltip",
+      result.inside === "Today's best" &&
+        result.outside.every((title) => title !== "Today's best"),
+      "Pointer hit testing limits Today's best to the icon area",
     );
-    const bounds = await tooltip.boundingBox();
     assert(
-      bounds.x >= 0 &&
-        bounds.x + bounds.width <= width &&
-        bounds.y >= 0 &&
-        bounds.y + bounds.height <= 900,
-      "Tooltip stays within the viewport and outside table clipping",
+      (await page.getByRole("tooltip").count()) === 0 &&
+        (await crown.getAttribute("aria-describedby")) === null,
+      "Hover creates no custom tooltip, portal or description wiring",
     );
-    const value = await page
-      .locator(".history-best-value")
-      .first()
-      .evaluate((el) => {
-        const range = document.createRange();
-        range.selectNodeContents(el);
-        const rect = range.getBoundingClientRect();
-        return { top: rect.top, bottom: rect.bottom };
-      });
-    assert(
-      bounds.y + bounds.height <= value.top || bounds.y >= value.bottom,
-      "Tooltip leaves the daily best value readable",
-    );
-    await page.mouse.move(1, 1);
-    await tooltip.waitFor({ state: "hidden" });
     await page.locator(".timer-surface").focus();
-    await page.keyboard.press("Tab");
-    assert(
-      await crown.evaluate((el) => el === document.activeElement),
-      "Tab reaches the informational crown in document order",
-    );
-    await tooltip.waitFor({ state: "visible" });
-    assert(
-      await crown.evaluate((el) => {
-        const dot = getComputedStyle(el, "::after");
-        return (
-          el.matches(":focus-visible") &&
-          parseFloat(dot.width) >= 3 &&
-          parseFloat(dot.height) >= 3 &&
-          dot.backgroundColor !== "rgba(0, 0, 0, 0)"
-        );
-      }),
-      "Keyboard focus has a visible neutral marker",
-    );
-    assert(
-      await unframed(),
-      "Keyboard tooltip uses no border, outline or box shadow around its trigger",
-    );
-    const description = await crown.getAttribute("aria-describedby");
-    assert(
-      description === (await tooltip.getAttribute("id")),
-      "The visible tooltip describes the focused crown",
-    );
-    await page.keyboard.press("Escape");
-    await tooltip.waitFor({ state: "hidden" });
-    assert(
-      await crown.evaluate((el) => el === document.activeElement),
-      "Escape dismisses the tooltip without moving focus",
-    );
-    await page.keyboard.down("Space");
-    await page.waitForTimeout(350);
-    await page.keyboard.up("Space");
-    await page.keyboard.press("Enter");
-    assert(
-      await page
-        .locator(".timer-panel")
-        .evaluate((el) => el.classList.contains("idle")),
-      "Space/Enter on the information mark do not arm or start the timer",
-    );
     await page.keyboard.press("Tab");
     assert(
       await page
         .locator("tbody .delete-solve")
         .first()
         .evaluate((el) => el === document.activeElement),
-      "Tab continues to the first recorded solve action",
+      "Keyboard navigation skips the static crown and reaches the real solve action",
     );
     assert(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,
       ),
-      "Crown and tooltip cause no horizontal overflow",
+      "The icon and native title cause no horizontal overflow",
     );
   }
   assert(
     (await page.evaluate(() => JSON.stringify({ ...localStorage }))) === saved,
-    "Tooltip interaction leaves all stored history and settings unchanged",
+    "Native-title inspection preserves history and settings",
   );
   return { passed };
 };

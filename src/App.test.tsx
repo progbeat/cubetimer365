@@ -1011,17 +1011,18 @@ it("uses uniform recorded rows and keeps metric emphasis only in the Best summar
   );
 });
 
-it("keeps the informative crown separate from timer keyboard input", async () => {
+it("uses a native title only on the noninteractive crown image", async () => {
   seedHistory("[12.34]");
   render(<App />);
   await flushStorage();
   const crown = screen.getByRole("img", { name: "Today's best" });
-  expect(crown).toHaveAttribute("tabindex", "0");
-  act(() => crown.focus());
-  fireEvent.keyDown(crown, { code: "Space" });
-  advance(350);
-  fireEvent.keyUp(crown, { code: "Space" });
-  expect(screen.getByText("Ready for your next solve")).toBeInTheDocument();
+  expect(crown.tagName).toBe("IMG");
+  expect(crown).toHaveAttribute("title", "Today's best");
+  expect(crown).not.toHaveAttribute("tabindex");
+  expect(crown.closest("button")).toBeNull();
+  expect(crown.closest("th")).not.toHaveAttribute("title");
+  expect(crown.closest("tr")).not.toHaveAttribute("title");
+  expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
   expect(saved()).toEqual([12.34]);
 });
 

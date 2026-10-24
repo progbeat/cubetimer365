@@ -4,10 +4,9 @@ import "./App.css";
 
 import React, { useEffect, useRef, useState } from "react";
 import { LineChart } from "@mantine/charts";
-import { createTheme, MantineProvider, Popover, Tooltip } from "@mantine/core";
+import { createTheme, MantineProvider, Popover } from "@mantine/core";
 import {
   IconChartLine,
-  IconCrown,
   IconList,
   IconStopwatch,
   IconTrash,
@@ -21,6 +20,7 @@ import LegacyHistoryImport from "./LegacyHistoryImport";
 import { loadCubeStyle, rememberCubeStyle } from "./cubeStylePreference";
 import About from "./About";
 import DailyLogo from "./DailyLogo";
+import bestCrown from "./bestCrown.svg?inline";
 import { createCalendarMark } from "./calendarMark";
 import { useDailyFavicon } from "./useDailyFavicon";
 import {
@@ -46,7 +46,7 @@ const isControl = (target: EventTarget | null) =>
   Boolean(
     target.isContentEditable ||
       target.closest(
-        'button, a, input, select, textarea, [contenteditable]:not([contenteditable="false"]), [role="dialog"], [role="menu"], .history-best-label',
+        'button, a, input, select, textarea, [contenteditable]:not([contenteditable="false"]), [role="dialog"], [role="menu"]',
       ),
   );
 
@@ -1095,31 +1095,14 @@ const App: React.FC = () => {
                       aria-label="Daily best results"
                     >
                       <th scope="row">
-                        <Tooltip
-                          label="Today's best"
-                          events={{ hover: true, focus: true, touch: false }}
-                          position="top"
-                          offset={8}
-                          withArrow
-                          classNames={{ tooltip: "history-best-tooltip" }}
-                        >
-                          <span
-                            className="history-best-label"
-                            role="img"
-                            aria-label="Today's best"
-                            // Informational tooltip needs keyboard focus, without button semantics.
-                            // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
-                            tabIndex={0}
-                          >
-                            <IconCrown
-                              size={16}
-                              stroke={1.5}
-                              aria-hidden="true"
-                            >
-                              <line x1={6} y1={22} x2={18} y2={22} />
-                            </IconCrown>
-                          </span>
-                        </Tooltip>
+                        <img
+                          className="history-best-icon"
+                          src={bestCrown}
+                          width={16}
+                          height={16}
+                          alt="Today's best"
+                          title="Today's best"
+                        />
                       </th>
                       {stats.map(([label, value], index) => (
                         <td
