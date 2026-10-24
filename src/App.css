@@ -184,7 +184,7 @@ kbd { border: 1px solid #43505a; border-radius: 4px; padding: 4px 7px; font: inh
   .delete-solve { width: 44px; height: 44px; }
   .chart-panel { min-height: 0; padding: 0 14px 12px; }
   .chart-plot { flex: none; height: 230px; }
-  .chart-panel .panel-heading { flex-direction: column; align-items: flex-start; gap: 10px; padding: 14px 0; }
+  .chart-panel .panel-heading { flex-direction: column; align-items: flex-end; gap: 10px; padding: 14px 0; }
   .chart-legend { gap: 16px; }
   .app-footer { font-size: 9px; gap: 18px; padding: 24px 0 4px; }
   .app-footer span:last-child { letter-spacing: 1px; }
