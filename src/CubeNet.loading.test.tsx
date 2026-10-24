@@ -123,7 +123,7 @@ it("keeps a decoded finish visible while preparing a new measured size", async (
   );
 });
 
-it("reveals the projected fallback after an actual decode failure", async () => {
+it("reveals the fallback after decode failure and recovers when that finish is retried", async () => {
   const view = render(<CubeNet scramble="R U" side={96} style="flat" />);
   await flush();
   await act(async () => decodes[0].reject());
@@ -137,4 +137,26 @@ it("reveals the projected fallback after an actual decode failure", async () => 
     "1",
   );
   expect(view.container.querySelector("[data-cube-loading]")).toBeNull();
+  view.rerender(<CubeNet scramble="R U" side={96} style="neon" />);
+  await flush();
+  await act(async () => decodes[1].resolve());
+  view.rerender(<CubeNet scramble="R U" side={96} style="flat" />);
+  await flush();
+  expect(view.container.querySelector("svg")).toHaveAttribute(
+    "aria-busy",
+    "true",
+  );
+  expect(view.container.querySelector("[data-cube-fallback]")).toHaveAttribute(
+    "opacity",
+    "0",
+  );
+  await act(async () => decodes[2].resolve());
+  expect(view.container.querySelector("svg")).toHaveAttribute(
+    "data-material-state",
+    "ready",
+  );
+  expect(view.container.querySelector("image")).toHaveAttribute(
+    "href",
+    decodes[2].href,
+  );
 });

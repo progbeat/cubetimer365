@@ -90,6 +90,7 @@ const CubeNet: React.FC<{
       return undefined;
     }
     let cancelled = false;
+    setFailedPaint(null);
     const padding = Math.ceil(width * 0.06);
     // Paint static material once. The final SVG pass keeps interference in
     // screen pixels, outside the face projection and outside the bitmap.
@@ -114,6 +115,7 @@ const CubeNet: React.FC<{
           });
         }
         if (!cancelled) {
+          setFailedPaint(null);
           setImage({
             href,
             padding,

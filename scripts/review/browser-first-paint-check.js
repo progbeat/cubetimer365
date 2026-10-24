@@ -166,10 +166,13 @@ export default async (page) => {
           });
         else {
           const decode = HTMLImageElement.prototype.decode;
+          let failNext = true;
           HTMLImageElement.prototype.decode = function () {
-            return this.src.startsWith("data:image/png")
-              ? Promise.reject(new Error("fixture decode failure"))
-              : decode.call(this);
+            if (this.src.startsWith("data:image/png") && failNext) {
+              failNext = false;
+              return Promise.reject(new Error("fixture decode failure"));
+            }
+            return decode.call(this);
           };
         }
       }, failure);
@@ -194,6 +197,25 @@ export default async (page) => {
         (await cube.getAttribute("aria-label")).includes("simplified preview"),
         "Accessible fallback is identified clearly",
       );
+      if (failure === "decode") {
+        for (const [button, style] of [
+          ["Flat · Round", "flat"],
+          ["Neon · Round", "neon"],
+        ]) {
+          await tab
+            .getByRole("button", { name: "Choose cube finish", exact: true })
+            .click();
+          await tab.getByRole("button", { name: button, exact: true }).click();
+          const recovered = tab.locator(
+            `.cube-style-trigger .cube-net--${style}[data-material-ready="true"]`,
+          );
+          await recovered.waitFor();
+          assert(
+            (await recovered.getAttribute("data-material-state")) === "ready",
+            "A successfully decoded retry clears the previous failure marker",
+          );
+        }
+      }
     } finally {
       await context.close();
     }
