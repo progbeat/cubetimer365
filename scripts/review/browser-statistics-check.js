@@ -143,18 +143,16 @@ export default async (page) => {
         };
       });
       const button = row.querySelector("button").getBoundingClientRect();
-      const cards = [
-        ...document.querySelectorAll(
-          innerWidth <= 760 ? ".stat p" : ".history-best-value",
-        ),
-      ].map((value) => {
-        const range = document.createRange();
-        range.selectNodeContents(value);
-        return (
-          range.getBoundingClientRect().width <=
-          value.getBoundingClientRect().width
-        );
-      });
+      const bestFits = [...document.querySelectorAll(".history-best-value")].map(
+        (value) => {
+          const range = document.createRange();
+          range.selectNodeContents(value);
+          return (
+            range.getBoundingClientRect().width <=
+            value.getBoundingClientRect().width
+          );
+        },
+      );
       return {
         viewport: innerWidth,
         document: document.documentElement.scrollWidth,
@@ -162,7 +160,7 @@ export default async (page) => {
         visible: scroll.clientWidth,
         numeric,
         button: { width: button.width, height: button.height },
-        cards,
+        bestFits,
       };
     });
     assert(
@@ -175,8 +173,8 @@ export default async (page) => {
       `All numeric columns fit and remain readable at ${width}px`,
     );
     assert(
-      measures.cards.length === 3 && measures.cards.every(Boolean),
-      `Three best values fit their panel at ${width}px`,
+      measures.bestFits.length === 3 && measures.bestFits.every(Boolean),
+      `Three best values fit the summary row at ${width}px`,
     );
     if (width <= 760)
       assert(

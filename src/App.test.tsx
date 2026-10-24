@@ -563,8 +563,8 @@ describe("preserved scramble and daily data", () => {
     expect(
       Array.from(
         screen
-          .getByRole("region", { name: "Today's best results" })
-          .querySelectorAll(".stat p"),
+          .getByRole("row", { name: "Daily best results" })
+          .querySelectorAll(".history-best-value"),
       ).map((value) => value.textContent),
     ).toEqual(["—", "—", "—"]);
   });
@@ -992,6 +992,25 @@ it.each([
   },
 );
 
+it("uses uniform recorded rows and keeps metric emphasis only in the Best summary", async () => {
+  seedHistory("[30,10,20]");
+  const { container } = render(<App />);
+  await flushStorage();
+  expect(container.querySelector(".stats-grid")).toBeNull();
+  const rows = Array.from(container.querySelectorAll("tbody tr"));
+  expect(rows).toHaveLength(3);
+  expect(rows.every((row) => row.className === "")).toBe(true);
+  expect(
+    rows.every((row) => row.querySelectorAll("td")[1].className === ""),
+  ).toBe(true);
+  expect(
+    container.querySelector(".history-best .best-single-value"),
+  ).toHaveTextContent("00:10.00");
+  expect(container.querySelector("#stats")).toBe(
+    container.querySelector("thead"),
+  );
+});
+
 it("shows chronological rolling values and earlier best averages, recalculating after deletion and reload", async () => {
   seedHistory(
     JSON.stringify(Array.from({ length: 13 }, (_, i) => (i + 1) * 10)),
@@ -1011,9 +1030,11 @@ it("shows chronological rolling values and earlier best averages, recalculating 
       (cell) => cell.textContent,
     );
   const bestValue = (label: string) =>
-    within(screen.getByRole("region", { name: "Today's best results" }))
-      .getByRole("heading", { name: label })
-      .parentElement!.querySelector("p");
+    screen
+      .getByRole("row", { name: "Daily best results" })
+      .querySelectorAll(".history-best-value")[
+      ["Best single", "Best AO5", "Best AO12"].indexOf(label)
+    ];
   await flushStorage();
   expect(cells(13)).toEqual(["13", "02:10.00", "01:50.00", "01:15.00"]);
   expect(summaryValues()).toEqual(["00:10.00", "00:30.00", "01:05.00"]);

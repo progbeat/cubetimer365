@@ -81,8 +81,8 @@ Browser checks cover reloads, new tabs, first-render labels and storage failures
 
 ## Daily data
 
-The results table shows rolling AO5/AO12 at each solve, while the separate summary
-shows daily best single, best AO5 and best AO12. [Statistics rules](STATISTICS.md)
+The results table shows rolling AO5/AO12 at each solve. Its sticky header
+shows independent daily best single, best AO5 and best AO12 on every screen size. [Statistics rules](STATISTICS.md)
 define chronological windows, trimming, deletion, display precision and the numeric
 history boundary. Browser checks exercise the table and summary at 320/390 px and
 desktop widths, along with the existing timer, materials and analytics suites.

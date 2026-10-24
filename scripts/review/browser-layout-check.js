@@ -171,8 +171,12 @@ export default async (page) => {
       await page
         .locator(".history-table tbody tr")
         .first()
-        .evaluate((el) => el.classList.contains("latest-solve")),
-      "Latest solve remains highlighted",
+        .evaluate(
+          (el) =>
+            el.cells[0].textContent === "100" &&
+            !el.classList.contains("latest-solve"),
+        ),
+      "Newest solve stays first without a special row highlight",
     );
     assert(
       (await page.evaluate(() => JSON.stringify({ ...localStorage }))) ===

@@ -1032,28 +1032,6 @@ const App: React.FC = () => {
               </div>
             </section>
             <section
-              className="stats-grid"
-              id="stats"
-              aria-label="Today's best results"
-            >
-              {stats.map(([label, value]) => (
-                <div className="stat" key={label}>
-                  <h2 className="eyebrow">{label}</h2>
-                  <p
-                    className={
-                      label === "Best single" &&
-                      best !== null &&
-                      Number.isFinite(best)
-                        ? "lime"
-                        : ""
-                    }
-                  >
-                    {formatTime(value)}
-                  </p>
-                </div>
-              ))}
-            </section>
-            <section
               className="panel history-panel"
               id="history"
               aria-labelledby="history-title"
@@ -1091,7 +1069,7 @@ const App: React.FC = () => {
                   <caption className="sr-only">
                     Solve times and rolling averages, newest first
                   </caption>
-                  <thead>
+                  <thead id="stats">
                     <tr>
                       <th scope="col">#</th>
                       <th scope="col">Time</th>
@@ -1124,7 +1102,7 @@ const App: React.FC = () => {
                       {stats.map(([label, value], index) => (
                         <td
                           key={label}
-                          className={`history-best-value ${value === null ? "incomplete-average" : ["best-solve", "ao5-cell", "ao12-cell"][index]}`}
+                          className={`history-best-value ${value === null ? "incomplete-average" : ["best-single-value", "ao5-cell", "ao12-cell"][index]}`}
                         >
                           {formatTime(value)}
                         </td>
@@ -1134,23 +1112,12 @@ const App: React.FC = () => {
                   </thead>
                   <tbody>
                     {statistics.newestFirst.map(
-                      ({ attempt, time, ao5, ao12 }, row) => {
+                      ({ attempt, time, ao5, ao12 }) => {
                         const index = attempt - 1;
                         return (
-                          <tr
-                            key={index}
-                            className={row === 0 ? "latest-solve" : ""}
-                          >
+                          <tr key={index}>
                             <td>{index + 1}</td>
-                            <td
-                              className={
-                                Number.isFinite(time) && time === best
-                                  ? "best-solve"
-                                  : ""
-                              }
-                            >
-                              {formatTime(time)}
-                            </td>
+                            <td>{formatTime(time)}</td>
                             <td
                               className={
                                 ao5 === null ? "incomplete-average" : "ao5-cell"

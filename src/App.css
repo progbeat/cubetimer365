@@ -69,10 +69,6 @@ kbd { border: 1px solid #43505a; border-radius: 4px; padding: 4px 7px; font: inh
 .timer-panel.ready { border-color: var(--lime); background: #1d281b; }
 .ready .timer-digits, .ready .timer-status { color: var(--lime); }
 .ready .status-dot, .running .status-dot { background: var(--lime); }
-.stats-grid { grid-column: 1; display: none; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--border); border-radius: 10px; background: var(--panel); }
-.stat { padding: 12px 16px; }
-.stat + .stat { border-left: 1px solid var(--border); }
-.stat p { margin: 8px 0 0; font-family: 'Chakra Petch', sans-serif; font-size: 23px; line-height: 1.25; font-weight: 700; letter-spacing: -1px; }
 .history-panel { grid-column: 2; grid-row: 1 / -1; display: flex; flex-direction: column; overflow: hidden; }
 .panel-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 16px 12px; }
 .count { color: var(--muted); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; white-space: nowrap; }
@@ -81,7 +77,7 @@ kbd { border: 1px solid #43505a; border-radius: 4px; padding: 4px 7px; font: inh
 .legacy-import-trigger { border: 0; padding: 6px 0; background: transparent; color: inherit; font: inherit; text-decoration: underline; cursor: pointer; }
 .history-scroll--empty { display: flex; flex-direction: column; }
 .history-table thead { position: sticky; top: 0; z-index: 2; background: var(--panel); }
-.history-table { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+.history-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12px; font-variant-numeric: tabular-nums; }
 .history-table th:first-child, .history-table td:first-child { width: 44px; padding-left: 10px; padding-right: 12px; text-align: right; }
 .history-table th:last-child, .history-table td:last-child { width: 44px; }
 .history-table th { background: var(--panel); color: var(--muted); text-align: left; font-size: 9px; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; padding: 12px 4px; border-bottom: 1px solid var(--border); }
@@ -95,8 +91,7 @@ kbd { border: 1px solid #43505a; border-radius: 4px; padding: 4px 7px; font: inh
 .history-table .ao12-cell { color: #e9c49b; }
 .history-table .incomplete-average { color: var(--muted); }
 .history-table td:last-child { padding: 0; }
-.latest-solve { background: #26341d; }
-.latest-solve td:first-child, .best-solve { color: var(--lime) !important; }
+.history-best .best-single-value { color: var(--lime) !important; }
 .delete-solve { display: flex; align-items: center; justify-content: center; width: 32px; height: 36px; background: none; border: none; color: #7e8b95; cursor: pointer; border-radius: 4px; }
 .delete-solve:hover { color: #f4aaaa; background: #44272b; }
 .history-footer { padding: 12px 16px; border-top: 1px solid var(--border); color: var(--muted); font-size: 10px; }
@@ -157,8 +152,6 @@ kbd { border: 1px solid #43505a; border-radius: 4px; padding: 4px 7px; font: inh
   .cube-display svg { width: 132px; height: 132px; }
   .scramble-moves { font-size: 20px; }
   .timer-digits { font-size: 80px; }
-  .stat { padding: 12px; }
-  .stat p { font-size: 19px; }
   .cube-options { grid-template-columns: repeat(2, 1fr); }
 }
 @media (width <= 760px) {
@@ -183,12 +176,6 @@ kbd { border: 1px solid #43505a; border-radius: 4px; padding: 4px 7px; font: inh
   .timer-status { font-size: 10px; }
   .keyboard-hint { display: none; }
   .touch-hint { display: block; color: #bcc7cf; font-size: 11px; letter-spacing: 0.5px; margin: 0; }
-  .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); }
-  .history-best, .history-scroll--empty .history-table { display: none; }
-  .stat { padding: 14px 16px; }
-  .stat p { font-size: 24px; }
-  .stat:first-child { grid-column: 1 / -1; border-bottom: 1px solid var(--border); }
-  .stat:nth-child(2) { border-left: 0; }
   .history-panel { min-height: 260px; max-height: 465px; }
   .panel-heading { padding: 14px 16px 10px; }
   .history-scroll { max-height: 345px; }

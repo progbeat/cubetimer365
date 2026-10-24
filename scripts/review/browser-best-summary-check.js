@@ -100,7 +100,7 @@ export default async (page) => {
 
   await load(Array.from({ length: 100 }, (_, i) => 12.34 + (i % 7)));
   const stored = await page.evaluate(() => JSON.stringify({ ...localStorage }));
-  for (const width of [1440, 1024, 768, 390, 320]) {
+  for (const width of [1440, 1024, 768, 760, 414, 390, 375, 360, 359, 320]) {
     await page.setViewportSize({ width, height: 900 });
     const m = await page.evaluate(() => {
       const box = (selector) => {
@@ -119,22 +119,38 @@ export default async (page) => {
         overflow: document.documentElement.scrollWidth > innerWidth,
         scramble: box(".scramble-panel"),
         timer: box(".timer-panel"),
-        stats: box(".stats-grid"),
         history: box(".history-panel"),
         chart: box(".chart-panel"),
         index: box(".history-table th"),
       };
     });
     assert(!m.overflow, `No page overflow at ${width}px`);
+    const rows = await page.locator("tbody tr").evaluateAll((els) =>
+      els.map((row) => ({
+        rowClass: row.className,
+        background: getComputedStyle(row).backgroundColor,
+        timeColor: getComputedStyle(row.cells[1]).color,
+        indexColor: getComputedStyle(row.cells[0]).color,
+      })),
+    );
+    assert(
+      rows.every(
+        (row) =>
+          row.rowClass === "" &&
+          row.background === rows[0].background &&
+          row.timeColor === rows[0].timeColor &&
+          row.indexColor === rows[0].indexColor,
+      ),
+      "Recorded solves use uniform styling regardless of time or position",
+    );
     assert(
       m.index.width <= 44.5,
       `Number column remains compact at ${width}px`,
     );
     if (width > 760) {
       assert(
-        m.stats.display === "none" &&
-          (await page.locator(".history-best").isVisible()),
-        "Desktop replaces redundant cards with the Best row",
+        await page.locator(".history-best").isVisible(),
+        "Desktop shows the Best summary",
       );
       assert(
         m.history.y === m.scramble.y &&
@@ -162,16 +178,27 @@ export default async (page) => {
       );
     } else {
       assert(
-        m.stats.display === "grid" &&
-          !(await page.locator(".history-best").isVisible()),
-        "Mobile retains the existing best cards without a duplicate row",
+        (await page.locator(".history-best").isVisible()) &&
+          (await page.locator(".stats-grid").count()) === 0,
+        "Mobile puts best values in the table without separate cards",
       );
       assert(
         m.scramble.y < m.timer.y &&
-          m.timer.y < m.stats.y &&
-          m.stats.y < m.history.y &&
+          m.timer.y < m.history.y &&
           m.history.y < m.chart.y,
-        "Mobile panel order is unchanged",
+        "Mobile history remains between the timer and chart",
+      );
+      await page.evaluate(() =>
+        window.scrollTo(0, document.documentElement.scrollHeight),
+      );
+      await page.getByRole("link", { name: "Stats", exact: true }).click();
+      await page.waitForFunction(() => {
+        const r = document.querySelector("thead").getBoundingClientRect();
+        return r.top >= 0 && r.bottom < innerHeight - 70;
+      });
+      assert(
+        await page.locator("#stats").evaluate((el) => el.tagName === "THEAD"),
+        "Mobile Stats navigation targets the complete summary header",
       );
     }
   }
