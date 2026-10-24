@@ -125,6 +125,30 @@ export default async (page) => {
       };
     });
     assert(!m.overflow, `No page overflow at ${width}px`);
+    const summaryColors = await page.locator(".history-best").evaluate((el) => {
+      const cells = Array.from(el.cells);
+      const background = getComputedStyle(cells[0]).backgroundColor;
+      const rgb = background.match(/\d+/g).map(Number);
+      const recorded = document.querySelector("tbody tr").cells;
+      return {
+        opaqueNeutral:
+          background.startsWith("rgb(") && rgb[1] <= Math.max(rgb[0], rgb[2]),
+        sameSurface: cells.every(
+          (cell) => getComputedStyle(cell).backgroundColor === background,
+        ),
+        sameSingle:
+          getComputedStyle(cells[1]).color === getComputedStyle(recorded[1]).color,
+        sameAverages: [2, 3].every(
+          (index) =>
+            getComputedStyle(cells[index]).color ===
+            getComputedStyle(recorded[index]).color,
+        ),
+      };
+    });
+    assert(
+      Object.values(summaryColors).every(Boolean),
+      `Best uses an opaque neutral surface and normal single-time text, preserving average colors at ${width}px`,
+    );
     const rows = await page.locator("tbody tr").evaluateAll((els) =>
       els.map((row) => ({
         rowClass: row.className,

@@ -85,13 +85,12 @@ kbd { border: 1px solid #43505a; border-radius: 4px; padding: 4px 7px; font: inh
 .history-table th:nth-child(n+2):not(:last-child), .history-table td:nth-child(n+2):not(:last-child) { text-align: center; }
 .history-table td:first-child { color: var(--muted); font-size: 11px; }
 .history-table td:nth-child(n+2):not(:last-child) { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; font-size: 13px; }
-.history-best th, .history-best td { height: 39px; background: #202b23; border-bottom: 1px solid #3a4939; }
+.history-best th, .history-best td { height: 39px; background: #20272b; border-bottom: 1px solid var(--border); }
 .history-best th { font-size: 10px; font-weight: 600; letter-spacing: 0; text-transform: none; }
 .history-table .ao5-cell { color: #9fc4e5; }
 .history-table .ao12-cell { color: #e9c49b; }
 .history-table .incomplete-average { color: var(--muted); }
 .history-table td:last-child { padding: 0; }
-.history-best .best-single-value { color: var(--lime) !important; }
 .delete-solve { display: flex; align-items: center; justify-content: center; width: 32px; height: 36px; background: none; border: none; color: #7e8b95; cursor: pointer; border-radius: 4px; }
 .delete-solve:hover { color: #f4aaaa; background: #44272b; }
 .history-footer { padding: 12px 16px; border-top: 1px solid var(--border); color: var(--muted); font-size: 10px; }
