@@ -21,8 +21,12 @@ of the remaining three/ten. Tied extrema still remove only one occurrence each.
 Use recorded precision for calculations; round only through the existing
 centisecond display formatter, including correct minute carries.
 
-The separate panel shows best single, best AO5 and best AO12 across the current
-daily history. Best averages are the lowest completed rolling windows anywhere
+A sticky Best row beneath the table headings shows best single,
+best AO5 and best AO12 across the current daily history. Each column is an
+independent minimum, rather than values from one solve. The row has no solve
+number or delete action and is excluded from the solve count and total. The same
+summary is shown on mobile without separate best-result cards.
+Best averages are the lowest completed rolling windows anywhere
 in that history, rather than the most recent averages. No completed window means
 `—`. Total solving time remains available in the table footer. The chart and table
 use the same calculated rolling values.
@@ -58,14 +62,13 @@ to official competition timing/truncation rules.
 The five table columns are number, time, AO5, AO12 and delete. Headers stay visible
 while scrolling the history. At 320/390 px, the numeric cells remain readable and
 the delete control keeps its 44 px target. Long values may scroll within the table
-without making the whole page overflow. The best-results panel has three values;
-on a phone, the best single spans the first row and both averages share the second.
+without making the whole page overflow. The desktop chart stays to the left of the
+full-height history panel, beneath the timer. On a phone, the history table stays
+between the timer and chart, with best values in its header. Recorded solves have
+uniform styling; the summary uses a neutral surface and an outline crown with a “Today's best” tooltip
+on hover or keyboard focus. It shows normal single-time text, while AO5/AO12 keep
+their blue/orange metric colors. The chart colors are unchanged.
 
 Unit and native Chromium checks cover complete/incomplete windows, chronological
 mapping, best-versus-latest averages, deletion/reload, append/daily reset, ties,
 precision, effective penalized times, DNF math, and phone/desktop readability.
-
-Inspected previews use illustrative history in an isolated localhost context:
-
-- [Desktop, 1440 px](images/statistics-desktop.png)
-- [Phone, 390 px](images/statistics-phone.png)

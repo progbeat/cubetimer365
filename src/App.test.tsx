@@ -225,7 +225,10 @@ describe("preserved scramble and daily data", () => {
       if (edit === "rollover") {
         expect(screen.queryByRole("alert")).not.toBeInTheDocument();
         expect(
-          screen.getByRole("cell", { name: "00:00.75" }),
+          within(screen.getByRole("table").querySelector("tbody")!).getByRole(
+            "cell",
+            { name: "00:00.75" },
+          ),
         ).toBeInTheDocument();
         touchStart();
         advance(500);
@@ -241,7 +244,10 @@ describe("preserved scramble and daily data", () => {
         );
         if (edit === "solve") {
           expect(
-            screen.getByRole("cell", { name: "00:00.50" }),
+            within(screen.getByRole("table").querySelector("tbody")!).getByRole(
+              "cell",
+              { name: "00:00.50" },
+            ),
           ).toBeInTheDocument();
         } else {
           expect(screen.getByText("No solves yet.")).toBeInTheDocument();
@@ -557,8 +563,8 @@ describe("preserved scramble and daily data", () => {
     expect(
       Array.from(
         screen
-          .getByRole("region", { name: "Today's best results" })
-          .querySelectorAll(".stat p"),
+          .getByRole("row", { name: "Daily best results" })
+          .querySelectorAll(".history-best-value"),
       ).map((value) => value.textContent),
     ).toEqual(["—", "—", "—"]);
   });
@@ -840,7 +846,7 @@ it.each(["flat", "neon", "cyber"] as const)(
     const { container } = render(<App />);
     expect(
       screen.getByRole("img", {
-        name: `Daily scramble cube, rounded ${style} finish`,
+        name: `Daily scramble cube, rounded ${style} finish (simplified preview)`,
       }),
     ).toBeInTheDocument();
     expect(
@@ -872,7 +878,7 @@ it("keeps the chosen finish in memory if its storage write is blocked", async ()
   await flushStorage();
   expect(
     screen.getByRole("img", {
-      name: "Daily scramble cube, rounded flat finish",
+      name: "Daily scramble cube, rounded flat finish (simplified preview)",
     }),
   ).toBeInTheDocument();
   expect(saved()).toEqual([12, 15]);
@@ -891,7 +897,7 @@ it("defaults to Neon without a query and switches finishes without altering hist
   await flushStorage();
   expect(
     screen.getByRole("img", {
-      name: "Daily scramble cube, rounded neon finish",
+      name: "Daily scramble cube, rounded neon finish (simplified preview)",
     }),
   ).toBeInTheDocument();
   fireEvent.click(picker);
@@ -911,7 +917,7 @@ it("defaults to Neon without a query and switches finishes without altering hist
 
   expect(
     screen.getByRole("img", {
-      name: "Daily scramble cube, rounded flat finish",
+      name: "Daily scramble cube, rounded flat finish (simplified preview)",
     }),
   ).toBeInTheDocument();
   fireEvent.click(picker);
@@ -958,6 +964,67 @@ it("shows per-solve rolling averages without restoring the comparison column", a
   await flushStorage();
   expect(saved()).toEqual([10, 20, 30, 40, 50]);
 });
+it.each([
+  { history: [], expected: ["—", "—", "—"] },
+  { history: [10, 20, 30, 40], expected: ["00:10.00", "—", "—"] },
+  { history: [10, 20, 30, 40, 50], expected: ["00:10.00", "00:30.00", "—"] },
+])(
+  "keeps the Best summary separate from $history.length recorded solves",
+  async ({ history, expected }) => {
+    seedHistory(JSON.stringify(history));
+    render(<App />);
+    await flushStorage();
+    const summary = screen.getByRole("row", { name: "Daily best results" });
+    expect(
+      within(summary).getByRole("rowheader", { name: "Today's best" }),
+    ).toBeInTheDocument();
+    expect(
+      Array.from(
+        summary.querySelectorAll(".history-best-value"),
+        (cell) => cell.textContent,
+      ),
+    ).toEqual(expected);
+    expect(within(summary).queryByRole("button")).not.toBeInTheDocument();
+    expect(screen.getByRole("table").querySelectorAll("tbody tr")).toHaveLength(
+      history.length,
+    );
+    expect(saved()).toEqual(history);
+  },
+);
+
+it("uses uniform recorded rows and keeps metric emphasis only in the Best summary", async () => {
+  seedHistory("[30,10,20]");
+  const { container } = render(<App />);
+  await flushStorage();
+  expect(container.querySelector(".stats-grid")).toBeNull();
+  const rows = Array.from(container.querySelectorAll("tbody tr"));
+  expect(rows).toHaveLength(3);
+  expect(rows.every((row) => row.className === "")).toBe(true);
+  expect(
+    rows.every((row) => row.querySelectorAll("td")[1].className === ""),
+  ).toBe(true);
+  expect(
+    container.querySelector(".history-best .best-single-value"),
+  ).toHaveTextContent("00:10.00");
+  expect(container.querySelector("#stats")).toBe(
+    container.querySelector("thead"),
+  );
+});
+
+it("keeps the informative crown separate from timer keyboard input", async () => {
+  seedHistory("[12.34]");
+  render(<App />);
+  await flushStorage();
+  const crown = screen.getByRole("img", { name: "Today's best" });
+  expect(crown).toHaveAttribute("tabindex", "0");
+  act(() => crown.focus());
+  fireEvent.keyDown(crown, { code: "Space" });
+  advance(350);
+  fireEvent.keyUp(crown, { code: "Space" });
+  expect(screen.getByText("Ready for your next solve")).toBeInTheDocument();
+  expect(saved()).toEqual([12.34]);
+});
+
 it("shows chronological rolling values and earlier best averages, recalculating after deletion and reload", async () => {
   seedHistory(
     JSON.stringify(Array.from({ length: 13 }, (_, i) => (i + 1) * 10)),
@@ -971,12 +1038,20 @@ it("shows chronological rolling values and earlier best averages, recalculating 
     Array.from(row(attempt).querySelectorAll("td"))
       .slice(0, 4)
       .map((cell) => cell.textContent);
+  const summaryValues = () =>
+    Array.from(
+      document.querySelectorAll(".history-best-value"),
+      (cell) => cell.textContent,
+    );
   const bestValue = (label: string) =>
-    within(screen.getByRole("region", { name: "Today's best results" }))
-      .getByRole("heading", { name: label })
-      .parentElement!.querySelector("p");
+    screen
+      .getByRole("row", { name: "Daily best results" })
+      .querySelectorAll(".history-best-value")[
+      ["Best single", "Best AO5", "Best AO12"].indexOf(label)
+    ];
   await flushStorage();
   expect(cells(13)).toEqual(["13", "02:10.00", "01:50.00", "01:15.00"]);
+  expect(summaryValues()).toEqual(["00:10.00", "00:30.00", "01:05.00"]);
 
   expect(cells(5)).toEqual(["5", "00:50.00", "00:30.00", "—"]);
 
@@ -1002,6 +1077,7 @@ it("shows chronological rolling values and earlier best averages, recalculating 
   expect(bestValue("Best AO5")).toHaveTextContent("00:36.67");
 
   expect(bestValue("Best AO12")).toHaveTextContent("01:14.00");
+  expect(summaryValues()).toEqual(["00:10.00", "00:36.67", "01:14.00"]);
 
   expect(cells(12)).toEqual(["12", "02:10.00", "01:50.00", "01:14.00"]);
   first.unmount();
@@ -1011,6 +1087,7 @@ it("shows chronological rolling values and earlier best averages, recalculating 
   fireEvent.click(screen.getByRole("button", { name: "Delete solve 1" }));
   await flushStorage();
   expect(bestValue("Best single")).toHaveTextContent("00:20.00");
+  expect(summaryValues()).toEqual(["00:20.00", "00:50.00", "—"]);
 
   expect(bestValue("Best AO12")).toHaveTextContent("—");
 

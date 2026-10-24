@@ -452,6 +452,7 @@ export default async (page) => {
       newer,
     });
     await delayed
+      .locator(".history-table tbody")
       .getByRole("cell", { name: "00:00.50", exact: true })
       .waitFor();
     assert(
@@ -463,6 +464,7 @@ export default async (page) => {
       (await page.evaluate((key) => localStorage.getItem(key), key)) ===
         newer &&
         (await delayed
+          .locator(".history-table tbody")
           .getByRole("cell", { name: "00:00.50", exact: true })
           .isVisible()),
       "The later midnight refresh preserves already-adopted current-day results",
