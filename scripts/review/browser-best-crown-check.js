@@ -39,6 +39,8 @@ export default async (page) => {
     const shape = await crown.evaluate((el) => {
       const svg = el.querySelector("svg"),
         box = svg.getBoundingClientRect();
+      const body = svg.querySelector("path").getBBox();
+      const base = svg.querySelector("line").getBBox();
       return {
         size: [box.width, box.height],
         stroke: svg.getAttribute("stroke-width"),
@@ -47,6 +49,9 @@ export default async (page) => {
           getComputedStyle(el).color ===
           getComputedStyle(el.closest("th")).color,
         column: el.closest("th").getBoundingClientRect().width,
+        baseGap: base.y - (body.y + body.height),
+        horizontalBase:
+          base.height === 0 && base.width > 0 && base.width < body.width,
       };
     });
     assert(
@@ -60,12 +65,26 @@ export default async (page) => {
       "Neutral crown fits the compact number column",
     );
     assert(
+      shape.horizontalBase && shape.baseGap > 1.5 && shape.baseGap <= 4,
+      "The crown has a separate compact horizontal base with a visible gap",
+    );
+    assert(
       (await crown.getAttribute("tabindex")) === "0",
       "Crown tooltip is keyboard reachable",
     );
     await crown.hover();
     const tooltip = page.getByRole("tooltip");
     await tooltip.waitFor({ state: "visible" });
+    const unframed = () =>
+      crown.evaluate((el) => {
+        const s = getComputedStyle(el);
+        return (
+          s.outlineStyle === "none" &&
+          s.boxShadow === "none" &&
+          s.borderTopWidth === "0px"
+        );
+      });
+    assert(await unframed(), "Hover tooltip adds no frame around its trigger");
     assert(
       (await tooltip.textContent()).trim() === "Today's best",
       "Hover shows the exact requested tooltip",
@@ -101,12 +120,20 @@ export default async (page) => {
     );
     await tooltip.waitFor({ state: "visible" });
     assert(
-      await crown.evaluate(
-        (el) =>
+      await crown.evaluate((el) => {
+        const dot = getComputedStyle(el, "::after");
+        return (
           el.matches(":focus-visible") &&
-          getComputedStyle(el).outlineStyle !== "none",
-      ),
-      "Keyboard focus has a visible outline",
+          parseFloat(dot.width) >= 3 &&
+          parseFloat(dot.height) >= 3 &&
+          dot.backgroundColor !== "rgba(0, 0, 0, 0)"
+        );
+      }),
+      "Keyboard focus has a visible neutral marker",
+    );
+    assert(
+      await unframed(),
+      "Keyboard tooltip uses no border, outline or box shadow around its trigger",
     );
     const description = await crown.getAttribute("aria-describedby");
     assert(

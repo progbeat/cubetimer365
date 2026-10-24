@@ -1115,7 +1115,9 @@ const App: React.FC = () => {
                               size={16}
                               stroke={1.5}
                               aria-hidden="true"
-                            />
+                            >
+                              <line x1={6} y1={22} x2={18} y2={22} />
+                            </IconCrown>
                           </span>
                         </Tooltip>
                       </th>
