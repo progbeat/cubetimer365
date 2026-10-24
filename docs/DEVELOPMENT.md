@@ -167,7 +167,8 @@ The checked-in static SVG, PNG and 16/32px ICO are reproducible snapshots for
 seed 20261021, generated with `node scripts/generate-favicons.mjs` (set
 `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` when using a system Chromium).
 They remain available without JavaScript or dynamic SVG favicon support.
-Browser checks verify SVG decoding, matching matrices, reload, midnight,
-focus/visibility resumption, stable link identity and fallback signatures.
+Browser checks verify SVG decoding, matching matrices and 32px rendered pixels,
+reload, midnight, focus/visibility resumption, stable link identity and fallback
+signatures.
 These checks prove the DOM update and decoding, not immediate tab-strip repaint.
 Browser icon caching and saved home-screen icons may retain a static image.

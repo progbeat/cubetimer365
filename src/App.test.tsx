@@ -976,7 +976,7 @@ it.each([
     await flushStorage();
     const summary = screen.getByRole("row", { name: "Daily best results" });
     expect(
-      within(summary).getByRole("rowheader", { name: "Best" }),
+      within(summary).getByRole("rowheader", { name: "Today's best" }),
     ).toBeInTheDocument();
     expect(
       Array.from(
@@ -1009,6 +1009,20 @@ it("uses uniform recorded rows and keeps metric emphasis only in the Best summar
   expect(container.querySelector("#stats")).toBe(
     container.querySelector("thead"),
   );
+});
+
+it("keeps the informative crown separate from timer keyboard input", async () => {
+  seedHistory("[12.34]");
+  render(<App />);
+  await flushStorage();
+  const crown = screen.getByRole("img", { name: "Today's best" });
+  expect(crown).toHaveAttribute("tabindex", "0");
+  act(() => crown.focus());
+  fireEvent.keyDown(crown, { code: "Space" });
+  advance(350);
+  fireEvent.keyUp(crown, { code: "Space" });
+  expect(screen.getByText("Ready for your next solve")).toBeInTheDocument();
+  expect(saved()).toEqual([12.34]);
 });
 
 it("shows chronological rolling values and earlier best averages, recalculating after deletion and reload", async () => {

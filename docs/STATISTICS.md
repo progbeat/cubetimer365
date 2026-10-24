@@ -64,8 +64,9 @@ while scrolling the history. At 320/390 px, the numeric cells remain readable an
 the delete control keeps its 44 px target. Long values may scroll within the table
 without making the whole page overflow. The desktop chart stays to the left of the
 full-height history panel, beneath the timer. On a phone, the history table stays
-between the timer and chart, with best values in its header. Recorded solves have uniform styling; the
-summary uses a neutral surface and normal single-time text, while AO5/AO12 keep
+between the timer and chart, with best values in its header. Recorded solves have
+uniform styling; the summary uses a neutral surface and an outline crown with a “Today's best” tooltip
+on hover or keyboard focus. It shows normal single-time text, while AO5/AO12 keep
 their blue/orange metric colors. The chart colors are unchanged.
 
 Unit and native Chromium checks cover complete/incomplete windows, chronological

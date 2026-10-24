@@ -106,6 +106,33 @@ export default async (page) => {
     );
     const m = await measure();
     assert(!m.horizontal, "Table does not cause horizontal page overflow");
+    const legend = await page.locator(".chart-panel").evaluate((el) => {
+      const title = el.querySelector("#chart-title").getBoundingClientRect();
+      const heading = el.querySelector(".panel-heading");
+      const style = getComputedStyle(heading);
+      const items = el.querySelector(".chart-legend");
+      return {
+        hiddenTitle: title.width <= 1 && title.height <= 1,
+        labels: Array.from(items.children, (item) => item.textContent.trim()),
+        extraHeight:
+          heading.getBoundingClientRect().height -
+          items.getBoundingClientRect().height -
+          parseFloat(style.paddingTop) -
+          parseFloat(style.paddingBottom),
+      };
+    });
+    assert(
+      legend.hiddenTitle,
+      "Chart title is available accessibly without a visible title row",
+    );
+    assert(
+      JSON.stringify(legend.labels) === JSON.stringify(["Time", "AO5", "AO12"]),
+      "Chart legend matches the table's metric names",
+    );
+    assert(
+      Math.abs(legend.extraHeight) < 1,
+      "Chart heading contains no empty space from the removed title",
+    );
     if (width < 760) {
       assert(
         m.history.top > m.timer.bottom && m.chart.top > m.history.bottom,
