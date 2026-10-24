@@ -103,7 +103,7 @@ kbd { border: 1px solid #43505a; border-radius: 4px; padding: 4px 7px; font: inh
 .empty-history p, .empty-chart p { color: #ced7dc; font-size: 14px; margin: 16px 0 8px; }
 .empty-history span, .empty-chart span { font-size: 11px; line-height: 1.7; }
 .chart-panel { display: flex; flex-direction: column; min-height: var(--chart-min-height); grid-column: 1; padding: 0 16px 10px; }
-.chart-panel .panel-heading { flex-shrink: 0; padding: 16px 0; }
+.chart-panel .panel-heading { flex-shrink: 0; justify-content: flex-end; padding: 16px 0; }
 .chart-plot { flex: 1; min-height: 180px; }
 .chart-legend { display: flex; gap: 18px; color: #b7c2ca; font-size: 10px; }
 .chart-legend span { display: flex; gap: 6px; align-items: center; }
