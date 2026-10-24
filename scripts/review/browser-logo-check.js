@@ -91,7 +91,7 @@ export default async (page) => {
     try {
       await tab.clock.setFixedTime(`${fixture.date}T05:00:00Z`);
       await tab.goto(root);
-      await tab.locator(".stats-grid").waitFor();
+      await tab.locator(".timer-panel").waitFor();
       const first = await snapshot(tab);
       const icon = await favicon(tab);
       assert(
@@ -174,7 +174,7 @@ export default async (page) => {
       );
       const before = await storage(tab);
       await tab.reload();
-      await tab.locator(".stats-grid").waitFor();
+      await tab.locator(".timer-panel").waitFor();
       assert(
         JSON.stringify(await snapshot(tab)) === JSON.stringify(first),
         `Reload restores ${fixture.date} logo exactly`,
@@ -200,7 +200,7 @@ export default async (page) => {
       await tab.clock.install({ time: "2026-10-20T16:59:58Z" });
       await tab.clock.pauseAt("2026-10-20T16:59:59.900Z");
       await tab.goto(root, { waitUntil: "domcontentloaded" });
-      await tab.locator(".stats-grid").waitFor();
+      await tab.locator(".timer-panel").waitFor();
       await tab.clock.runFor(20);
       const beforeIcon = await favicon(tab);
       await tab.locator("#daily-favicon").evaluate((el) => {

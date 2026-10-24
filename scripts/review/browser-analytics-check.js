@@ -60,7 +60,7 @@ export default async (page, options = {}) => {
     for (const choice of [null, "granted", "denied"]) {
       const before = beaconRequests;
       await page.goto(`${root}?fixture-consent=${choice || "unset"}`);
-      await page.locator(".stats-grid").waitFor();
+      await page.locator(".timer-panel").waitFor();
       if (configured)
         await page.waitForFunction(
           () => !!document.querySelector("script[data-cf-beacon]"),
@@ -129,7 +129,7 @@ export default async (page, options = {}) => {
     for (const signal of ["dnt", "gpc"]) {
       const before = beaconRequests;
       await page.goto(`${root}?fixture-signal=${signal}`);
-      await page.locator(".stats-grid").waitFor();
+      await page.locator(".timer-panel").waitFor();
       assert(
         (await scripts()) === 0 && beaconRequests === before,
         `${signal}: no beacon is loaded with a privacy signal`,

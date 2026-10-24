@@ -1084,97 +1084,116 @@ const App: React.FC = () => {
                   tab; existing stored data was left intact.
                 </p>
               )}
-              {history.length === 0 ? (
-                <div className="empty-history">
-                  <IconList size={28} stroke={1.2} />
-                  <p>No solves yet.</p>
-                </div>
-              ) : (
-                <div className="history-scroll">
-                  <table className="history-table">
-                    <caption className="sr-only">
-                      Solve times and rolling averages, newest first
-                    </caption>
-                    <thead>
-                      <tr>
-                        <th scope="col">#</th>
-                        <th scope="col">Time</th>
-                        <th
-                          scope="col"
-                          title="Last five solves ending at this solve"
+              <div
+                className={`history-scroll${history.length === 0 ? " history-scroll--empty" : ""}`}
+              >
+                <table className="history-table">
+                  <caption className="sr-only">
+                    Solve times and rolling averages, newest first
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">#</th>
+                      <th scope="col">Time</th>
+                      <th
+                        scope="col"
+                        title="Last five solves ending at this solve"
+                      >
+                        AO5
+                      </th>
+                      <th
+                        scope="col"
+                        title="Last twelve solves ending at this solve"
+                      >
+                        AO12
+                      </th>
+                      <th scope="col">
+                        <span className="sr-only">Delete</span>
+                      </th>
+                    </tr>
+                    <tr
+                      className="history-best"
+                      aria-label="Daily best results"
+                    >
+                      <th
+                        scope="row"
+                        title="Independent daily best in each column"
+                      >
+                        Best
+                      </th>
+                      {stats.map(([label, value], index) => (
+                        <td
+                          key={label}
+                          className={`history-best-value ${value === null ? "incomplete-average" : ["best-solve", "ao5-cell", "ao12-cell"][index]}`}
                         >
-                          AO5
-                        </th>
-                        <th
-                          scope="col"
-                          title="Last twelve solves ending at this solve"
-                        >
-                          AO12
-                        </th>
-                        <th scope="col">
-                          <span className="sr-only">Delete</span>
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {statistics.newestFirst.map(
-                        ({ attempt, time, ao5, ao12 }, row) => {
-                          const index = attempt - 1;
-                          return (
-                            <tr
-                              key={index}
-                              className={row === 0 ? "latest-solve" : ""}
+                          {formatTime(value)}
+                        </td>
+                      ))}
+                      <td aria-hidden="true" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {statistics.newestFirst.map(
+                      ({ attempt, time, ao5, ao12 }, row) => {
+                        const index = attempt - 1;
+                        return (
+                          <tr
+                            key={index}
+                            className={row === 0 ? "latest-solve" : ""}
+                          >
+                            <td>{index + 1}</td>
+                            <td
+                              className={
+                                Number.isFinite(time) && time === best
+                                  ? "best-solve"
+                                  : ""
+                              }
                             >
-                              <td>{index + 1}</td>
-                              <td
-                                className={
-                                  Number.isFinite(time) && time === best
-                                    ? "best-solve"
-                                    : ""
+                              {formatTime(time)}
+                            </td>
+                            <td
+                              className={
+                                ao5 === null ? "incomplete-average" : "ao5-cell"
+                              }
+                            >
+                              {formatTime(ao5)}
+                            </td>
+                            <td
+                              className={
+                                ao12 === null
+                                  ? "incomplete-average"
+                                  : "ao12-cell"
+                              }
+                            >
+                              {formatTime(ao12)}
+                            </td>
+                            <td>
+                              <button
+                                type="button"
+                                className="delete-solve"
+                                aria-label={`Delete solve ${index + 1}`}
+                                onClick={() =>
+                                  setHistory((previous) =>
+                                    previous.filter((_, i) => i !== index),
+                                  )
                                 }
                               >
-                                {formatTime(time)}
-                              </td>
-                              <td
-                                className={
-                                  ao5 === null
-                                    ? "incomplete-average"
-                                    : "ao5-cell"
-                                }
-                              >
-                                {formatTime(ao5)}
-                              </td>
-                              <td
-                                className={
-                                  ao12 === null
-                                    ? "incomplete-average"
-                                    : "ao12-cell"
-                                }
-                              >
-                                {formatTime(ao12)}
-                              </td>
-                              <td>
-                                <button
-                                  type="button"
-                                  className="delete-solve"
-                                  aria-label={`Delete solve ${index + 1}`}
-                                  onClick={() =>
-                                    setHistory((previous) =>
-                                      previous.filter((_, i) => i !== index),
-                                    )
-                                  }
-                                >
-                                  <IconTrash size={16} stroke={1.5} />
-                                </button>
-                              </td>
-                            </tr>
-                          );
-                        },
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+                                <IconTrash size={16} stroke={1.5} />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      },
+                    )}
+                  </tbody>
+                </table>
+                {history.length === 0 && (
+                  <div className="empty-history">
+                    <IconList size={28} stroke={1.2} />
+                    <p>No solves yet.</p>
+                  </div>
+                )}
+              </div>
               <div className="history-footer">
                 <div className="history-meta">
                   <span>Total {formatTime(statistics.totalTime)}</span>
