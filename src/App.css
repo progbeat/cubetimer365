@@ -87,7 +87,7 @@ kbd { border: 1px solid #43505a; border-radius: 4px; padding: 4px 7px; font: inh
 .history-table td:nth-child(n+2):not(:last-child) { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; font-size: 13px; }
 .history-best th, .history-best td { height: 39px; background: #20272b; border-bottom: 1px solid var(--border); }
 .history-best th { padding-top: 0; padding-bottom: 0; vertical-align: middle; font-size: 10px; font-weight: 600; letter-spacing: 0; text-transform: none; }
-.history-best-icon { position: relative; top: -1px; display: block; width: 16px; height: 16px; margin-left: auto; margin-right: -4.5px; }
+.history-best-icon { position: relative; top: -1px; display: block; width: 16px; height: 16px; margin-left: auto; margin-right: -1px; }
 .history-table .ao5-cell { color: #9fc4e5; }
 .history-table .ao12-cell { color: #e9c49b; }
 .history-table .incomplete-average { color: var(--muted); }

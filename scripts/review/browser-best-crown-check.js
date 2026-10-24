@@ -13,7 +13,7 @@ export default async (page) => {
       JSON.stringify({
         version: 1,
         date: new Date().toISOString().slice(0, 10),
-        history: [12.34, 15.67],
+        history: Array.from({ length: 100 }, (_, i) => 12.34 + (i % 7)),
         legacyMigration: "ignored",
       }),
     ),
@@ -46,11 +46,14 @@ export default async (page) => {
       const icon = image.getBoundingClientRect(),
         cell = image.closest("th"),
         box = cell.getBoundingClientRect();
-      const range = document.createRange();
-      range.selectNodeContents(
-        document.querySelector("thead tr:first-child th"),
-      );
-      const heading = range.getBoundingClientRect();
+      const numberEdges = [1, 9, 18, 99, 100].map((number) => {
+        const cell = [...document.querySelectorAll("tbody tr")]
+          .find((row) => row.children[0].textContent.trim() === String(number))
+          .children[0];
+        const range = document.createRange();
+        range.selectNodeContents(cell);
+        return range.getBoundingClientRect().right;
+      });
       const ancestors = [];
       for (let el = image.parentElement; el; el = el.parentElement)
         ancestors.push(el);
@@ -65,9 +68,8 @@ export default async (page) => {
         size: [icon.width, icon.height],
         natural: [image.naturalWidth, image.naturalHeight],
         column: box.width,
-        centerOffset: Math.abs(
-          (icon.left + icon.right) / 2 - (heading.left + heading.right) / 2,
-        ),
+        numberEdges,
+        edgeOffset: icon.right - numberEdges[0],
         confined:
           icon.left >= box.left &&
           icon.right <= box.right &&
@@ -100,8 +102,12 @@ export default async (page) => {
       "The compact icon remains inside the unchanged number column",
     );
     assert(
-      result.centerOffset < 1.5,
-      "The icon is centered beneath the number-column heading",
+      Math.abs(result.edgeOffset - 1) < 0.1,
+      "The crown aligns to solve-number right edges, accounting for its SVG ink inset",
+    );
+    assert(
+      result.numberEdges.every((edge) => edge === result.numberEdges[0]),
+      "One-, two- and three-digit solve numbers share one stable crown anchor",
     );
     assert(
       !result.ancestorTitles && result.summaryTitles === 1,
