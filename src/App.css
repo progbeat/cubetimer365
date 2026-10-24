@@ -47,12 +47,12 @@ button:focus-visible, a:focus-visible, [role='button']:focus-visible { outline: 
 .practice-grid { display: grid; flex: 1; min-height: 0; grid-template-columns: minmax(0, 1fr) 350px; grid-template-rows: var(--scramble-height) var(--timer-height) minmax(var(--chart-min-height), 1fr); gap: var(--panel-gap); }
 .panel { background: linear-gradient(120deg, #181e22, #14191d); border: 1px solid var(--border); border-radius: 10px; }
 .eyebrow { font-size: 11px; line-height: 1.5; text-transform: uppercase; letter-spacing: 2px; font-weight: 500; margin: 0; color: #c1cbd2; }
-.scramble-panel { display: flex; align-items: center; gap: 20px; padding: 16px 20px; }
-.scramble-content { flex: 1; min-width: 0; }
-.scramble-moves { font-family: 'Scramble Roboto', sans-serif; font-size: 22px; letter-spacing: 0; word-spacing: 0.2em; line-height: 1.5; margin: 14px 0 12px; font-weight: 700; }
+.scramble-panel { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto 1fr; align-items: center; column-gap: 20px; padding: 16px; }
+.scramble-content { display: contents; }
+.scramble-moves { grid-column: 1; grid-row: 2; min-width: 0; font-family: 'Scramble Roboto', sans-serif; font-size: 22px; letter-spacing: 0; word-spacing: 0.2em; line-height: 1.5; margin: 0; font-weight: 700; }
 .scramble-note { color: var(--muted); font-size: 11px; display: flex; gap: 8px; align-items: center; margin: 0; }
 .shared-dot { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--lime); flex-shrink: 0; }
-.cube-display { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+.cube-display { grid-column: 2; grid-row: 1 / span 2; display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
 .cube-display svg { width: 170px; height: 170px; }
 .cube-review-link { color: var(--muted); font-size: 10px; margin-top: 8px; }
 .cube-review-link:hover { color: var(--lime); }
@@ -150,7 +150,7 @@ kbd { border: 1px solid #43505a; border-radius: 4px; padding: 4px 7px; font: inh
 @media (width <= 1100px) {
   .app-layout { --page-inset: 24px; }
   .practice-grid { grid-template-columns: minmax(0, 1fr) 320px; }
-  .scramble-panel { padding: 14px 16px; gap: 16px; }
+  .scramble-panel { column-gap: 16px; }
   .cube-display svg { width: 132px; height: 132px; }
   .scramble-moves { font-size: 20px; }
   .timer-digits { font-size: 80px; }
@@ -167,8 +167,8 @@ kbd { border: 1px solid #43505a; border-radius: 4px; padding: 4px 7px; font: inh
   .app-header time { font-size: 10px; letter-spacing: 0.6px; }
   .header-year { display: none; }
   .practice-grid { display: flex; flex-direction: column; gap: 10px; }
-  .scramble-panel { padding: 12px; gap: 12px; }
-  .scramble-moves { font-size: 16px; line-height: 1.5; margin: 8px 0 0; letter-spacing: 0; }
+  .scramble-panel { padding: 14px 16px; column-gap: 12px; }
+  .scramble-moves { font-size: 16px; line-height: 1.5; letter-spacing: 0; }
   .scramble-note { display: none; }
   .cube-display svg { width: 124px; height: 124px; }
   .cube-review-link { font-size: 10px; margin-top: 6px; }

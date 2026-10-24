@@ -846,7 +846,7 @@ it.each(["flat", "neon", "cyber"] as const)(
     const { container } = render(<App />);
     expect(
       screen.getByRole("img", {
-        name: `Daily scramble cube, rounded ${style} finish`,
+        name: `Daily scramble cube, rounded ${style} finish (simplified preview)`,
       }),
     ).toBeInTheDocument();
     expect(
@@ -878,7 +878,7 @@ it("keeps the chosen finish in memory if its storage write is blocked", async ()
   await flushStorage();
   expect(
     screen.getByRole("img", {
-      name: "Daily scramble cube, rounded flat finish",
+      name: "Daily scramble cube, rounded flat finish (simplified preview)",
     }),
   ).toBeInTheDocument();
   expect(saved()).toEqual([12, 15]);
@@ -897,7 +897,7 @@ it("defaults to Neon without a query and switches finishes without altering hist
   await flushStorage();
   expect(
     screen.getByRole("img", {
-      name: "Daily scramble cube, rounded neon finish",
+      name: "Daily scramble cube, rounded neon finish (simplified preview)",
     }),
   ).toBeInTheDocument();
   fireEvent.click(picker);
@@ -917,7 +917,7 @@ it("defaults to Neon without a query and switches finishes without altering hist
 
   expect(
     screen.getByRole("img", {
-      name: "Daily scramble cube, rounded flat finish",
+      name: "Daily scramble cube, rounded flat finish (simplified preview)",
     }),
   ).toBeInTheDocument();
   fireEvent.click(picker);

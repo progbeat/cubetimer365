@@ -15,6 +15,7 @@ const defaultSuites = [
   "browser-sticky-header-check",
   "browser-layout-check",
   "browser-loading-check",
+  "browser-first-paint-check",
   "browser-storage-check",
   "browser-style-preference-check",
   "browser-analytics-check",

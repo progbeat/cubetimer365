@@ -60,10 +60,13 @@ Flat, Neon and Cyber use the same projected sticker geometry and material
 renderer. Their paint parameters live in `src/cubeMaterials.ts`; the shared
 fill, contour and glow pipeline lives in `src/cubeRenderer.ts`.
 
-`CubeNet` keeps an accessible SVG and a projected fallback, then paints the
-material at the displayed size. It redraws when the scramble, finish, size or
-device pixel ratio changes, with the pixel ratio capped at 2. Timer ticks do
-not trigger material redraws.
+`CubeNet` measures its displayed size before preparing the material and reveals
+the bitmap only after decoding it. A neutral loading mark reserves the cube's
+space meanwhile; the rest of the page remains usable. The projected SVG is a
+fallback for an actual canvas/render/decode failure, rather than an intermediate
+finish. A decoded bitmap stays visible during size/DPR updates for the same
+scramble and finish. The pixel ratio is capped at 2, and timer ticks do not
+trigger material redraws.
 
 Cyber's static interference is a final SVG pass in screen space: 3.4 px pitch,
 0.6 px bands, 0.7 px phase and 0.18 opacity. Browser checks cover the approved
@@ -77,7 +80,8 @@ by the initial React state, so a saved choice is used on the first render. An
 explicit valid `?cube=` URL takes priority without rewriting the preference.
 Missing/invalid values or blocked reads fall back to Neon; blocked writes leave
 the choice usable in memory. The picker writes only that namespaced preference.
-Browser checks cover reloads, new tabs, first-render labels and storage failures.
+Browser checks cover reloads, new tabs, first-render labels and storage failures,
+plus rendered loading pixels, decoded-image reveal and graphics failure states.
 
 ## Daily data
 

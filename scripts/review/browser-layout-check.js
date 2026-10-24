@@ -106,6 +106,44 @@ export default async (page) => {
     );
     const m = await measure();
     assert(!m.horizontal, "Table does not cause horizontal page overflow");
+    const titles = await page.evaluate(() => {
+      const measureTitle = (selector) => {
+        const title = document.querySelector(selector),
+          panel = title.closest(".panel");
+        const box = title.getBoundingClientRect(),
+          outer = panel.getBoundingClientRect();
+        const style = getComputedStyle(title);
+        return {
+          top: box.top,
+          insetTop: box.top - outer.top,
+          insetLeft: box.left - outer.left,
+          typography: [
+            style.fontSize,
+            style.lineHeight,
+            style.fontWeight,
+            style.letterSpacing,
+          ],
+        };
+      };
+      return [
+        measureTitle("#scramble-title"),
+        measureTitle(".history-panel h2"),
+      ];
+    });
+    assert(
+      Math.abs(titles[0].insetTop - titles[1].insetTop) < 1 &&
+        Math.abs(titles[0].insetLeft - titles[1].insetLeft) < 1,
+      "Panel titles use consistent top and left insets on desktop and mobile",
+    );
+    assert(
+      width <= 760 || Math.abs(titles[0].top - titles[1].top) < 1,
+      "Desktop Daily scramble aligns with Today's solves",
+    );
+    assert(
+      JSON.stringify(titles[0].typography) ===
+        JSON.stringify(titles[1].typography),
+      "Visible panel titles share typography",
+    );
     const legend = await page.locator(".chart-panel").evaluate((el) => {
       const title = el.querySelector("#chart-title").getBoundingClientRect();
       const heading = el.querySelector(".panel-heading");
