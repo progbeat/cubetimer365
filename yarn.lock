@@ -4287,6 +4287,7 @@ __metadata:
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     recharts: "npm:2"
+    recharts-scale: "npm:0.4.5"
     stylelint: "npm:^17.16.0"
     terser: "npm:^5.51.2"
     typescript: "npm:^5.6.3"
@@ -5016,7 +5017,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"recharts-scale@npm:^0.4.4":
+"recharts-scale@npm:0.4.5, recharts-scale@npm:^0.4.4":
   version: 0.4.5
   resolution: "recharts-scale@npm:0.4.5"
   dependencies:

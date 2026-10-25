@@ -10,6 +10,7 @@ const defaultSuites = [
   "browser-date-check",
   "browser-logo-check",
   "browser-statistics-check",
+  "browser-chart-axis-check",
   "browser-best-summary-check",
   "browser-best-crown-check",
   "browser-sticky-header-check",

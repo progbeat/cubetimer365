@@ -5,6 +5,7 @@ import "./App.css";
 import React, { useEffect, useRef, useState } from "react";
 import { LineChart } from "@mantine/charts";
 import { createTheme, MantineProvider, Popover } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import {
   IconChartLine,
   IconList,
@@ -23,6 +24,11 @@ import DailyLogo from "./DailyLogo";
 import bestCrown from "./bestCrown.svg?inline";
 import { createCalendarMark } from "./calendarMark";
 import { useDailyFavicon } from "./useDailyFavicon";
+import {
+  CHART_TICK_COUNT,
+  COMPACT_TICK_MARGIN,
+  getCompactYAxisWidth,
+} from "./chartAxis";
 import {
   SOLVE_STORAGE_KEY,
   loadDailyHistory,
@@ -89,6 +95,9 @@ function CubeStyleReview({
 }
 
 const App: React.FC = () => {
+  const compactChart = useMediaQuery("(max-width: 760px)", undefined, {
+    getInitialValueInEffect: false,
+  });
   useEffect(() => {
     startAnalytics();
   }, []);
@@ -830,6 +839,24 @@ const App: React.FC = () => {
     };
   }, [history]);
   const best = statistics.bestSingle;
+  const chartDomain = React.useMemo<[number, number]>(
+    () => [
+      best !== null && Number.isFinite(best)
+        ? Math.max(0, Math.floor(best - 0.25))
+        : 0,
+      statistics.maxFinite !== null
+        ? Math.ceil(statistics.maxFinite + 0.25)
+        : 1,
+    ],
+    [best, statistics.maxFinite],
+  );
+  const compactAxisWidth = React.useMemo(
+    () =>
+      compactChart
+        ? getCompactYAxisWidth(chartDomain, theme.fontFamily)
+        : undefined,
+    [compactChart, chartDomain],
+  );
   const stats = [
     ["Best single", best],
     ["Best AO5", statistics.bestAO5],
@@ -1225,14 +1252,18 @@ const App: React.FC = () => {
                     gridAxis="xy"
                     curveType="linear"
                     yAxisProps={{
-                      domain: [
-                        best !== null && Number.isFinite(best)
-                          ? Math.max(0, Math.floor(best - 0.25))
-                          : 0,
-                        statistics.maxFinite !== null
-                          ? Math.ceil(statistics.maxFinite + 0.25)
-                          : 1,
-                      ],
+                      domain: chartDomain,
+                      tickCount: CHART_TICK_COUNT,
+                      ...(compactChart && {
+                        width: compactAxisWidth,
+                        tickMargin: COMPACT_TICK_MARGIN,
+                        tickSize: 0,
+                        tick: {
+                          transform: "translate(0, 0)",
+                          fontSize: 12,
+                          fill: "currentColor",
+                        },
+                      }),
                     }}
                   />
                 )}
