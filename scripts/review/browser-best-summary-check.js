@@ -215,14 +215,13 @@ export default async (page) => {
       await page.evaluate(() =>
         window.scrollTo(0, document.documentElement.scrollHeight),
       );
-      await page.getByRole("link", { name: "Stats", exact: true }).click();
-      await page.waitForFunction(() => {
-        const r = document.querySelector("thead").getBoundingClientRect();
-        return r.top >= 0 && r.bottom < innerHeight - 70;
-      });
+      await page.locator(".history-panel").scrollIntoViewIfNeeded();
       assert(
-        await page.locator("#stats").evaluate((el) => el.tagName === "THEAD"),
-        "Mobile Stats navigation targets the complete summary header",
+        await page.locator(".history-best").evaluate((el) => {
+          const r = el.getBoundingClientRect();
+          return r.top >= 0 && r.bottom <= innerHeight;
+        }),
+        "Mobile best summary remains reachable through normal scrolling",
       );
     }
   }

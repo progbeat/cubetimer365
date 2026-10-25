@@ -6,12 +6,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { LineChart } from "@mantine/charts";
 import { createTheme, MantineProvider, Popover } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
-import {
-  IconChartLine,
-  IconList,
-  IconStopwatch,
-  IconTrash,
-} from "@tabler/icons-react";
+import { IconChartLine, IconList, IconTrash } from "@tabler/icons-react";
 import CubeNet, { CubeStyle } from "./CubeNet";
 import ScrambleText from "./ScrambleText";
 import { generateScramble } from "./scramble";
@@ -1097,7 +1092,7 @@ const App: React.FC = () => {
                   <caption className="sr-only">
                     Solve times and rolling averages, newest first
                   </caption>
-                  <thead id="stats">
+                  <thead>
                     <tr>
                       <th scope="col">#</th>
                       <th scope="col">Time</th>
@@ -1270,20 +1265,6 @@ const App: React.FC = () => {
               </div>
             </section>
           </main>
-          <nav className="mobile-nav" aria-label="Session sections">
-            <a href="#timer">
-              <IconStopwatch size={22} stroke={1.6} />
-              Timer
-            </a>
-            <a href="#stats">
-              <IconChartLine size={22} stroke={1.6} />
-              Stats
-            </a>
-            <a href="#history">
-              <IconList size={22} stroke={1.6} />
-              History
-            </a>
-          </nav>
         </div>
       )}
     </MantineProvider>

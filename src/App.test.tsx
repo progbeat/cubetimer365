@@ -1006,9 +1006,6 @@ it("uses uniform recorded rows and keeps metric emphasis only in the Best summar
   expect(
     container.querySelector(".history-best .best-single-value"),
   ).toHaveTextContent("00:10.00");
-  expect(container.querySelector("#stats")).toBe(
-    container.querySelector("thead"),
-  );
 });
 
 it("uses a native title only on the noninteractive crown image", async () => {
