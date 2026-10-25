@@ -1232,6 +1232,7 @@ const App: React.FC = () => {
                     series={chartSeries}
                     unit="s"
                     withDots={false}
+                    strokeWidth={2.5}
                     withTooltip
                     // Mantine's separate dot areas are disabled; keep active
                     // markers on the native line areas instead.
@@ -1258,7 +1259,7 @@ const App: React.FC = () => {
                     tickLine="none"
                     gridAxis="x"
                     withGradient
-                    fillOpacity={0.12}
+                    fillOpacity={0.08}
                     strokeDasharray="2 4"
                     gridColor="#63727c"
                     gridProps={{
