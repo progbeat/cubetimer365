@@ -127,7 +127,9 @@ export default async (page) => {
           legendColor: getComputedStyle(panel.querySelector(".solve-key"))
             .backgroundColor,
           timeDots: [...panel.querySelectorAll(".recharts-area-dot")].filter(
-            (dot) => getComputedStyle(dot).fill === "rgb(243, 245, 246)",
+            (dot) =>
+              dot.getBoundingClientRect().width > 0 &&
+              getComputedStyle(dot).fill === "rgb(243, 245, 246)",
           ).length,
           gradients: panel.querySelectorAll("linearGradient").length,
           saved: JSON.parse(
@@ -193,8 +195,8 @@ export default async (page) => {
             ? m.timeStroke === null
             : m.timeStroke === "rgb(243, 245, 246)") &&
           m.legendColor === "rgb(243, 245, 246)" &&
-          m.timeDots === history.length,
-        "Time uses the same light color in rows, Best, curve, dots and legend",
+          m.timeDots === 0,
+        "Time stays light in rows, Best, curve and legend without permanent dots",
       );
       assert(m.gradients >= 3, "Series retain their soft gradient fills");
       assert(

@@ -11,6 +11,7 @@ const defaultSuites = [
   "browser-logo-check",
   "browser-statistics-check",
   "browser-chart-axis-check",
+  "browser-chart-interaction-check",
   "browser-best-summary-check",
   "browser-best-crown-check",
   "browser-sticky-header-check",

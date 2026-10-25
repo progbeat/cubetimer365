@@ -3,7 +3,7 @@ import "@mantine/core/styles.css";
 import "./App.css";
 
 import React, { useEffect, useRef, useState } from "react";
-import { AreaChart } from "@mantine/charts";
+import { AreaChart, ChartTooltip } from "@mantine/charts";
 import { createTheme, MantineProvider, Popover } from "@mantine/core";
 import { IconChartLine, IconList, IconTrash } from "@tabler/icons-react";
 import CubeNet, { CubeStyle } from "./CubeNet";
@@ -31,6 +31,11 @@ const theme = createTheme({
   fontFamily:
     'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
 });
+const chartSeries = [
+  { name: "time", label: "Time", color: "#f3f5f6" },
+  { name: "ao5", label: "AO5", color: "#62b1ed" },
+  { name: "ao12", label: "AO12", color: "#efaa59" },
+];
 const ScrambleCube = React.memo(CubeNet);
 const sameDailyHistory = (left: DailyHistory, right: DailyHistory) =>
   left.date === right.date &&
@@ -1224,13 +1229,32 @@ const App: React.FC = () => {
                     h="100%"
                     data={statistics.chartData}
                     dataKey="attempt"
-                    series={[
-                      { name: "time", color: "#f3f5f6" },
-                      { name: "ao5", color: "#62b1ed" },
-                      { name: "ao12", color: "#efaa59" },
-                    ]}
+                    series={chartSeries}
                     unit="s"
-                    withTooltip={false}
+                    withDots={false}
+                    withTooltip
+                    // Mantine's separate dot areas are disabled; keep active
+                    // markers on the native line areas instead.
+                    areaProps={(series) => ({
+                      activeDot: {
+                        fill: "#ffffff",
+                        stroke: series.color,
+                        strokeWidth: 2,
+                        r: 4,
+                      },
+                    })}
+                    tooltipProps={{
+                      cursor: false,
+                      position: {},
+                      content: ({ label, payload }) => (
+                        <ChartTooltip
+                          label={`Solve ${label}`}
+                          payload={payload}
+                          series={chartSeries}
+                          valueFormatter={formatTime}
+                        />
+                      ),
+                    }}
                     tickLine="none"
                     gridAxis="x"
                     withGradient
