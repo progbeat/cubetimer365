@@ -72,7 +72,10 @@ single, share the chart's light curve, dots and legend marker. AO5/AO12 keep the
 blue/orange metric colors. Seconds labels align with the plot's left edge;
 horizontal dashed guides begin after each label. Data keeps fixed side margins
 independent of label length, with soft gradient fills and no vertical grid or
-axis line.
+axis line. Permanent markers are hidden. Hovering or touching the plot reveals
+the active solve's markers and a tooltip with its Time/AO5/AO12 values. A lone
+solve has no connecting line and is shown by its active marker on interaction;
+its value also remains in the table.
 
 Unit and native Chromium checks cover complete/incomplete windows, chronological
 mapping, best-versus-latest averages, deletion/reload, append/daily reset, ties,
