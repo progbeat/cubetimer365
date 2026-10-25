@@ -14,6 +14,7 @@ export default async (page) => {
     ],
     [99999.48],
   ];
+  const bounds = new Map();
   let passed = 0;
   const assert = (ok, message) => {
     if (!ok) throw new Error(message);
@@ -58,12 +59,20 @@ export default async (page) => {
           axis: grid.left - plot.left,
           plotLeft: plot.left,
           gridLeft: grid.left,
+          gridRight: grid.right,
+          plotRight: plot.right,
+          navCount: document.querySelectorAll(".mobile-nav").length,
           legendRight: legend.right,
           headingRight: heading.right,
           ticks: [...panel.querySelectorAll(".recharts-yAxis text")].map(
             (el) => {
               const box = el.getBoundingClientRect();
-              return { text: el.textContent, left: box.left, right: box.right };
+              return {
+                text: el.textContent,
+                left: box.left,
+                right: box.right,
+                fill: getComputedStyle(el).fill,
+              };
             },
           ),
           saved: JSON.parse(
@@ -71,7 +80,7 @@ export default async (page) => {
           ).history,
         };
       });
-      assert(m.docWidth <= width, "Compact chart does not overflow the page");
+      assert(m.docWidth <= width, "The chart does not overflow the page");
       assert(
         m.legendRight === m.headingRight,
         "The legend remains right-aligned",
@@ -80,24 +89,27 @@ export default async (page) => {
         JSON.stringify(m.saved) === JSON.stringify(history),
         "Axis resizing preserves recorded solves",
       );
-      if (width <= 760) {
+      assert(
+        m.ticks.every((t) => t.left >= m.gridLeft && t.right <= m.gridRight),
+        "Internal fractional and long labels fit the data area",
+      );
+      assert(
+        Math.abs(m.axis - 8) < 1 &&
+          Math.abs(m.plotRight - m.gridRight - 8) < 1,
+        "Every screen uses fixed 8px plot margins",
+      );
+      const geometry = [m.gridLeft - m.plotLeft, m.plotRight - m.gridRight];
+      if (bounds.has(width))
         assert(
-          m.ticks.every(
-            (t) => t.left >= m.plotLeft && t.right <= m.gridLeft - 2,
-          ),
-          "Fractional and long labels fit the external gutter",
+          geometry.every((value, i) => Math.abs(value - bounds.get(width)[i]) < 1),
+          "Label length cannot move the data boundaries",
         );
-        if (history[0] < 10000)
-          assert(
-            m.axis < 50,
-            "Normal and hour-long solves reclaim chart width",
-          );
-      } else {
-        assert(
-          Math.abs(m.axis - 60) < 1,
-          "Desktop keeps its original axis spacing",
-        );
-      }
+      else bounds.set(width, geometry);
+      assert(
+        m.ticks.every((t) => t.fill === "rgb(202, 212, 220)"),
+        "Time labels retain the brighter contrast on every screen",
+      );
+      assert(m.navCount === 0, "No obsolete mobile navigation obscures the chart");
       if (history.length === 1 && history[0] < 2) {
         assert(
           m.ticks.some((t) => t.text === "1.75s"),

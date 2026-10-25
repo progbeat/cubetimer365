@@ -99,7 +99,7 @@ export default async (page) => {
         ["scramble", ".scramble-moves"],
         ["cube control", ".cube-style-trigger"],
         ["delete control", 'button[aria-label="Delete solve 1"]'],
-        ["navigation link", 'a[href="#history"]'],
+        ["brand navigation link", 'a.brand[href="#timer"]'],
       ]) {
         await reset();
         if (name === "timer") {

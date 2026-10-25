@@ -5,7 +5,6 @@ import "./App.css";
 import React, { useEffect, useRef, useState } from "react";
 import { LineChart } from "@mantine/charts";
 import { createTheme, MantineProvider, Popover } from "@mantine/core";
-import { useMediaQuery } from "@mantine/hooks";
 import { IconChartLine, IconList, IconTrash } from "@tabler/icons-react";
 import CubeNet, { CubeStyle } from "./CubeNet";
 import ScrambleText from "./ScrambleText";
@@ -19,11 +18,6 @@ import DailyLogo from "./DailyLogo";
 import bestCrown from "./bestCrown.svg?inline";
 import { createCalendarMark } from "./calendarMark";
 import { useDailyFavicon } from "./useDailyFavicon";
-import {
-  CHART_TICK_COUNT,
-  COMPACT_TICK_MARGIN,
-  getCompactYAxisWidth,
-} from "./chartAxis";
 import {
   SOLVE_STORAGE_KEY,
   loadDailyHistory,
@@ -90,9 +84,6 @@ function CubeStyleReview({
 }
 
 const App: React.FC = () => {
-  const compactChart = useMediaQuery("(max-width: 760px)", undefined, {
-    getInitialValueInEffect: false,
-  });
   useEffect(() => {
     startAnalytics();
   }, []);
@@ -845,13 +836,6 @@ const App: React.FC = () => {
     ],
     [best, statistics.maxFinite],
   );
-  const compactAxisWidth = React.useMemo(
-    () =>
-      compactChart
-        ? getCompactYAxisWidth(chartDomain, theme.fontFamily)
-        : undefined,
-    [compactChart, chartDomain],
-  );
   const stats = [
     ["Best single", best],
     ["Best AO5", statistics.bestAO5],
@@ -1233,6 +1217,9 @@ const App: React.FC = () => {
                   </div>
                 ) : (
                   <LineChart
+                    lineChartProps={{
+                      margin: { top: 16, bottom: 0, left: 8, right: 8 },
+                    }}
                     h="100%"
                     data={statistics.chartData}
                     dataKey="attempt"
@@ -1248,17 +1235,16 @@ const App: React.FC = () => {
                     curveType="linear"
                     yAxisProps={{
                       domain: chartDomain,
-                      tickCount: CHART_TICK_COUNT,
-                      ...(compactChart && {
-                        width: compactAxisWidth,
-                        tickMargin: COMPACT_TICK_MARGIN,
-                        tickSize: 0,
-                        tick: {
-                          transform: "translate(0, 0)",
-                          fontSize: 12,
-                          fill: "currentColor",
-                        },
-                      }),
+                      tickCount: 5,
+                      mirror: true,
+                      width: 8,
+                      tickMargin: 4,
+                      tickSize: 0,
+                      tick: {
+                        transform: "translate(0, 0)",
+                        fontSize: 12,
+                        fill: "#cad4dc",
+                      },
                     }}
                   />
                 )}
