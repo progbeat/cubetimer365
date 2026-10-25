@@ -3,6 +3,7 @@ import { waitForStorage } from "./browser-storage-helpers.js";
 export default async (page) => {
   const root = `${new URL(page.url()).origin}/cubetimer365/`;
   const fixtures = [
+    [],
     [1.48],
     [
       1.45, 1.75, 1.74, 1.45, 4.6, 2.9, 1.62, 0.88, 0.72, 0.66, 0.66, 0.86,
@@ -41,13 +42,35 @@ export default async (page) => {
       await page.reload();
       await waitForStorage(page);
       await page.evaluate(() => document.fonts.ready);
+      if (history.length === 0) {
+        const empty = await page.locator(".empty-chart").evaluate((el) => ({
+          background: getComputedStyle(el).backgroundImage,
+          overflow: document.documentElement.scrollWidth > innerWidth,
+        }));
+        assert(
+          (empty.background.match(/linear-gradient/g) || []).length === 1 &&
+            !empty.background.includes("90deg"),
+          "Empty charts also keep only horizontal guides",
+        );
+        assert(!empty.overflow, "Empty charts fit every viewport");
+        continue;
+      }
       await page.locator(".recharts-yAxis text").first().waitFor();
       const m = await page.evaluate(() => {
         const panel = document.querySelector(".chart-panel");
         const plot = panel.querySelector(".chart-plot").getBoundingClientRect();
-        const grid = panel
-          .querySelector(".recharts-cartesian-grid")
+        const svg = panel
+          .querySelector(".recharts-surface")
           .getBoundingClientRect();
+        const clip = panel.querySelector("clipPath rect");
+        const grid = {
+          left: svg.left + Number(clip.getAttribute("x")),
+          right:
+            svg.left +
+            Number(clip.getAttribute("x")) +
+            Number(clip.getAttribute("width")),
+          top: svg.top + Number(clip.getAttribute("y")),
+        };
         const legend = panel
           .querySelector(".chart-legend")
           .getBoundingClientRect();
@@ -81,6 +104,32 @@ export default async (page) => {
               };
             },
           ),
+          guides: [
+            ...panel.querySelectorAll(
+              ".recharts-cartesian-grid-horizontal line",
+            ),
+          ].map((line) => ({
+            label: line.getAttribute("data-guide-label"),
+            left: line.getBoundingClientRect().left,
+          })),
+          verticalLines: panel.querySelectorAll(
+            ".recharts-cartesian-grid-vertical line, .recharts-cartesian-axis-line",
+          ).length,
+          timeColors: [
+            ...document.querySelectorAll(
+              ".history-table tbody td:nth-child(2), .history-best .best-single-value",
+            ),
+          ].map((cell) => getComputedStyle(cell).color),
+          timeStroke: panel.querySelector(".recharts-area-curve")
+            ? getComputedStyle(panel.querySelector(".recharts-area-curve"))
+                .stroke
+            : null,
+          legendColor: getComputedStyle(panel.querySelector(".solve-key"))
+            .backgroundColor,
+          timeDots: [...panel.querySelectorAll(".recharts-area-dot")].filter(
+            (dot) => getComputedStyle(dot).fill === "rgb(243, 245, 246)",
+          ).length,
+          gradients: panel.querySelectorAll("linearGradient").length,
           saved: JSON.parse(
             localStorage.getItem("cubetimer365:daily-history:v1"),
           ).history,
@@ -96,12 +145,13 @@ export default async (page) => {
         "Axis resizing preserves recorded solves",
       );
       assert(
-        m.ticks.every((t) => t.left >= m.gridLeft && t.right <= m.gridRight),
-        "Internal fractional and long labels fit the data area",
+        m.ticks.every(
+          (t) => Math.abs(t.left - m.plotLeft) < 1 && t.right <= m.gridRight,
+        ),
+        "Fractional and long labels stay left-aligned without moving the data",
       );
       assert(
-        m.gridTop - m.legendBottom >= 12 &&
-          m.gridTop - m.legendBottom <= 16,
+        m.gridTop - m.legendBottom >= 12 && m.gridTop - m.legendBottom <= 16,
         "Legend and grid keep a compact gap on every screen",
       );
       assert(
@@ -109,14 +159,15 @@ export default async (page) => {
         "Upper and lower time labels fit inside the chart",
       );
       assert(
-        Math.abs(m.axis - 8) < 1 &&
-          Math.abs(m.plotRight - m.gridRight - 8) < 1,
+        Math.abs(m.axis - 8) < 1 && Math.abs(m.plotRight - m.gridRight - 8) < 1,
         "Every screen uses fixed 8px plot margins",
       );
       const geometry = [m.gridLeft - m.plotLeft, m.plotRight - m.gridRight];
       if (bounds.has(width))
         assert(
-          geometry.every((value, i) => Math.abs(value - bounds.get(width)[i]) < 1),
+          geometry.every(
+            (value, i) => Math.abs(value - bounds.get(width)[i]) < 1,
+          ),
           "Label length cannot move the data boundaries",
         );
       else bounds.set(width, geometry);
@@ -124,7 +175,32 @@ export default async (page) => {
         m.ticks.every((t) => t.fill === "rgb(202, 212, 220)"),
         "Time labels retain the brighter contrast on every screen",
       );
-      assert(m.navCount === 0, "No obsolete mobile navigation obscures the chart");
+      assert(
+        m.guides.length > 0 &&
+          m.guides.every((line) => {
+            const tick = m.ticks.find((t) => t.text === line.label);
+            return tick && Math.abs(line.left - tick.right - 6) < 1;
+          }),
+        "Each horizontal guide starts after its own label with a 6px gap",
+      );
+      assert(
+        m.verticalLines === 0,
+        "The chart has no vertical grid or axis line",
+      );
+      assert(
+        m.timeColors.every((color) => color === "rgb(243, 245, 246)") &&
+          (history.length === 1
+            ? m.timeStroke === null
+            : m.timeStroke === "rgb(243, 245, 246)") &&
+          m.legendColor === "rgb(243, 245, 246)" &&
+          m.timeDots === history.length,
+        "Time uses the same light color in rows, Best, curve, dots and legend",
+      );
+      assert(m.gradients >= 3, "Series retain their soft gradient fills");
+      assert(
+        m.navCount === 0,
+        "No obsolete mobile navigation obscures the chart",
+      );
       if (history.length === 1 && history[0] < 2) {
         assert(
           m.ticks.some((t) => t.text === "1.75s"),

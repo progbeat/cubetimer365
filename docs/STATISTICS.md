@@ -67,8 +67,12 @@ full-height history panel, beneath the timer. On a phone, the history table stay
 between the timer and chart, with best values in its header. Recorded solves have
 uniform styling; the summary uses a neutral surface and an outline crown whose
 native title is “Today's best”. The title belongs only to the compact icon, and
-the row header retains its accessible name. It shows normal single-time text,
-while AO5/AO12 keep their blue/orange metric colors. The chart colors are unchanged.
+the row header retains its accessible name. Time values, including the best
+single, share the chart's light curve, dots and legend marker. AO5/AO12 keep their
+blue/orange metric colors. Seconds labels align with the plot's left edge;
+horizontal dashed guides begin after each label. Data keeps fixed side margins
+independent of label length, with soft gradient fills and no vertical grid or
+axis line.
 
 Unit and native Chromium checks cover complete/incomplete windows, chronological
 mapping, best-versus-latest averages, deletion/reload, append/daily reset, ties,

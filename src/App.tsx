@@ -3,7 +3,7 @@ import "@mantine/core/styles.css";
 import "./App.css";
 
 import React, { useEffect, useRef, useState } from "react";
-import { LineChart } from "@mantine/charts";
+import { AreaChart } from "@mantine/charts";
 import { createTheme, MantineProvider, Popover } from "@mantine/core";
 import { IconChartLine, IconList, IconTrash } from "@tabler/icons-react";
 import CubeNet, { CubeStyle } from "./CubeNet";
@@ -18,6 +18,7 @@ import DailyLogo from "./DailyLogo";
 import bestCrown from "./bestCrown.svg?inline";
 import { createCalendarMark } from "./calendarMark";
 import { useDailyFavicon } from "./useDailyFavicon";
+import TimeAxisGuide from "./TimeAxisGuide";
 import {
   SOLVE_STORAGE_KEY,
   loadDailyHistory,
@@ -1216,32 +1217,48 @@ const App: React.FC = () => {
                     <p>No data yet.</p>
                   </div>
                 ) : (
-                  <LineChart
-                    lineChartProps={{
+                  <AreaChart
+                    areaChartProps={{
                       margin: { top: 8, bottom: 0, left: 8, right: 8 },
                     }}
                     h="100%"
                     data={statistics.chartData}
                     dataKey="attempt"
                     series={[
-                      { name: "time", color: "#b1f54b" },
+                      { name: "time", color: "#f3f5f6" },
                       { name: "ao5", color: "#62b1ed" },
                       { name: "ao12", color: "#efaa59" },
                     ]}
                     unit="s"
                     withTooltip={false}
                     tickLine="none"
-                    gridAxis="xy"
-                    curveType="linear"
+                    gridAxis="x"
+                    withGradient
+                    fillOpacity={0.12}
+                    strokeDasharray="2 4"
+                    gridColor="#63727c"
+                    gridProps={{
+                      vertical: false,
+                      horizontal: (props) => <TimeAxisGuide {...props} />,
+                      strokeOpacity: 0.3,
+                      strokeWidth: 1,
+                    }}
+                    xAxisProps={{
+                      axisLine: false,
+                      padding: { left: 0, right: 0 },
+                    }}
+                    connectNulls={false}
+                    curveType="monotone"
                     yAxisProps={{
                       domain: chartDomain,
                       tickCount: 5,
+                      axisLine: false,
                       mirror: true,
                       width: 8,
                       tickMargin: 4,
                       tickSize: 0,
                       tick: {
-                        transform: "translate(0, 0)",
+                        transform: "translate(-12, 0)",
                         fontSize: 12,
                         fill: "#cad4dc",
                       },

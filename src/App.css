@@ -108,10 +108,10 @@ kbd { border: 1px solid #43505a; border-radius: 4px; padding: 4px 7px; font: inh
 .chart-legend { display: flex; gap: 18px; color: #b7c2ca; font-size: 10px; }
 .chart-legend span { display: flex; gap: 6px; align-items: center; }
 .chart-legend i { width: 7px; height: 7px; border-radius: 50%; }
-.solve-key { background: var(--lime); }
+.solve-key { background: var(--text); }
 .ao5-key { background: #62b1ed; }
 .ao12-key { background: #efaa59; }
-.empty-chart { height: 100%; border-bottom: 1px solid #293239; background-image: linear-gradient(#27313850 1px, transparent 1px), linear-gradient(90deg, #27313850 1px, transparent 1px); background-size: 10% 40px; }
+.empty-chart { height: 100%; border-bottom: 1px solid #293239; background-image: linear-gradient(#27313850 1px, transparent 1px); background-size: 100% 40px; }
 .app-footer { display: flex; justify-content: space-between; color: #788791; font-size: 10px; padding: 24px 0; }
 .app-footer span:last-child { letter-spacing: 2px; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }

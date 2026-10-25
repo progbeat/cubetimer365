@@ -45,7 +45,7 @@ export default async (page) => {
         app: box(".app-layout"),
         chart: box(".chart-panel"),
         plot: box(".chart-plot"),
-        rendered: box(".mantine-LineChart-root, .empty-chart"),
+        rendered: box(".mantine-AreaChart-root, .empty-chart"),
         history: box(".history-panel"),
         timer: box(".timer-panel"),
       };
