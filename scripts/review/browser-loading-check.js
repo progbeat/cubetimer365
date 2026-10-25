@@ -137,7 +137,7 @@ export default async (page) => {
         await tab.keyboard.up("Space");
         await tab.waitForTimeout(300);
         await tab.keyboard.press("Space");
-        await tab.locator(".latest-solve").waitFor();
+        await tab.locator(".history-table tbody tr").first().waitFor();
         assert(
           (await tab.locator(".history-table tbody tr").count()) === 1,
           `${mode} fonts leave the timer usable`,

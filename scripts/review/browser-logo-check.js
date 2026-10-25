@@ -71,12 +71,33 @@ export default async (page) => {
       const image = new Image();
       image.src = href;
       await image.decode();
+      const headerImage = new Image();
+      headerImage.src = `data:image/svg+xml,${encodeURIComponent(
+        new XMLSerializer().serializeToString(
+          document.querySelector(".daily-logo"),
+        ),
+      )}`;
+      await headerImage.decode();
+      const canvas = document.createElement("canvas");
+      canvas.width = 32;
+      canvas.height = 32;
+      const drawing = canvas.getContext("2d");
+      const pixels = (source) => {
+        drawing.clearRect(0, 0, 32, 32);
+        drawing.drawImage(source, 0, 0, 32, 32);
+        return drawing.getImageData(0, 0, 32, 32).data;
+      };
+      const iconPixels = pixels(image),
+        headerPixels = pixels(headerImage);
       return {
         href,
         colors: Array.from(svg.querySelectorAll("[data-logo-sticker]"), (el) =>
           el.getAttribute("data-logo-color"),
         ),
         decoded: image.naturalWidth === 32 && image.naturalHeight === 32,
+        matchingPixels: iconPixels.every(
+          (channel, i) => channel === headerPixels[i],
+        ),
         count: document.querySelectorAll("link#daily-favicon").length,
         fallbacks: document.querySelectorAll(
           'link[rel="icon"][type="image/png"],link[rel="icon"][type="image/x-icon"]',
@@ -91,7 +112,7 @@ export default async (page) => {
     try {
       await tab.clock.setFixedTime(`${fixture.date}T05:00:00Z`);
       await tab.goto(root);
-      await tab.locator(".stats-grid").waitFor();
+      await tab.locator(".timer-panel").waitFor();
       const first = await snapshot(tab);
       const icon = await favicon(tab);
       assert(
@@ -101,6 +122,10 @@ export default async (page) => {
       assert(
         icon.decoded,
         `Chromium decodes the SVG data URL on ${fixture.date}`,
+      );
+      assert(
+        icon.matchingPixels,
+        `Favicon and header icon render identical pixels at 32 px on ${fixture.date}`,
       );
       assert(
         icon.count === 1 && icon.fallbacks === 2,
@@ -174,7 +199,7 @@ export default async (page) => {
       );
       const before = await storage(tab);
       await tab.reload();
-      await tab.locator(".stats-grid").waitFor();
+      await tab.locator(".timer-panel").waitFor();
       assert(
         JSON.stringify(await snapshot(tab)) === JSON.stringify(first),
         `Reload restores ${fixture.date} logo exactly`,
@@ -200,7 +225,7 @@ export default async (page) => {
       await tab.clock.install({ time: "2026-10-20T16:59:58Z" });
       await tab.clock.pauseAt("2026-10-20T16:59:59.900Z");
       await tab.goto(root, { waitUntil: "domcontentloaded" });
-      await tab.locator(".stats-grid").waitFor();
+      await tab.locator(".timer-panel").waitFor();
       await tab.clock.runFor(20);
       const beforeIcon = await favicon(tab);
       await tab.locator("#daily-favicon").evaluate((el) => {
@@ -238,6 +263,10 @@ export default async (page) => {
         afterIcon.href !== beforeIcon.href &&
           JSON.stringify(afterIcon.colors) === JSON.stringify(after.colors),
         `${mode}: favicon changes with the same rear matrix`,
+      );
+      assert(
+        afterIcon.matchingPixels,
+        `${mode}: updated favicon pixels match the updated header icon`,
       );
       assert(
         afterIcon.count === 1 &&

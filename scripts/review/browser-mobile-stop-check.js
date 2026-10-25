@@ -96,10 +96,10 @@ export default async (page) => {
       for (const [name, selector] of [
         ["timer", ".timer-surface"],
         ["whitespace", null],
-        ["scramble", ".scramble-content"],
+        ["scramble", ".scramble-moves"],
         ["cube control", ".cube-style-trigger"],
         ["delete control", 'button[aria-label="Delete solve 1"]'],
-        ["navigation link", 'a[href="#history"]'],
+        ["brand navigation link", 'a.brand[href="#timer"]'],
       ]) {
         await reset();
         if (name === "timer") {

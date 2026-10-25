@@ -26,10 +26,10 @@ export default async (page) => {
       localStorage.setItem("cubetimer365:analytics-consent", "denied");
     }, history);
     await page.reload();
-    await page.locator(".stats-grid").waitFor();
+    await page.locator(".timer-panel").waitFor();
     await page.evaluate(() => document.fonts.ready);
   };
-  const best = () => page.locator(".stat p").allTextContents();
+  const best = () => page.locator(".history-best-value").allTextContents();
   const cells = async (attempt) => {
     const row = page.locator(".history-table tbody tr").filter({
       has: page.getByRole("button", {
@@ -44,9 +44,11 @@ export default async (page) => {
   await load(times);
   assert(
     same(
-      (await page.locator(".history-table th").allTextContents()).map((text) =>
-        text.trim(),
-      ),
+      (
+        await page
+          .locator(".history-table thead tr:first-child th")
+          .allTextContents()
+      ).map((text) => text.trim()),
       ["#", "Time", "AO5", "AO12", "Delete"],
     ),
     "Results table has both rolling average columns",
@@ -120,7 +122,7 @@ export default async (page) => {
   await load([]);
   assert(
     same(await best(), ["—", "—", "—"]) &&
-      (await page.locator(".history-table").count()) === 0,
+      (await page.locator(".history-table tbody tr").count()) === 0,
     "Empty history has no stale best values",
   );
 
@@ -141,14 +143,16 @@ export default async (page) => {
         };
       });
       const button = row.querySelector("button").getBoundingClientRect();
-      const cards = [...document.querySelectorAll(".stat p")].map((value) => {
-        const range = document.createRange();
-        range.selectNodeContents(value);
-        return (
-          range.getBoundingClientRect().width <=
-          value.getBoundingClientRect().width
-        );
-      });
+      const bestFits = [...document.querySelectorAll(".history-best-value")].map(
+        (value) => {
+          const range = document.createRange();
+          range.selectNodeContents(value);
+          return (
+            range.getBoundingClientRect().width <=
+            value.getBoundingClientRect().width
+          );
+        },
+      );
       return {
         viewport: innerWidth,
         document: document.documentElement.scrollWidth,
@@ -156,7 +160,7 @@ export default async (page) => {
         visible: scroll.clientWidth,
         numeric,
         button: { width: button.width, height: button.height },
-        cards,
+        bestFits,
       };
     });
     assert(
@@ -169,8 +173,8 @@ export default async (page) => {
       `All numeric columns fit and remain readable at ${width}px`,
     );
     assert(
-      measures.cards.length === 3 && measures.cards.every(Boolean),
-      `Three best values fit their panel at ${width}px`,
+      measures.bestFits.length === 3 && measures.bestFits.every(Boolean),
+      `Three best values fit the summary row at ${width}px`,
     );
     if (width <= 760)
       assert(

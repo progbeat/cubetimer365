@@ -3,14 +3,9 @@ import "@mantine/core/styles.css";
 import "./App.css";
 
 import React, { useEffect, useRef, useState } from "react";
-import { LineChart } from "@mantine/charts";
+import { AreaChart } from "@mantine/charts";
 import { createTheme, MantineProvider, Popover } from "@mantine/core";
-import {
-  IconChartLine,
-  IconList,
-  IconStopwatch,
-  IconTrash,
-} from "@tabler/icons-react";
+import { IconChartLine, IconList, IconTrash } from "@tabler/icons-react";
 import CubeNet, { CubeStyle } from "./CubeNet";
 import ScrambleText from "./ScrambleText";
 import { generateScramble } from "./scramble";
@@ -20,8 +15,10 @@ import LegacyHistoryImport from "./LegacyHistoryImport";
 import { loadCubeStyle, rememberCubeStyle } from "./cubeStylePreference";
 import About from "./About";
 import DailyLogo from "./DailyLogo";
+import bestCrown from "./bestCrown.svg?inline";
 import { createCalendarMark } from "./calendarMark";
 import { useDailyFavicon } from "./useDailyFavicon";
+import TimeAxisGuide from "./TimeAxisGuide";
 import {
   SOLVE_STORAGE_KEY,
   loadDailyHistory,
@@ -829,6 +826,17 @@ const App: React.FC = () => {
     };
   }, [history]);
   const best = statistics.bestSingle;
+  const chartDomain = React.useMemo<[number, number]>(
+    () => [
+      best !== null && Number.isFinite(best)
+        ? Math.max(0, Math.floor(best - 0.25))
+        : 0,
+      statistics.maxFinite !== null
+        ? Math.ceil(statistics.maxFinite + 0.25)
+        : 1,
+    ],
+    [best, statistics.maxFinite],
+  );
   const stats = [
     ["Best single", best],
     ["Best AO5", statistics.bestAO5],
@@ -1032,28 +1040,6 @@ const App: React.FC = () => {
               </div>
             </section>
             <section
-              className="stats-grid"
-              id="stats"
-              aria-label="Today's best results"
-            >
-              {stats.map(([label, value]) => (
-                <div className="stat" key={label}>
-                  <h2 className="eyebrow">{label}</h2>
-                  <p
-                    className={
-                      label === "Best single" &&
-                      best !== null &&
-                      Number.isFinite(best)
-                        ? "lime"
-                        : ""
-                    }
-                  >
-                    {formatTime(value)}
-                  </p>
-                </div>
-              ))}
-            </section>
-            <section
               className="panel history-panel"
               id="history"
               aria-labelledby="history-title"
@@ -1084,97 +1070,109 @@ const App: React.FC = () => {
                   tab; existing stored data was left intact.
                 </p>
               )}
-              {history.length === 0 ? (
-                <div className="empty-history">
-                  <IconList size={28} stroke={1.2} />
-                  <p>No solves yet.</p>
-                </div>
-              ) : (
-                <div className="history-scroll">
-                  <table className="history-table">
-                    <caption className="sr-only">
-                      Solve times and rolling averages, newest first
-                    </caption>
-                    <thead>
-                      <tr>
-                        <th scope="col">#</th>
-                        <th scope="col">Time</th>
-                        <th
-                          scope="col"
-                          title="Last five solves ending at this solve"
+              <div
+                className={`history-scroll${history.length === 0 ? " history-scroll--empty" : ""}`}
+              >
+                <table className="history-table">
+                  <caption className="sr-only">
+                    Solve times and rolling averages, newest first
+                  </caption>
+                  <thead>
+                    <tr>
+                      <th scope="col">#</th>
+                      <th scope="col">Time</th>
+                      <th
+                        scope="col"
+                        title="Last five solves ending at this solve"
+                      >
+                        AO5
+                      </th>
+                      <th
+                        scope="col"
+                        title="Last twelve solves ending at this solve"
+                      >
+                        AO12
+                      </th>
+                      <th scope="col">
+                        <span className="sr-only">Delete</span>
+                      </th>
+                    </tr>
+                    <tr
+                      className="history-best"
+                      aria-label="Daily best results"
+                    >
+                      <th scope="row">
+                        <img
+                          className="history-best-icon"
+                          src={bestCrown}
+                          width={16}
+                          height={16}
+                          alt="Today's best"
+                          title="Today's best"
+                        />
+                      </th>
+                      {stats.map(([label, value], index) => (
+                        <td
+                          key={label}
+                          className={`history-best-value ${value === null ? "incomplete-average" : ["best-single-value", "ao5-cell", "ao12-cell"][index]}`}
                         >
-                          AO5
-                        </th>
-                        <th
-                          scope="col"
-                          title="Last twelve solves ending at this solve"
-                        >
-                          AO12
-                        </th>
-                        <th scope="col">
-                          <span className="sr-only">Delete</span>
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {statistics.newestFirst.map(
-                        ({ attempt, time, ao5, ao12 }, row) => {
-                          const index = attempt - 1;
-                          return (
-                            <tr
-                              key={index}
-                              className={row === 0 ? "latest-solve" : ""}
+                          {formatTime(value)}
+                        </td>
+                      ))}
+                      <td aria-hidden="true" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {statistics.newestFirst.map(
+                      ({ attempt, time, ao5, ao12 }) => {
+                        const index = attempt - 1;
+                        return (
+                          <tr key={index}>
+                            <td>{index + 1}</td>
+                            <td>{formatTime(time)}</td>
+                            <td
+                              className={
+                                ao5 === null ? "incomplete-average" : "ao5-cell"
+                              }
                             >
-                              <td>{index + 1}</td>
-                              <td
-                                className={
-                                  Number.isFinite(time) && time === best
-                                    ? "best-solve"
-                                    : ""
+                              {formatTime(ao5)}
+                            </td>
+                            <td
+                              className={
+                                ao12 === null
+                                  ? "incomplete-average"
+                                  : "ao12-cell"
+                              }
+                            >
+                              {formatTime(ao12)}
+                            </td>
+                            <td>
+                              <button
+                                type="button"
+                                className="delete-solve"
+                                aria-label={`Delete solve ${index + 1}`}
+                                onClick={() =>
+                                  setHistory((previous) =>
+                                    previous.filter((_, i) => i !== index),
+                                  )
                                 }
                               >
-                                {formatTime(time)}
-                              </td>
-                              <td
-                                className={
-                                  ao5 === null
-                                    ? "incomplete-average"
-                                    : "ao5-cell"
-                                }
-                              >
-                                {formatTime(ao5)}
-                              </td>
-                              <td
-                                className={
-                                  ao12 === null
-                                    ? "incomplete-average"
-                                    : "ao12-cell"
-                                }
-                              >
-                                {formatTime(ao12)}
-                              </td>
-                              <td>
-                                <button
-                                  type="button"
-                                  className="delete-solve"
-                                  aria-label={`Delete solve ${index + 1}`}
-                                  onClick={() =>
-                                    setHistory((previous) =>
-                                      previous.filter((_, i) => i !== index),
-                                    )
-                                  }
-                                >
-                                  <IconTrash size={16} stroke={1.5} />
-                                </button>
-                              </td>
-                            </tr>
-                          );
-                        },
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+                                <IconTrash size={16} stroke={1.5} />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      },
+                    )}
+                  </tbody>
+                </table>
+                {history.length === 0 && (
+                  <div className="empty-history">
+                    <IconList size={28} stroke={1.2} />
+                    <p>No solves yet.</p>
+                  </div>
+                )}
+              </div>
               <div className="history-footer">
                 <div className="history-meta">
                   <span>Total {formatTime(statistics.totalTime)}</span>
@@ -1194,13 +1192,13 @@ const App: React.FC = () => {
               aria-labelledby="chart-title"
             >
               <div className="panel-heading">
-                <h2 className="eyebrow" id="chart-title">
+                <h2 className="sr-only" id="chart-title">
                   Solve times
                 </h2>
                 <div className="chart-legend">
                   <span>
                     <i className="solve-key" />
-                    Solve time
+                    Time
                   </span>
                   <span>
                     <i className="ao5-key" />
@@ -1219,49 +1217,57 @@ const App: React.FC = () => {
                     <p>No data yet.</p>
                   </div>
                 ) : (
-                  <LineChart
+                  <AreaChart
+                    areaChartProps={{
+                      margin: { top: 8, bottom: 0, left: 8, right: 8 },
+                    }}
                     h="100%"
                     data={statistics.chartData}
                     dataKey="attempt"
                     series={[
-                      { name: "time", color: "#b1f54b" },
+                      { name: "time", color: "#f3f5f6" },
                       { name: "ao5", color: "#62b1ed" },
                       { name: "ao12", color: "#efaa59" },
                     ]}
                     unit="s"
                     withTooltip={false}
                     tickLine="none"
-                    gridAxis="xy"
-                    curveType="linear"
+                    gridAxis="x"
+                    withGradient
+                    fillOpacity={0.12}
+                    strokeDasharray="2 4"
+                    gridColor="#63727c"
+                    gridProps={{
+                      vertical: false,
+                      horizontal: (props) => <TimeAxisGuide {...props} />,
+                      strokeOpacity: 0.3,
+                      strokeWidth: 1,
+                    }}
+                    xAxisProps={{
+                      axisLine: false,
+                      padding: { left: 0, right: 0 },
+                    }}
+                    connectNulls={false}
+                    curveType="monotone"
                     yAxisProps={{
-                      domain: [
-                        best !== null && Number.isFinite(best)
-                          ? Math.max(0, Math.floor(best - 0.25))
-                          : 0,
-                        statistics.maxFinite !== null
-                          ? Math.ceil(statistics.maxFinite + 0.25)
-                          : 1,
-                      ],
+                      domain: chartDomain,
+                      tickCount: 5,
+                      axisLine: false,
+                      mirror: true,
+                      width: 8,
+                      tickMargin: 4,
+                      tickSize: 0,
+                      tick: {
+                        transform: "translate(-12, 0)",
+                        fontSize: 12,
+                        fill: "#cad4dc",
+                      },
                     }}
                   />
                 )}
               </div>
             </section>
           </main>
-          <nav className="mobile-nav" aria-label="Session sections">
-            <a href="#timer">
-              <IconStopwatch size={22} stroke={1.6} />
-              Timer
-            </a>
-            <a href="#stats">
-              <IconChartLine size={22} stroke={1.6} />
-              Stats
-            </a>
-            <a href="#history">
-              <IconList size={22} stroke={1.6} />
-              History
-            </a>
-          </nav>
         </div>
       )}
     </MantineProvider>

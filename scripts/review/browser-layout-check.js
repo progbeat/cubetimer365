@@ -45,7 +45,7 @@ export default async (page) => {
         app: box(".app-layout"),
         chart: box(".chart-panel"),
         plot: box(".chart-plot"),
-        rendered: box(".mantine-LineChart-root, .empty-chart"),
+        rendered: box(".mantine-AreaChart-root, .empty-chart"),
         history: box(".history-panel"),
         timer: box(".timer-panel"),
       };
@@ -106,6 +106,71 @@ export default async (page) => {
     );
     const m = await measure();
     assert(!m.horizontal, "Table does not cause horizontal page overflow");
+    const titles = await page.evaluate(() => {
+      const measureTitle = (selector) => {
+        const title = document.querySelector(selector),
+          panel = title.closest(".panel");
+        const box = title.getBoundingClientRect(),
+          outer = panel.getBoundingClientRect();
+        const style = getComputedStyle(title);
+        return {
+          top: box.top,
+          insetTop: box.top - outer.top,
+          insetLeft: box.left - outer.left,
+          typography: [
+            style.fontSize,
+            style.lineHeight,
+            style.fontWeight,
+            style.letterSpacing,
+          ],
+        };
+      };
+      return [
+        measureTitle("#scramble-title"),
+        measureTitle(".history-panel h2"),
+      ];
+    });
+    assert(
+      Math.abs(titles[0].insetTop - titles[1].insetTop) < 1 &&
+        Math.abs(titles[0].insetLeft - titles[1].insetLeft) < 1,
+      "Panel titles use consistent top and left insets on desktop and mobile",
+    );
+    assert(
+      width <= 760 || Math.abs(titles[0].top - titles[1].top) < 1,
+      "Desktop Daily scramble aligns with Today's solves",
+    );
+    assert(
+      JSON.stringify(titles[0].typography) ===
+        JSON.stringify(titles[1].typography),
+      "Visible panel titles share typography",
+    );
+    const legend = await page.locator(".chart-panel").evaluate((el) => {
+      const title = el.querySelector("#chart-title").getBoundingClientRect();
+      const heading = el.querySelector(".panel-heading");
+      const style = getComputedStyle(heading);
+      const items = el.querySelector(".chart-legend");
+      return {
+        hiddenTitle: title.width <= 1 && title.height <= 1,
+        labels: Array.from(items.children, (item) => item.textContent.trim()),
+        extraHeight:
+          heading.getBoundingClientRect().height -
+          items.getBoundingClientRect().height -
+          parseFloat(style.paddingTop) -
+          parseFloat(style.paddingBottom),
+      };
+    });
+    assert(
+      legend.hiddenTitle,
+      "Chart title is available accessibly without a visible title row",
+    );
+    assert(
+      JSON.stringify(legend.labels) === JSON.stringify(["Time", "AO5", "AO12"]),
+      "Chart legend matches the table's metric names",
+    );
+    assert(
+      Math.abs(legend.extraHeight) < 1,
+      "Chart heading contains no empty space from the removed title",
+    );
     if (width < 760) {
       assert(
         m.history.top > m.timer.bottom && m.chart.top > m.history.bottom,
@@ -171,8 +236,12 @@ export default async (page) => {
       await page
         .locator(".history-table tbody tr")
         .first()
-        .evaluate((el) => el.classList.contains("latest-solve")),
-      "Latest solve remains highlighted",
+        .evaluate(
+          (el) =>
+            el.cells[0].textContent === "100" &&
+            !el.classList.contains("latest-solve"),
+        ),
+      "Newest solve stays first without a special row highlight",
     );
     assert(
       (await page.evaluate(() => JSON.stringify({ ...localStorage }))) ===
