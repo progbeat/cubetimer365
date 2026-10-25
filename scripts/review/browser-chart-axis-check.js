@@ -60,6 +60,10 @@ export default async (page) => {
           plotLeft: plot.left,
           gridLeft: grid.left,
           gridRight: grid.right,
+          gridTop: grid.top,
+          legendBottom: legend.bottom,
+          plotTop: plot.top,
+          plotBottom: plot.bottom,
           plotRight: plot.right,
           navCount: document.querySelectorAll(".mobile-nav").length,
           legendRight: legend.right,
@@ -71,6 +75,8 @@ export default async (page) => {
                 text: el.textContent,
                 left: box.left,
                 right: box.right,
+                top: box.top,
+                bottom: box.bottom,
                 fill: getComputedStyle(el).fill,
               };
             },
@@ -92,6 +98,15 @@ export default async (page) => {
       assert(
         m.ticks.every((t) => t.left >= m.gridLeft && t.right <= m.gridRight),
         "Internal fractional and long labels fit the data area",
+      );
+      assert(
+        m.gridTop - m.legendBottom >= 12 &&
+          m.gridTop - m.legendBottom <= 16,
+        "Legend and grid keep a compact gap on every screen",
+      );
+      assert(
+        m.ticks.every((t) => t.top >= m.plotTop && t.bottom <= m.plotBottom),
+        "Upper and lower time labels fit inside the chart",
       );
       assert(
         Math.abs(m.axis - 8) < 1 &&

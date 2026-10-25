@@ -1218,7 +1218,7 @@ const App: React.FC = () => {
                 ) : (
                   <LineChart
                     lineChartProps={{
-                      margin: { top: 16, bottom: 0, left: 8, right: 8 },
+                      margin: { top: 8, bottom: 0, left: 8, right: 8 },
                     }}
                     h="100%"
                     data={statistics.chartData}
