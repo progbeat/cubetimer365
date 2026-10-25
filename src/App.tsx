@@ -1259,7 +1259,7 @@ const App: React.FC = () => {
                     tickLine="none"
                     gridAxis="x"
                     withGradient
-                    fillOpacity={0.08}
+                    fillOpacity={0.04}
                     strokeDasharray="2 4"
                     gridColor="#63727c"
                     gridProps={{
