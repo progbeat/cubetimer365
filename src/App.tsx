@@ -3,7 +3,7 @@ import "@mantine/core/styles.css";
 import "./App.css";
 
 import React, { useEffect, useRef, useState } from "react";
-import { AreaChart, ChartTooltip } from "@mantine/charts";
+import { ChartTooltip, LineChart } from "@mantine/charts";
 import { createTheme, MantineProvider, Popover } from "@mantine/core";
 import { IconChartLine, IconList, IconTrash } from "@tabler/icons-react";
 import CubeNet, { CubeStyle } from "./CubeNet";
@@ -1222,8 +1222,8 @@ const App: React.FC = () => {
                     <p>No data yet.</p>
                   </div>
                 ) : (
-                  <AreaChart
-                    areaChartProps={{
+                  <LineChart
+                    lineChartProps={{
                       margin: { top: 8, bottom: 0, left: 8, right: 8 },
                     }}
                     h="100%"
@@ -1232,10 +1232,10 @@ const App: React.FC = () => {
                     series={chartSeries}
                     unit="s"
                     withDots={false}
+                    strokeWidth={2.5}
                     withTooltip
-                    // Mantine's separate dot areas are disabled; keep active
-                    // markers on the native line areas instead.
-                    areaProps={(series) => ({
+                    // Keep active markers available while permanent dots are disabled.
+                    lineProps={(series) => ({
                       activeDot: {
                         fill: "#ffffff",
                         stroke: series.color,
@@ -1257,8 +1257,6 @@ const App: React.FC = () => {
                     }}
                     tickLine="none"
                     gridAxis="x"
-                    withGradient
-                    fillOpacity={0.12}
                     strokeDasharray="2 4"
                     gridColor="#63727c"
                     gridProps={{

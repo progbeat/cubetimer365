@@ -71,7 +71,7 @@ the row header retains its accessible name. Time values, including the best
 single, share the chart's light curve, dots and legend marker. AO5/AO12 keep their
 blue/orange metric colors. Seconds labels align with the plot's left edge;
 horizontal dashed guides begin after each label. Data keeps fixed side margins
-independent of label length, with soft gradient fills and no vertical grid or
+independent of label length, with no series fills, vertical grid or
 axis line. Permanent markers are hidden. Hovering or touching the plot reveals
 the active solve's markers and a tooltip with its Time/AO5/AO12 values. A lone
 solve has no connecting line and is shown by its active marker on interaction;

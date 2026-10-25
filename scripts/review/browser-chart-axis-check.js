@@ -120,18 +120,22 @@ export default async (page) => {
               ".history-table tbody td:nth-child(2), .history-best .best-single-value",
             ),
           ].map((cell) => getComputedStyle(cell).color),
-          timeStroke: panel.querySelector(".recharts-area-curve")
-            ? getComputedStyle(panel.querySelector(".recharts-area-curve"))
+          timeStroke: panel.querySelector(".recharts-line-curve")
+            ? getComputedStyle(panel.querySelector(".recharts-line-curve"))
                 .stroke
             : null,
           legendColor: getComputedStyle(panel.querySelector(".solve-key"))
             .backgroundColor,
-          timeDots: [...panel.querySelectorAll(".recharts-area-dot")].filter(
+          timeDots: [...panel.querySelectorAll(".recharts-line-dot")].filter(
             (dot) =>
               dot.getBoundingClientRect().width > 0 &&
               getComputedStyle(dot).fill === "rgb(243, 245, 246)",
           ).length,
           gradients: panel.querySelectorAll("linearGradient").length,
+          areas: panel.querySelectorAll(".recharts-area-area").length,
+          lineFills: [...panel.querySelectorAll(".recharts-line-curve")].map(
+            (line) => getComputedStyle(line).fill,
+          ),
           saved: JSON.parse(
             localStorage.getItem("cubetimer365:daily-history:v1"),
           ).history,
@@ -198,7 +202,12 @@ export default async (page) => {
           m.timeDots === 0,
         "Time stays light in rows, Best, curve and legend without permanent dots",
       );
-      assert(m.gradients >= 3, "Series retain their soft gradient fills");
+      assert(
+        m.gradients === 0 &&
+          m.areas === 0 &&
+          m.lineFills.every((fill) => fill === "none"),
+        "Series render only lines, without filled areas or unused gradients",
+      );
       assert(
         m.navCount === 0,
         "No obsolete mobile navigation obscures the chart",

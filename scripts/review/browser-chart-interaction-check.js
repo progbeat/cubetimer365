@@ -42,9 +42,9 @@ export default async (page) => {
         .history,
       unrelated: localStorage.getItem("chart-interaction-unrelated"),
       path:
-        document.querySelector(".recharts-area-curve")?.getAttribute("d") ||
+        document.querySelector(".recharts-line-curve")?.getAttribute("d") ||
         null,
-      dots: [...document.querySelectorAll(".recharts-area-dot")].filter(
+      dots: [...document.querySelectorAll(".recharts-line-dot")].filter(
         (dot) => dot.getBoundingClientRect().width > 0,
       ).length,
       overflow: document.documentElement.scrollWidth > innerWidth,

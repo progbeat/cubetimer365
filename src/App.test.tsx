@@ -16,7 +16,7 @@ import { CUBE_STYLE_KEY } from "./cubeStylePreference";
 import { cubeFaceColors } from "./cubeGeometry";
 
 vi.mock("@mantine/charts", () => ({
-  AreaChart: ({
+  LineChart: ({
     data,
   }: {
     data: {

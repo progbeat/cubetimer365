@@ -87,7 +87,7 @@ kbd { border: 1px solid #43505a; border-radius: 4px; padding: 4px 7px; font: inh
 .history-table td:nth-child(n+2):not(:last-child) { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; font-size: 13px; }
 .history-best th, .history-best td { height: 39px; background: #20272b; border-bottom: 1px solid var(--border); }
 .history-best th { padding-top: 0; padding-bottom: 0; vertical-align: middle; font-size: 10px; font-weight: 600; letter-spacing: 0; text-transform: none; }
-.history-best-icon { position: relative; top: -1px; display: block; width: 16px; height: 16px; margin-left: auto; margin-right: -1px; }
+.history-best-icon { position: relative; top: 0; display: block; width: 16px; height: 16px; margin-left: auto; margin-right: -1px; }
 .history-table .ao5-cell { color: #9fc4e5; }
 .history-table .ao12-cell { color: #e9c49b; }
 .history-table .incomplete-average { color: var(--muted); }
@@ -105,9 +105,9 @@ kbd { border: 1px solid #43505a; border-radius: 4px; padding: 4px 7px; font: inh
 .chart-panel { display: flex; flex-direction: column; min-height: var(--chart-min-height); grid-column: 1; padding: 0 16px 10px; }
 .chart-panel .panel-heading { flex-shrink: 0; justify-content: flex-end; padding: 16px 0 6px; }
 .chart-plot { flex: 1; min-height: 180px; }
-/* Recharts forces a static dot for one-point areas, even with dots disabled.
+/* Recharts forces a static dot for one-point lines, even with dots disabled.
    Active markers use a separate layer and remain available on interaction. */
-.chart-plot .recharts-area-dots { display: none; }
+.chart-plot .recharts-line-dots { display: none; }
 .chart-legend { display: flex; gap: 18px; color: #b7c2ca; font-size: 10px; }
 .chart-legend span { display: flex; gap: 6px; align-items: center; }
 .chart-legend i { width: 7px; height: 7px; border-radius: 50%; }
